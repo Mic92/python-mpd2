@@ -3,7 +3,6 @@
 # TODO: return {} if no object read (?)
 # TODO: implement argument checking/parsing (?)
 # TODO: check for EOF when reading and benchmark it
-# TODO: command_list support
 # TODO: converter support
 # TODO: global for parsing MPD_HOST/MPD_PORT
 # TODO: global for parsing MPD error messages
@@ -15,6 +14,7 @@ import socket
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
+NEXT = "list_OK"
 
 
 class MPDError(Exception):
@@ -24,6 +24,9 @@ class ProtocolError(MPDError):
     pass
 
 class CommandError(MPDError):
+    pass
+
+class CommandListError(MPDError):
     pass
 
 
@@ -112,16 +115,20 @@ class MPDClient(object):
         return lambda *args: self._docommand(attr, args, retval)
 
     def _docommand(self, command, args, retval):
+        if self._commandlist is not None and not callable(retval):
+            raise CommandListError, "%s not allowed in command list" % command
         self._writecommand(command, args)
-        if callable(retval):
-            return retval()
-        return retval
+        if self._commandlist is None:
+            if callable(retval):
+                return retval()
+            return retval
+        self._commandlist.append(retval)
 
     def _writeline(self, line):
         self._sockfile.write("%s\n" % line)
         self._sockfile.flush()
 
-    def _writecommand(self, command, args):
+    def _writecommand(self, command, args=[]):
         parts = [command]
         for arg in args:
             parts.append('"%s"' % escape(str(arg)))
@@ -132,7 +139,12 @@ class MPDClient(object):
         if line.startswith(ERROR_PREFIX):
             error = line[len(ERROR_PREFIX):].strip()
             raise CommandError, error
-        if line == SUCCESS:
+        if self._commandlist is not None:
+            if line == NEXT:
+                return
+            if line == SUCCESS:
+                raise ProtocolError, "Got unexpected '%s'" % SUCCESS
+        elif line == SUCCESS:
             return
         return line
 
@@ -187,6 +199,13 @@ class MPDClient(object):
             yield obj
         raise StopIteration
 
+    def _readcommandlist(self):
+        for retval in self._commandlist:
+            yield retval()
+        self._commandlist = None
+        self._getnone()
+        raise StopIteration
+
     def _wrapiterator(self, iterator):
         if not self.iterate:
             return list(iterator)
@@ -230,6 +249,9 @@ class MPDClient(object):
     def _getchanges(self):
         return self._getobjects(["cpos"])
 
+    def _getcommandlist(self):
+        return self._wrapiterator(self._readcommandlist())
+
     def _hello(self):
         line = self._sockfile.readline().rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
@@ -238,6 +260,7 @@ class MPDClient(object):
 
     def _reset(self):
         self.mpd_version = None
+        self._commandlist = None
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sockfile = self._sock.makefile("rb+")
 
@@ -250,6 +273,18 @@ class MPDClient(object):
         self._sockfile.close()
         self._sock.close()
         self._reset()
+
+    def command_list_ok_begin(self):
+        if self._commandlist is not None:
+            raise CommandListError, "Already in command list"
+        self._writecommand("command_list_ok_begin")
+        self._commandlist = []
+
+    def command_list_end(self):
+        if self._commandlist is None:
+            raise CommandListError, "Not in command list"
+        self._writecommand("command_list_end")
+        return self._getcommandlist()
 
 
 def escape(text):
