@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-# TODO: return {} if no object read (?)
 # TODO: implement argument checking/parsing (?)
 # TODO: check for EOF when reading and benchmark it
 # TODO: converter support
@@ -231,7 +230,7 @@ class MPDClient(object):
     def _getobject(self):
         objs = list(self._readobjects())
         if not objs:
-            return
+            return {}
         return objs[0]
 
     def _getobjects(self, delimiters):
