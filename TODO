@@ -1,6 +1,7 @@
 python-mpd TODO list
 ====================
 
+* pick a license and add copyright notices
 * check for EOF when reading and benchmark it
 * converter support
 * global for parsing MPD_HOST/MPD_PORT
