@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-# TODO: implement argument checking/parsing (?)
 # TODO: check for EOF when reading and benchmark it
 # TODO: converter support
 # TODO: global for parsing MPD_HOST/MPD_PORT
