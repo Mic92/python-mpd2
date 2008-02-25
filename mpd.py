@@ -1,11 +1,5 @@
 #! /usr/bin/env python
 
-# TODO: check for EOF when reading and benchmark it
-# TODO: converter support
-# TODO: global for parsing MPD_HOST/MPD_PORT
-# TODO: global for parsing MPD error messages
-# TODO: IPv6 support (AF_INET6)
-
 import socket
 
 

@@ -1,0 +1,8 @@
+python-mpd TODO list
+====================
+
+* check for EOF when reading and benchmark it
+* converter support
+* global for parsing MPD_HOST/MPD_PORT
+* global for parsing MPD error messages
+* IPv6 support (AF_INET6)
