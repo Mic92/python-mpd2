@@ -1,3 +1,4 @@
+# Python MPD client library
 # Copyright (C) 2008  J. Alexander Treuman <jat@spatialrift.net>
 #
 # This program is free software: you can redistribute it and/or modify
