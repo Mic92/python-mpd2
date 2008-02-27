@@ -2,7 +2,6 @@ python-mpd TODO list
 ====================
 
 == Pre-release
-* pick a license and add copyright notices
 * add setup.py, setup.cfg, and MANIFEST.in
 * add a little documentation, and other informational files
 
