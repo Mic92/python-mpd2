@@ -3,7 +3,6 @@ python-mpd TODO list
 
 == Pre-release
 * add setup.py, setup.cfg, and MANIFEST.in
-* add a README.txt
 
 
 == Post-release
