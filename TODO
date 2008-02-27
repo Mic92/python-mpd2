@@ -1,7 +1,14 @@
 python-mpd TODO list
 ====================
 
+== Pre-release
 * pick a license and add copyright notices
+* add setup.py, setup.cfg, and MANIFEST.in
+* add a little documentation, and other informational files
+
+
+== Post-release
+* port scripts to new API and add them as examples
 * check for EOF when reading and benchmark it
 * converter support
 * global for parsing MPD_HOST/MPD_PORT
