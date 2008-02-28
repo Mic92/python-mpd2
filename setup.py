@@ -46,9 +46,9 @@ setup(
     download_url="http://pypi.python.org/pypi/python-mpd/",
     py_modules=["mpd"],
     classifiers=CLASSIFIERS,
-    license=LICENSE,
+    #license=LICENSE,
     keywords=["mpd"],
-    platforms=["Independant"],
+    #platforms=["Independant"],
 )
 
 
