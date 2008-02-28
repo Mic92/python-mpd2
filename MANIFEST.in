@@ -1,2 +1,3 @@
+exclude setup.cfg
 include *.txt
 recursive-include doc *.txt
