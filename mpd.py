@@ -225,7 +225,7 @@ class MPDClient(object):
     def _getitem(self):
         items = list(self._readitems())
         if len(items) != 1:
-            raise ProtocolError, "Expected 1 item, got %i" % len(items)
+            return
         return items[0][1]
 
     def _getlist(self):
