@@ -2,6 +2,7 @@ python-mpd TODO list
 ====================
 
 * port personal scripts to the new API and add them as examples
+* benchmark removal of line == SUCCESS test when in a command list
 * check for EOF when reading and benchmark it
 * converter support
 * global for parsing MPD_HOST/MPD_PORT
