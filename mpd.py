@@ -26,6 +26,9 @@ NEXT = "list_OK"
 class MPDError(Exception):
     pass
 
+class ConnectionError(MPDError):
+    pass
+
 class ProtocolError(MPDError):
     pass
 
@@ -141,7 +144,10 @@ class MPDClient(object):
         self._writeline(" ".join(parts))
 
     def _readline(self):
-        line = self._sockfile.readline().rstrip("\n")
+        line = self._sockfile.readline()
+        if not line.endswith("\n"):
+            raise ConnectionError, "Connection lost while reading line"
+        line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
             error = line[len(ERROR_PREFIX):].strip()
             raise CommandError, error
@@ -259,7 +265,9 @@ class MPDClient(object):
         return self._wrapiterator(self._readcommandlist())
 
     def _hello(self):
-        line = self._sockfile.readline().rstrip("\n")
+        line = self._sockfile.readline()
+        if not line.endswith("\n"):
+            raise ConnectionError, "Connection lost while reading MPD hello"
         if not line.startswith(HELLO_PREFIX):
             raise ProtocolError, "Got invalid MPD hello: '%s'" % line
         self.mpd_version = line[len(HELLO_PREFIX):].strip()
