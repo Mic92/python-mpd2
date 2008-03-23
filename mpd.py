@@ -44,7 +44,7 @@ class _NotConnected(object):
         return self._dummy
 
     def _dummy(*args):
-        raise ConnectionError, "Not connected"
+        raise ConnectionError("Not connected")
 
 class MPDClient(object):
     def __init__(self):
@@ -126,13 +126,13 @@ class MPDClient(object):
         try:
             retval = self._commands[attr]
         except KeyError:
-            raise AttributeError, "'%s' object has no attribute '%s'" % \
-                                  (self.__class__.__name__, attr)
+            raise AttributeError("'%s' object has no attribute '%s'" %
+                                 (self.__class__.__name__, attr))
         return lambda *args: self._docommand(attr, args, retval)
 
     def _docommand(self, command, args, retval):
         if self._commandlist is not None and not callable(retval):
-            raise CommandListError, "%s not allowed in command list" % command
+            raise CommandListError("%s not allowed in command list" % command)
         self._writecommand(command, args)
         if self._commandlist is None:
             if callable(retval):
@@ -153,16 +153,16 @@ class MPDClient(object):
     def _readline(self):
         line = self._rfile.readline()
         if not line.endswith("\n"):
-            raise ConnectionError, "Connection lost while reading line"
+            raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
             error = line[len(ERROR_PREFIX):].strip()
-            raise CommandError, error
+            raise CommandError(error)
         if self._commandlist is not None:
             if line == NEXT:
                 return
             if line == SUCCESS:
-                raise ProtocolError, "Got unexpected '%s'" % SUCCESS
+                raise ProtocolError("Got unexpected '%s'" % SUCCESS)
         elif line == SUCCESS:
             return
         return line
@@ -173,7 +173,7 @@ class MPDClient(object):
             return
         item = line.split(separator, 1)
         if len(item) < 2:
-            raise ProtocolError, "Could not parse item: '%s'" % line
+            raise ProtocolError("Could not parse item: '%s'" % line)
         return item
 
     def _readitems(self, separator=": "):
@@ -188,8 +188,8 @@ class MPDClient(object):
         for key, value in self._readitems():
             if key != seen:
                 if seen is not None:
-                    raise ProtocolError, "Expected key '%s', got '%s'" % \
-                                         (seen, key)
+                    raise ProtocolError("Expected key '%s', got '%s'" %
+                                        (seen, key))
                 seen = key
             yield value
         raise StopIteration
@@ -233,7 +233,7 @@ class MPDClient(object):
     def _getnone(self):
         line = self._readline()
         if line is not None:
-            raise ProtocolError, "Got unexpected return value: '%s'" % line
+            raise ProtocolError("Got unexpected return value: '%s'" % line)
 
     def _getitem(self):
         items = list(self._readitems())
@@ -274,10 +274,10 @@ class MPDClient(object):
     def _hello(self):
         line = self._rfile.readline()
         if not line.endswith("\n"):
-            raise ConnectionError, "Connection lost while reading MPD hello"
+            raise ConnectionError("Connection lost while reading MPD hello")
         line = line.rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
-            raise ProtocolError, "Got invalid MPD hello: '%s'" % line
+            raise ProtocolError("Got invalid MPD hello: '%s'" % line)
         self.mpd_version = line[len(HELLO_PREFIX):].strip()
 
     def _reset(self):
@@ -289,7 +289,7 @@ class MPDClient(object):
 
     def connect(self, host, port):
         if self._sock:
-            raise ConnectionError, "Already connected"
+            raise ConnectionError("Already connected")
         msg = "getaddrinfo returns an empty list"
         for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM, socket.IPPROTO_TCP,
@@ -305,7 +305,7 @@ class MPDClient(object):
                 continue
             break
         if not self._sock:
-            raise socket.error, msg
+            raise socket.error(msg)
         self._rfile = self._sock.makefile("rb")
         self._wfile = self._sock.makefile("wb")
         try:
@@ -322,13 +322,13 @@ class MPDClient(object):
 
     def command_list_ok_begin(self):
         if self._commandlist is not None:
-            raise CommandListError, "Already in command list"
+            raise CommandListError("Already in command list")
         self._writecommand("command_list_ok_begin")
         self._commandlist = []
 
     def command_list_end(self):
         if self._commandlist is None:
-            raise CommandListError, "Not in command list"
+            raise CommandListError("Not in command list")
         self._writecommand("command_list_end")
         return self._getcommandlist()
 
