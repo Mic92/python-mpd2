@@ -275,6 +275,7 @@ class MPDClient(object):
         line = self._rfile.readline()
         if not line.endswith("\n"):
             raise ConnectionError, "Connection lost while reading MPD hello"
+        line = line.rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
             raise ProtocolError, "Got invalid MPD hello: '%s'" % line
         self.mpd_version = line[len(HELLO_PREFIX):].strip()
