@@ -39,6 +39,13 @@ class CommandListError(MPDError):
     pass
 
 
+class _NotConnected(object):
+    def __getattr__(self, attr):
+        return self._dummy
+
+    def _dummy(*args):
+        raise ConnectionError, "Not connected"
+
 class MPDClient(object):
     def __init__(self):
         self.iterate = False
@@ -275,12 +282,15 @@ class MPDClient(object):
     def _reset(self):
         self.mpd_version = None
         self._commandlist = None
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sockfile = self._sock.makefile("rb+")
+        self._sock = None
+        self._sockfile = _NotConnected()
 
     def connect(self, host, port):
-        self.disconnect()
+        if self._sock:
+            self.disconnect()
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((host, port))
+        self._sockfile = self._sock.makefile("rb+")
         self._hello()
 
     def disconnect(self):
