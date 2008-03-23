@@ -4,7 +4,6 @@ python-mpd TODO List
 Pre-release
 -----------
 
-* IPv6 support
 * remove line == SUCCESS test when in a command list (?)
 
 
