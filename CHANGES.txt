@@ -4,6 +4,7 @@ python-mpd Changes List
 Changes in 0.2.0
 ----------------
 
+* support for IPv6 and multi-homed hostnames
 * connect() will fail if already connected
 * commands may now raise ConnectionError
 * addid and update may now return None
