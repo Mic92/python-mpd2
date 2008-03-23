@@ -1,4 +1,4 @@
-python-mpd TODO list
+python-mpd TODO List
 ====================
 
 * port personal scripts to the new API and add them as examples
