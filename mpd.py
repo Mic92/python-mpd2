@@ -288,7 +288,7 @@ class MPDClient(object):
 
     def connect(self, host, port):
         if self._sock:
-            self.disconnect()
+            raise ConnectionError, "Already connected"
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((host, port))
         self._rfile = self._sock.makefile("rb")
