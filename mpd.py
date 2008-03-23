@@ -307,7 +307,11 @@ class MPDClient(object):
             raise socket.error, msg
         self._rfile = self._sock.makefile("rb")
         self._wfile = self._sock.makefile("wb")
-        self._hello()
+        try:
+            self._hello()
+        except (socket.error, MPDError):
+            self.disconnect()
+            raise
 
     def disconnect(self):
         self._rfile.close()
