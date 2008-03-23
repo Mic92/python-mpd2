@@ -141,8 +141,8 @@ class MPDClient(object):
         self._commandlist.append(retval)
 
     def _writeline(self, line):
-        self._sockfile.write("%s\n" % line)
-        self._sockfile.flush()
+        self._wfile.write("%s\n" % line)
+        self._wfile.flush()
 
     def _writecommand(self, command, args=[]):
         parts = [command]
@@ -151,7 +151,7 @@ class MPDClient(object):
         self._writeline(" ".join(parts))
 
     def _readline(self):
-        line = self._sockfile.readline()
+        line = self._rfile.readline()
         if not line.endswith("\n"):
             raise ConnectionError, "Connection lost while reading line"
         line = line.rstrip("\n")
@@ -272,7 +272,7 @@ class MPDClient(object):
         return self._wrapiterator(self._readcommandlist())
 
     def _hello(self):
-        line = self._sockfile.readline()
+        line = self._rfile.readline()
         if not line.endswith("\n"):
             raise ConnectionError, "Connection lost while reading MPD hello"
         if not line.startswith(HELLO_PREFIX):
@@ -283,18 +283,21 @@ class MPDClient(object):
         self.mpd_version = None
         self._commandlist = None
         self._sock = None
-        self._sockfile = _NotConnected()
+        self._rfile = _NotConnected()
+        self._wfile = _NotConnected()
 
     def connect(self, host, port):
         if self._sock:
             self.disconnect()
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock.connect((host, port))
-        self._sockfile = self._sock.makefile("rb+")
+        self._rfile = self._sock.makefile("rb")
+        self._wfile = self._sock.makefile("wb")
         self._hello()
 
     def disconnect(self):
-        self._sockfile.close()
+        self._rfile.close()
+        self._wfile.close()
         self._sock.close()
         self._reset()
 
