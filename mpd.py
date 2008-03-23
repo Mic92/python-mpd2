@@ -289,8 +289,22 @@ class MPDClient(object):
     def connect(self, host, port):
         if self._sock:
             raise ConnectionError, "Already connected"
-        self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock.connect((host, port))
+        msg = "getaddrinfo returns an empty list"
+        for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
+                                      socket.SOCK_STREAM, socket.IPPROTO_TCP,
+                                      socket.AI_ADDRCONFIG):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self._sock = socket.socket(af, socktype, proto)
+                self._sock.connect(sa)
+            except socket.error, msg:
+                if self._sock:
+                    self._sock.close()
+                self._sock = None
+                continue
+            break
+        if not self._sock:
+            raise socket.error, msg
         self._rfile = self._sock.makefile("rb")
         self._wfile = self._sock.makefile("wb")
         self._hello()
