@@ -1,15 +1,7 @@
 python-mpd TODO List
 ====================
 
-Pre-release
------------
-
 * remove line == SUCCESS test when in a command list (?)
-
-
-Post-release
-------------
-
 * port personal scripts to the new API and add them as examples
 * converter support
 * global for parsing MPD_HOST/MPD_PORT
