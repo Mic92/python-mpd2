@@ -310,7 +310,7 @@ class MPDClient(object):
         self._wfile = self._sock.makefile("wb")
         try:
             self._hello()
-        except (socket.error, MPDError):
+        except:
             self.disconnect()
             raise
 
