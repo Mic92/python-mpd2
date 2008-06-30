@@ -1,6 +1,11 @@
 python-mpd Changes List
 =======================
 
+Changes in 0.2.1
+----------------
+
+* connect() no longer broken on Windows
+
 Changes in 0.2.0
 ----------------
 
