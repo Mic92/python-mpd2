@@ -291,9 +291,13 @@ class MPDClient(object):
         if self._sock:
             raise ConnectionError("Already connected")
         msg = "getaddrinfo returns an empty list"
+        try:
+            flags = socket.AI_ADDRCONFIG
+        except AttributeError:
+            flags = 0
         for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                                      socket.AI_ADDRCONFIG):
+                                      flags):
             af, socktype, proto, canonname, sa = res
             try:
                 self._sock = socket.socket(af, socktype, proto)
