@@ -54,6 +54,8 @@ class MPDClient(object):
             # Status Commands
             "clearerror":       self._getnone,
             "currentsong":      self._getobject,
+            "idle":             self._getlist,
+            "noidle":           None,
             "status":           self._getobject,
             "stats":            self._getobject,
             # Playback Option Commands

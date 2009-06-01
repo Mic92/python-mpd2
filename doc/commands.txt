@@ -1,6 +1,8 @@
 == Status Commands
 clearerror                         -> getnone
 currentsong                        -> getobject
+idle             <str>             -> getlist
+noidle                             -> None
 status                             -> getobject
 stats                              -> getobject
 
