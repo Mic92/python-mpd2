@@ -7,10 +7,12 @@ status                             -> getobject
 stats                              -> getobject
 
 == Playback Option Commands
+consume          <bool>            -> getnone
 crossfade        <int>             -> getnone
 random           <bool>            -> getnone
 repeat           <bool>            -> getnone
 setvol           <int>             -> getnone
+single           <bool>            -> getnone
 volume           <int>             -> getnone
 
 == Playback Control Commands

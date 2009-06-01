@@ -59,10 +59,12 @@ class MPDClient(object):
             "status":           self._getobject,
             "stats":            self._getobject,
             # Playback Option Commands
+            "consume":          self._getnone,
             "crossfade":        self._getnone,
             "random":           self._getnone,
             "repeat":           self._getnone,
             "setvol":           self._getnone,
+            "single":           self._getnone,
             "volume":           self._getnone,
             # Playback Control Commands
             "next":             self._getnone,
