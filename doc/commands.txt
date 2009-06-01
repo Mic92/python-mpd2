@@ -1,69 +1,80 @@
-== Admin Commands
-disableoutput    <int>             -> getnone
-enableoutput     <int>             -> getnone
-kill                               -> None
-update           [<str>]           -> getitem
-== Informational Commands
+== Status Commands
+clearerror                         -> getnone
+currentsong                        -> getobject
 status                             -> getobject
 stats                              -> getobject
-outputs                            -> getoutputs
-commands                           -> getlist
-notcommands                        -> getlist
-tagtypes                           -> getlist
-urlhandlers                        -> getlist
+
+== Playback Option Commands
+crossfade        <int>             -> getnone
+random           <bool>            -> getnone
+repeat           <bool>            -> getnone
+setvol           <int>             -> getnone
+volume           <int>             -> getnone
+
+== Playback Control Commands
+next                               -> getnone
+pause            [<bool>]          -> getnone
+play             [<int>]           -> getnone
+playid           [<int>]           -> getnone
+previous                           -> getnone
+seek             <int> <int>       -> getnone
+seekid           <int> <int>       -> getnone
+stop                               -> getnone
+
+== Playlist Commands
+add              <str>             -> getnone
+addid            <str> [<int>]     -> getitem
+clear                              -> getnone
+delete           <int>             -> getnone
+deleteid         <int>             -> getnone
+move             <int> <int>       -> getnone
+moveid           <int> <int>       -> getnone
+playlist                           -> getplaylist
+playlistfind     <locate>          -> getsongs
+playlistid       [<int>]           -> getsongs
+playlistinfo     [<int>]           -> getsongs
+playlistsearch   <locate>          -> getsongs
+plchanges        <int>             -> getsongs
+plchangesposid   <int>             -> getchanges
+shuffle                            -> getnone
+swap             <int> <int>       -> getnone
+swapid           <int> <int>       -> getnone
+
+== Stored Playlist Commands
+listplaylist     <str>             -> getlist
+listplaylistinfo <str>             -> getsongs
+load             <str>             -> getnone
+playlistadd      <str> <str>       -> getnone
+playlistclear    <str>             -> getnone
+playlistdelete   <str> <int>       -> getnone
+playlistmove     <str> <int> <int> -> getnone
+rename           <str> <str>       -> getnone
+rm               <str>             -> getnone
+save             <str>             -> getnone
+
 == Database Commands
+count            <locate>          -> getobject
 find             <locate>          -> getsongs
 list             <str> [<locate>]  -> getlist
 listall          [<str>]           -> getdatabase
 listallinfo      [<str>]           -> getdatabase
 lsinfo           [<str>]           -> getdatabase
 search           <locate>          -> getsongs
-count            <locate>          -> getobject
-== Playlist Commands
-add              <str>             -> getnone
-addid            <str> [<int>]     -> getitem
-clear                              -> getnone
-currentsong                        -> getobject
-delete           <int>             -> getnone
-deleteid         <int>             -> getnone
-load             <str>             -> getnone
-rename           <str> <str>       -> getnone
-move             <int> <int>       -> getnone
-moveid           <int> <int>       -> getnone
-playlist                           -> getplaylist
-playlistinfo     [<int>]           -> getsongs
-playlistid       [<int>]           -> getsongs
-plchanges        <int>             -> getsongs
-plchangesposid   <int>             -> getchanges
-rm               <str>             -> getnone
-save             <str>             -> getnone
-shuffle                            -> getnone
-swap             <int> <int>       -> getnone
-swapid           <int> <int>       -> getnone
-listplaylist     <str>             -> getlist
-listplaylistinfo <str>             -> getsongs
-playlistadd      <str> <str>       -> getnone
-playlistclear    <str>             -> getnone
-playlistdelete   <str> <int>       -> getnone
-playlistmove     <str> <int> <int> -> getnone
-playlistfind     <locate>          -> getsongs
-playlistsearch   <locate>          -> getsongs
-== Playback Commands
-crossfade        <int>             -> getnone
-next                               -> getnone
-pause            [<bool>]          -> getnone
-play             [<int>]           -> getnone
-playid           [<int>]           -> getnone
-previous                           -> getnone
-random           <bool>            -> getnone
-repeat           <bool>            -> getnone
-seek             <int> <int>       -> getnone
-seekid           <int> <int>       -> getnone
-setvol           <int>             -> getnone
-stop                               -> getnone
-volume           <int>             -> getnone
-== Miscellaneous Commands
-clearerror                         -> getnone
+update           [<str>]           -> getitem
+
+== Connection Commands
 close                              -> None
+kill                               -> None
 password         <str>             -> getnone
 ping                               -> getnone
+
+== Audio Output Commands
+disableoutput    <int>             -> getnone
+enableoutput     <int>             -> getnone
+outputs                            -> getoutputs
+
+== Reflection Commands
+commands                           -> getlist
+notcommands                        -> getlist
+tagtypes                           -> getlist
+urlhandlers                        -> getlist
