@@ -92,6 +92,7 @@ class MPDClient(object):
             # Stored Playlist Commands
             "listplaylist":     self._getlist,
             "listplaylistinfo": self._getsongs,
+            "listplaylists":    self._getplaylists,
             "load":             self._getnone,
             "playlistadd":      self._getnone,
             "playlistclear":    self._getnone,
@@ -261,6 +262,9 @@ class MPDClient(object):
 
     def _getsongs(self):
         return self._getobjects(["file"])
+
+    def _getplaylists(self):
+        return self._getobjects(["playlist"])
 
     def _getdatabase(self):
         return self._getobjects(["file", "directory", "playlist"])

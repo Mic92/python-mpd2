@@ -43,6 +43,7 @@ swapid           <int> <int>       -> getnone
 == Stored Playlist Commands
 listplaylist     <str>             -> getlist
 listplaylistinfo <str>             -> getsongs
+listplaylists                      -> getplaylists
 load             <str>             -> getnone
 playlistadd      <str> <str>       -> getnone
 playlistclear    <str>             -> getnone
