@@ -298,29 +298,41 @@ class MPDClient(object):
         self._rfile = _NotConnected()
         self._wfile = _NotConnected()
 
-    def connect(self, host, port):
-        if self._sock:
-            raise ConnectionError("Already connected")
-        msg = "getaddrinfo returns an empty list"
+    def _unix_connect(self, path):
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(path)
+        return sock
+
+    def _tcp_connect(self, host, port):
         try:
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
             flags = 0
+        msg = "getaddrinfo returns an empty list"
         for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM, socket.IPPROTO_TCP,
                                       flags):
             af, socktype, proto, canonname, sa = res
             try:
-                self._sock = socket.socket(af, socktype, proto)
-                self._sock.connect(sa)
+                sock = socket.socket(af, socktype, proto)
+                sock.connect(sa)
             except socket.error, msg:
-                if self._sock:
-                    self._sock.close()
-                self._sock = None
+                if sock:
+                    sock.close()
+                sock = None
                 continue
             break
-        if not self._sock:
+        if not sock:
             raise socket.error(msg)
+        return sock
+
+    def connect(self, host, port):
+        if self._sock:
+            raise ConnectionError("Already connected")
+        if host.startswith("/"):
+            self._sock = self._unix_connect(host)
+        else:
+            self._sock = self._tcp_connect(host, port)
         self._rfile = self._sock.makefile("rb")
         self._wfile = self._sock.makefile("wb")
         try:
