@@ -299,6 +299,9 @@ class MPDClient(object):
         self._wfile = _NotConnected()
 
     def _unix_connect(self, path):
+        if not hasattr(socket, "AF_UNIX"):
+            raise ConnectionError("Unix domain sockets not supported "
+                                  "on this platform")
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.connect(path)
         return sock
