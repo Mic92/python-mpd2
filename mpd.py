@@ -215,7 +215,7 @@ class MPDClient(object):
                 if key in delimiters:
                     yield obj
                     obj = {}
-                elif obj.has_key(key):
+                elif key in obj:
                     if not isinstance(obj[key], list):
                         obj[key] = [obj[key], value]
                     else:
