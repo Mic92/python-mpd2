@@ -42,7 +42,7 @@ setup(
     long_description=DESCRIPTION,
     author="J. Alexander Treuman",
     author_email="jat@spatialrift.net",
-    url="http://www.musicpd.org/~jat/python-mpd/",
+    url="http://jatreuman.indefero.net/p/python-mpd/",
     download_url="http://pypi.python.org/pypi/python-mpd/",
     py_modules=["mpd"],
     classifiers=CLASSIFIERS,
