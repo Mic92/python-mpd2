@@ -64,7 +64,7 @@ Commands may also return iterators instead of lists if `iterate` is set to
 
 ------------------------------------------------------------------------------
 client.iterate = True
-for song in client.listallinfo():
+for song in client.playlistinfo():
     print song["file"]
 ------------------------------------------------------------------------------
 
