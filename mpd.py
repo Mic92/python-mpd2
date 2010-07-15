@@ -41,6 +41,9 @@ class CommandListError(MPDError):
 class PendingCommandError(MPDError):
     pass
 
+class IteratingError(MPDError):
+    pass
+
 
 class _NotConnected(object):
     def __getattr__(self, attr):
@@ -159,6 +162,9 @@ class MPDClient(object):
         if self._command_list is not None:
             raise CommandListError("Cannot use fetch_%s in a command list" %
                                    command)
+        if self._iterating:
+            raise IteratingError("Cannot use fetch_%s while iterating" %
+                                 command)
         if not self._pending:
             raise PendingCommandError("No pending commands to fetch")
         if self._pending[0] != command:
@@ -170,6 +176,8 @@ class MPDClient(object):
             return retval()
 
     def _execute(self, command, args):
+        if self._iterating:
+            raise IteratingError("Cannot execute %s while iterating" % command)
         if self._pending:
             raise PendingCommandError("Cannot execute %s with "
                                       "pending commands" % command)
@@ -266,10 +274,16 @@ class MPDClient(object):
         self._command_list = None
         self._fetch_nothing()
 
+    def _iterator_wrapper(self, iterator):
+        self._iterating = True
+        for item in iterator:
+            yield item
+        self._iterating = False
+
     def _wrap_iterator(self, iterator):
         if not self.iterate:
             return list(iterator)
-        return iterator
+        return self._iterator_wrapper(iterator)
 
     def _fetch_nothing(self):
         line = self._read_line()
@@ -326,6 +340,7 @@ class MPDClient(object):
 
     def _reset(self):
         self.mpd_version = None
+        self._iterating = False
         self._pending = []
         self._command_list = None
         self._sock = None
@@ -392,6 +407,8 @@ class MPDClient(object):
     def command_list_ok_begin(self):
         if self._command_list is not None:
             raise CommandListError("Already in command list")
+        if self._iterating:
+            raise IteratingError("Cannot begin command list while iterating")
         if self._pending:
             raise PendingCommandError("Cannot begin command list "
                                       "with pending commands")
