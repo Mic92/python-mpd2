@@ -174,14 +174,17 @@ class MPDClient(object):
             raise PendingCommandError("Cannot execute %s with "
                                       "pending commands" % command)
         retval = self._commands[command]
-        if self._command_list is not None and not callable(retval):
-            raise CommandListError("%s not allowed in command list" % command)
-        self._write_command(command, args)
-        if self._command_list is None:
+        if self._command_list is not None:
+            if not callable(retval):
+                raise CommandListError("%s not allowed in command list" %
+                                        command)
+            self._write_command(command, args)
+            self._command_list.append(retval)
+        else:
+            self._write_command(command, args)
             if callable(retval):
                 return retval()
             return retval
-        self._command_list.append(retval)
 
     def _write_line(self, line):
         self._wfile.write("%s\n" % line)
