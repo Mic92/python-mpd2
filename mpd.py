@@ -275,9 +275,11 @@ class MPDClient(object):
         self._fetch_nothing()
 
     def _iterator_wrapper(self, iterator):
-        for item in iterator:
-            yield item
-        self._iterating = False
+        try:
+            for item in iterator:
+                yield item
+        finally:
+            self._iterating = False
 
     def _wrap_iterator(self, iterator):
         if not self.iterate:
