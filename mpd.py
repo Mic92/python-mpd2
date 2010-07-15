@@ -38,6 +38,9 @@ class CommandError(MPDError):
 class CommandListError(MPDError):
     pass
 
+class PendingCommandError(MPDError):
+    pass
+
 
 class _NotConnected(object):
     def __getattr__(self, attr):
@@ -131,14 +134,46 @@ class MPDClient(object):
         }
 
     def __getattr__(self, attr):
-        try:
-            retval = self._commands[attr]
-        except KeyError:
+        if attr.startswith("send_"):
+            command = attr.replace("send_", "", 1)
+            wrapper = self._send
+        elif attr.startswith("fetch_"):
+            command = attr.replace("fetch_", "", 1)
+            wrapper = self._fetch
+        else:
+            command = attr
+            wrapper = self._execute
+        if command not in self._commands:
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (self.__class__.__name__, attr))
-        return lambda *args: self._execute(attr, args, retval)
+        return lambda *args: wrapper(command, args)
 
-    def _execute(self, command, args, retval):
+    def _send(self, command, args):
+        if self._command_list is not None:
+            raise CommandListError("Cannot use send_%s in a command list" %
+                                   command)
+        self._write_command(command, args)
+        self._pending.append(command)
+
+    def _fetch(self, command, args=None):
+        if self._command_list is not None:
+            raise CommandListError("Cannot use fetch_%s in a command list" %
+                                   command)
+        if not self._pending:
+            raise PendingCommandError("No pending commands to fetch")
+        if self._pending[0] != command:
+            raise PendingCommandError("%s is not the currently "
+                                      "pending command" % command)
+        del self._pending[0]
+        retval = self._commands[command]
+        if callable(retval):
+            return retval()
+
+    def _execute(self, command, args):
+        if self._pending:
+            raise PendingCommandError("Cannot execute %s with "
+                                      "pending commands" % command)
+        retval = self._commands[command]
         if self._command_list is not None and not callable(retval):
             raise CommandListError("%s not allowed in command list" % command)
         self._write_command(command, args)
@@ -293,6 +328,7 @@ class MPDClient(object):
 
     def _reset(self):
         self.mpd_version = None
+        self._pending = []
         self._command_list = None
         self._sock = None
         self._rfile = _NotConnected()
@@ -353,6 +389,9 @@ class MPDClient(object):
     def command_list_ok_begin(self):
         if self._command_list is not None:
             raise CommandListError("Already in command list")
+        if self._pending:
+            raise PendingCommandError("Cannot begin command list "
+                                      "with pending commands")
         self._write_command("command_list_ok_begin")
         self._command_list = []
 
