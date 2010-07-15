@@ -389,6 +389,11 @@ class MPDClient(object):
         self._sock.close()
         self._reset()
 
+    def fileno(self):
+        if not self._sock:
+            raise ConnectionError("Not connected")
+        return self._sock.fileno()
+
     def command_list_ok_begin(self):
         if self._command_list is not None:
             raise CommandListError("Already in command list")
