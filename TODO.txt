@@ -1,8 +1,0 @@
-python-mpd TODO List
-====================
-
-* remove line == SUCCESS test when in a command list (?)
-* port personal scripts to the new API and add them as examples
-* converter support
-* global for parsing MPD_HOST/MPD_PORT
-* global for parsing MPD error messages
