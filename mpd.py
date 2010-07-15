@@ -418,6 +418,8 @@ class MPDClient(object):
     def command_list_end(self):
         if self._command_list is None:
             raise CommandListError("Not in command list")
+        if self._iterating:
+            raise IteratingError("Already iterating over a command list")
         self._write_command("command_list_end")
         return self._fetch_command_list()
 
