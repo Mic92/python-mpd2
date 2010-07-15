@@ -1,6 +1,18 @@
 python-mpd Changes List
 =======================
 
+Changes in 0.3.0
+----------------
+
+* correctly handle errors in command lists (fixes a longstanding bug)
+* raise IteratingError instead of breaking horribly when called wrong
+* added fileno() to export socket FD (for polling with select et al.)
+* asynchronous API (use send_<cmd> to queue, fetch_<cmd> to retrieve)
+* support for connecting to unix domain sockets
+* added consume and single commands
+* added idle and noidle commands
+* added listplaylists command
+
 Changes in 0.2.1
 ----------------
 
