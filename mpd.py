@@ -269,9 +269,11 @@ class MPDClient(object):
             yield obj
 
     def _read_command_list(self):
-        for retval in self._command_list:
-            yield retval()
-        self._command_list = None
+        try:
+            for retval in self._command_list:
+                yield retval()
+        finally:
+            self._command_list = None
         self._fetch_nothing()
 
     def _iterator_wrapper(self, iterator):
