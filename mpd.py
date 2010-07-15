@@ -227,7 +227,6 @@ class MPDClient(object):
         while pair:
             yield pair
             pair = self._read_pair(separator)
-        raise StopIteration
 
     def _read_list(self):
         seen = None
@@ -238,12 +237,10 @@ class MPDClient(object):
                                         (seen, key))
                 seen = key
             yield value
-        raise StopIteration
 
     def _read_playlist(self):
         for key, value in self._read_pairs(":"):
             yield value
-        raise StopIteration
 
     def _read_objects(self, delimiters=[]):
         obj = {}
@@ -262,14 +259,12 @@ class MPDClient(object):
             obj[key] = value
         if obj:
             yield obj
-        raise StopIteration
 
     def _read_command_list(self):
         for retval in self._command_list:
             yield retval()
         self._command_list = None
         self._fetch_nothing()
-        raise StopIteration
 
     def _wrap_iterator(self, iterator):
         if not self.iterate:
