@@ -364,23 +364,23 @@ class MPDClient(object):
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
             flags = 0
-        msg = "getaddrinfo returns an empty list"
+        err = None
         for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
                                       socket.SOCK_STREAM, socket.IPPROTO_TCP,
                                       flags):
             af, socktype, proto, canonname, sa = res
+            sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
                 sock.connect(sa)
-            except socket.error, msg:
-                if sock:
+                return sock
+            except socket.error, err:
+                if sock is not None:
                     sock.close()
-                sock = None
-                continue
-            break
-        if not sock:
-            raise socket.error(msg)
-        return sock
+        if err is not None:
+            raise err
+        else:
+            raise ConnectionError("getaddrinfo returns an empty list")
 
     def connect(self, host, port):
         if self._sock:
