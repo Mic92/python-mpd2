@@ -146,6 +146,7 @@ class MPDClient(object):
         else:
             command = attr
             wrapper = self._execute
+        command = command.replace("_", " ")
         if command not in self._commands:
             raise AttributeError("'%s' object has no attribute '%s'" %
                                  (self.__class__.__name__, attr))
@@ -154,21 +155,21 @@ class MPDClient(object):
     def _send(self, command, args):
         if self._command_list is not None:
             raise CommandListError("Cannot use send_%s in a command list" %
-                                   command)
+                                   command.replace(" ", "_"))
         self._write_command(command, args)
         self._pending.append(command)
 
     def _fetch(self, command, args=None):
         if self._command_list is not None:
             raise CommandListError("Cannot use fetch_%s in a command list" %
-                                   command)
+                                   command.replace(" ", "_"))
         if self._iterating:
             raise IteratingError("Cannot use fetch_%s while iterating" %
-                                 command)
+                                 command.replace(" ", "_"))
         if not self._pending:
             raise PendingCommandError("No pending commands to fetch")
         if self._pending[0] != command:
-            raise PendingCommandError("%s is not the currently "
+            raise PendingCommandError("'%s' is not the currently "
                                       "pending command" % command)
         del self._pending[0]
         retval = self._commands[command]
@@ -177,14 +178,15 @@ class MPDClient(object):
 
     def _execute(self, command, args):
         if self._iterating:
-            raise IteratingError("Cannot execute %s while iterating" % command)
+            raise IteratingError("Cannot execute '%s' while iterating" %
+                                 command)
         if self._pending:
-            raise PendingCommandError("Cannot execute %s with "
+            raise PendingCommandError("Cannot execute '%s' with "
                                       "pending commands" % command)
         retval = self._commands[command]
         if self._command_list is not None:
             if not callable(retval):
-                raise CommandListError("%s not allowed in command list" %
+                raise CommandListError("'%s' not allowed in command list" %
                                         command)
             self._write_command(command, args)
             self._command_list.append(retval)
