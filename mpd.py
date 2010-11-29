@@ -120,6 +120,12 @@ class MPDClient(object):
             "lsinfo":           self._fetch_database,
             "search":           self._fetch_songs,
             "update":           self._fetch_item,
+            # Sticker Commands
+            "sticker get":      self._fetch_item,
+            "sticker set":      self._fetch_nothing,
+            "sticker delete":   self._fetch_nothing,
+            "sticker list":     self._fetch_list,
+            "sticker find":     self._fetch_songs,
             # Connection Commands
             "close":            None,
             "kill":             None,
