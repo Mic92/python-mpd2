@@ -383,7 +383,7 @@ class MPDClient(object):
             raise ConnectionError("getaddrinfo returns an empty list")
 
     def connect(self, host, port):
-        if self._sock:
+        if self._sock is not None:
             raise ConnectionError("Already connected")
         if host.startswith("/"):
             self._sock = self._connect_unix(host)
@@ -404,7 +404,7 @@ class MPDClient(object):
         self._reset()
 
     def fileno(self):
-        if not self._sock:
+        if self._sock is None:
             raise ConnectionError("Not connected")
         return self._sock.fileno()
 
