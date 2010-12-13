@@ -9,6 +9,8 @@ stats                                    -> fetch_object
 == Playback Option Commands
 consume          <bool>                  -> fetch_nothing
 crossfade        <int>                   -> fetch_nothing
+mixrampdb        <str>                   -> fetch_nothing
+mixrampdelay     <int>                   -> fetch_nothing
 random           <bool>                  -> fetch_nothing
 repeat           <bool>                  -> fetch_nothing
 setvol           <int>                   -> fetch_nothing

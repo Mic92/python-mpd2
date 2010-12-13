@@ -67,6 +67,8 @@ class MPDClient(object):
             # Playback Option Commands
             "consume":          self._fetch_nothing,
             "crossfade":        self._fetch_nothing,
+            "mixrampdb":        self._fetch_nothing,
+            "mixrampdelay":     self._fetch_nothing,
             "random":           self._fetch_nothing,
             "repeat":           self._fetch_nothing,
             "setvol":           self._fetch_nothing,
