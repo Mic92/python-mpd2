@@ -157,10 +157,11 @@ class MPDClient(object):
         else:
             command = attr
             wrapper = self._execute
-        command = command.replace("_", " ")
         if command not in self._commands:
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (self.__class__.__name__, attr))
+            command = command.replace("_", " ")
+            if command not in self._commands:
+                raise AttributeError("'%s' object has no attribute '%s'" %
+                                     (self.__class__.__name__, attr))
         return lambda *args: wrapper(command, args)
 
     def _send(self, command, args):
