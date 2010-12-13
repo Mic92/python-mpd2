@@ -90,3 +90,4 @@ commands                                 -> fetch_list
 notcommands                              -> fetch_list
 tagtypes                                 -> fetch_list
 urlhandlers                              -> fetch_list
+decoders                                 -> fetch_plugins

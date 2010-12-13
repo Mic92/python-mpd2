@@ -140,6 +140,7 @@ class MPDClient(object):
             "notcommands":      self._fetch_list,
             "tagtypes":         self._fetch_list,
             "urlhandlers":      self._fetch_list,
+            "decoders":         self._fetch_plugins,
         }
 
     def __getattr__(self, attr):
@@ -323,6 +324,9 @@ class MPDClient(object):
     def _fetch_objects(self, delimiters):
         return self._wrap_iterator(self._read_objects(delimiters))
 
+    def _fetch_changes(self):
+        return self._fetch_objects(["cpos"])
+
     def _fetch_songs(self):
         return self._fetch_objects(["file"])
 
@@ -335,8 +339,8 @@ class MPDClient(object):
     def _fetch_outputs(self):
         return self._fetch_objects(["outputid"])
 
-    def _fetch_changes(self):
-        return self._fetch_objects(["cpos"])
+    def _fetch_plugins(self):
+        return self._fetch_objects(["plugin"])
 
     def _fetch_command_list(self):
         return self._wrap_iterator(self._read_command_list())
