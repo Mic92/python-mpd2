@@ -60,12 +60,14 @@ save             <str>                   -> fetch_nothing
 == Database Commands
 count            <locate>                -> fetch_object
 find             <locate>                -> fetch_songs
+findadd          <locate>                -> fetch_nothing
 list             <str> [<locate>]        -> fetch_list
 listall          [<str>]                 -> fetch_database
 listallinfo      [<str>]                 -> fetch_database
 lsinfo           [<str>]                 -> fetch_database
 search           <locate>                -> fetch_songs
 update           [<str>]                 -> fetch_item
+rescan           [<str>]                 -> fetch_item
 
 == Sticker Commands
 sticker get      <str> <str> <str>       -> fetch_item

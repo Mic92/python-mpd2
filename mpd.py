@@ -114,12 +114,14 @@ class MPDClient(object):
             # Database Commands
             "count":            self._fetch_object,
             "find":             self._fetch_songs,
+            "findadd":          self._fetch_nothing,
             "list":             self._fetch_list,
             "listall":          self._fetch_database,
             "listallinfo":      self._fetch_database,
             "lsinfo":           self._fetch_database,
             "search":           self._fetch_songs,
             "update":           self._fetch_item,
+            "rescan":           self._fetch_item,
             # Sticker Commands
             "sticker get":      self._fetch_item,
             "sticker set":      self._fetch_nothing,
