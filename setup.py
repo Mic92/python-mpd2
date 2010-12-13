@@ -8,9 +8,9 @@ An MPD (Music Player Daemon) client library written in pure Python.\
 """
 
 CLASSIFIERS = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
