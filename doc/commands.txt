@@ -1,7 +1,7 @@
 == Status Commands
 clearerror                               -> fetch_nothing
 currentsong                              -> fetch_object
-idle             <str>                   -> fetch_list
+idle             [<str>]                 -> fetch_list
 noidle                                   -> None
 status                                   -> fetch_object
 stats                                    -> fetch_object
@@ -40,7 +40,7 @@ playlistinfo     [<int>]                 -> fetch_songs
 playlistsearch   <locate>                -> fetch_songs
 plchanges        <int>                   -> fetch_songs
 plchangesposid   <int>                   -> fetch_changes
-shuffle                                  -> fetch_nothing
+shuffle          [<str>]                 -> fetch_nothing
 swap             <int> <int>             -> fetch_nothing
 swapid           <int> <int>             -> fetch_nothing
 
