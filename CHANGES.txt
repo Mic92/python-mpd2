@@ -4,6 +4,12 @@ python-mpd Changes List
 Changes in 0.3.0
 ----------------
 
+* added replay_gain_mode and replay_gain_status commands
+* added mixrampdb and mixrampdelay commands
+* added findadd and rescan commands
+* added decoders command
+* changed license to LGPL
+* added sticker commands
 * correctly handle errors in command lists (fixes a longstanding bug)
 * raise IteratingError instead of breaking horribly when called wrong
 * added fileno() to export socket FD (for polling with select et al.)
