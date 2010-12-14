@@ -171,7 +171,9 @@ class MPDClient(object):
             raise CommandListError("Cannot use send_%s in a command list" %
                                    command.replace(" ", "_"))
         self._write_command(command, args)
-        self._pending.append(command)
+        retval = self._commands[command]
+        if retval is not None:
+            self._pending.append(command)
 
     def _fetch(self, command, args=None):
         if self._command_list is not None:
@@ -189,6 +191,7 @@ class MPDClient(object):
         retval = self._commands[command]
         if callable(retval):
             return retval()
+        return retval
 
     def _execute(self, command, args):
         if self._iterating:
