@@ -68,9 +68,6 @@ for song in client.playlistinfo():
     print song["file"]
 ------------------------------------------------------------------------------
 
-Extra care must be taken to exhaust the iterator before executing *any* other
-commands.
-
 
 Contacting the author
 ---------------------
