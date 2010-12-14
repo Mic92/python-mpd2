@@ -14,7 +14,7 @@ Getting the latest source code
 If you would instead like to use the latest source code, you can grab a copy
 of the development version from git by running the command:
 
-  git clone http://git.thejat.be/python-mpd.git
+  git clone git://jatreuman.indefero.net/jatreuman/python-mpd.git
 
 
 Installing from source
@@ -45,9 +45,9 @@ client.disconnect()                # disconnect from the server
 
 A list of supported commands, their arguments (as MPD currently understands
 them), and the functions used to parse their responses can be found in
-`doc/commands.txt`.  See
-http://mpd.wikia.com/wiki/MusicPlayerDaemonCommands[MusicPlayerDaemonCommands]
-on the http://mpd.wikia.com/[MPD Wiki] for more details.
+`doc/commands.txt`.  See the
+http://www.musicpd.org/doc/protocol/[MPD protocol documentation] for more
+details.
 
 Command lists are also supported using `command_list_ok_begin()` and
 `command_list_end()`:
