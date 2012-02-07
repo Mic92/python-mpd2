@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import unittest
-from mpd import MPDClient
+from mpd import MPDClient, CommandError
 
 # Alternate this to your setup
 # Make sure you have at least one song on your playlist
@@ -60,6 +60,18 @@ class TestMPDClient(unittest.TestCase):
         self.client.update()
         event = self.idleclient.fetch_idle()
         self.assertEqual(event, ['update'])
+    def test_add_and_remove_command(self):
+        self.client.add_command("awesome command", MPDClient._fetch_nothing)
+        self.assertTrue(hasattr(self.client, "awesome_command"))
+        self.assertTrue(hasattr(self.client, "send_awesome_command"))
+        self.assertTrue(hasattr(self.client, "fetch_awesome_command"))
+        # should be unknown by mpd
+        with self.assertRaises(CommandError):
+            self.client.awesome_command()
+        self.client.remove_command("awesome_command")
+        self.assertFalse(hasattr(self.client, "awesome_command"))
+        self.assertFalse(hasattr(self.client, "send_awesome_command"))
+        self.assertFalse(hasattr(self.client, "fetch_awesome_command"))
 
 if __name__ == '__main__':
     unittest.main()

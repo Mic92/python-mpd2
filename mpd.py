@@ -52,155 +52,136 @@ class _NotConnected(object):
     def _dummy(*args):
         raise ConnectionError("Not connected")
 
-class MPDClient(object):
+_commands = {
+    # Status Commands
+    "clearerror":         "_fetch_nothing",
+    "currentsong":        "_fetch_object",
+    "idle":               "_fetch_list",
+    "noidle":             None,
+    "status":             "_fetch_object",
+    "stats":              "_fetch_object",
+    # Playback Option Commands
+    "consume":            "_fetch_nothing",
+    "crossfade":          "_fetch_nothing",
+    "mixrampdb":          "_fetch_nothing",
+    "mixrampdelay":       "_fetch_nothing",
+    "random":             "_fetch_nothing",
+    "repeat":             "_fetch_nothing",
+    "setvol":             "_fetch_nothing",
+    "single":             "_fetch_nothing",
+    "replay_gain_mode":   "_fetch_nothing",
+    "replay_gain_status": "_fetch_item",
+    "volume":             "_fetch_nothing",
+    # Playback Control Commands
+    "next":               "_fetch_nothing",
+    "pause":              "_fetch_nothing",
+    "play":               "_fetch_nothing",
+    "playid":             "_fetch_nothing",
+    "previous":           "_fetch_nothing",
+    "seek":               "_fetch_nothing",
+    "seekid":             "_fetch_nothing",
+    "stop":               "_fetch_nothing",
+    # Playlist Commands
+    "add":                "_fetch_nothing",
+    "addid":              "_fetch_item",
+    "clear":              "_fetch_nothing",
+    "delete":             "_fetch_nothing",
+    "deleteid":           "_fetch_nothing",
+    "move":               "_fetch_nothing",
+    "moveid":             "_fetch_nothing",
+    "playlist":           "_fetch_playlist",
+    "playlistfind":       "_fetch_songs",
+    "playlistid":         "_fetch_songs",
+    "playlistinfo":       "_fetch_songs",
+    "playlistsearch":     "_fetch_songs",
+    "plchanges":          "_fetch_songs",
+    "plchangesposid":     "_fetch_changes",
+    "shuffle":            "_fetch_nothing",
+    "swap":               "_fetch_nothing",
+    "swapid":             "_fetch_nothing",
+    # Stored Playlist Commands
+    "listplaylist":       "_fetch_list",
+    "listplaylistinfo":   "_fetch_songs",
+    "listplaylists":      "_fetch_playlists",
+    "load":               "_fetch_nothing",
+    "playlistadd":        "_fetch_nothing",
+    "playlistclear":      "_fetch_nothing",
+    "playlistdelete":     "_fetch_nothing",
+    "playlistmove":       "_fetch_nothing",
+    "rename":             "_fetch_nothing",
+    "rm":                 "_fetch_nothing",
+    "save":               "_fetch_nothing",
+    # Database Commands
+    "count":              "_fetch_object",
+    "find":               "_fetch_songs",
+    "findadd":            "_fetch_nothing",
+    "list":               "_fetch_list",
+    "listall":            "_fetch_database",
+    "listallinfo":        "_fetch_database",
+    "lsinfo":             "_fetch_database",
+    "search":             "_fetch_songs",
+    "update":             "_fetch_item",
+    "rescan":             "_fetch_item",
+    # Sticker Commands
+    "sticker get":        "_fetch_item",
+    "sticker set":        "_fetch_nothing",
+    "sticker delete":     "_fetch_nothing",
+    "sticker list":       "_fetch_list",
+    "sticker find":       "_fetch_songs",
+    # Connection Commands
+    "close":              None,
+    "kill":               None,
+    "password":           "_fetch_nothing",
+    "ping":               "_fetch_nothing",
+    # Audio Output Commands
+    "disableoutput":      "_fetch_nothing",
+    "enableoutput":       "_fetch_nothing",
+    "outputs":            "_fetch_outputs",
+    # Reflection Commands
+    "commands":           "_fetch_list",
+    "notcommands":        "_fetch_list",
+    "tagtypes":           "_fetch_list",
+    "urlhandlers":        "_fetch_list",
+    "decoders":           "_fetch_plugins",
+}
+
+class MPDClient():
     def __init__(self):
         self.iterate = False
         self._reset()
-        self._commands = {
-            # Status Commands
-            "clearerror":         self._fetch_nothing,
-            "currentsong":        self._fetch_object,
-            "idle":               self._fetch_list,
-            "noidle":             None,
-            "status":             self._fetch_object,
-            "stats":              self._fetch_object,
-            # Playback Option Commands
-            "consume":            self._fetch_nothing,
-            "crossfade":          self._fetch_nothing,
-            "mixrampdb":          self._fetch_nothing,
-            "mixrampdelay":       self._fetch_nothing,
-            "random":             self._fetch_nothing,
-            "repeat":             self._fetch_nothing,
-            "setvol":             self._fetch_nothing,
-            "single":             self._fetch_nothing,
-            "replay_gain_mode":   self._fetch_nothing,
-            "replay_gain_status": self._fetch_item,
-            "volume":             self._fetch_nothing,
-            # Playback Control Commands
-            "next":               self._fetch_nothing,
-            "pause":              self._fetch_nothing,
-            "play":               self._fetch_nothing,
-            "playid":             self._fetch_nothing,
-            "previous":           self._fetch_nothing,
-            "seek":               self._fetch_nothing,
-            "seekid":             self._fetch_nothing,
-            "stop":               self._fetch_nothing,
-            # Playlist Commands
-            "add":                self._fetch_nothing,
-            "addid":              self._fetch_item,
-            "clear":              self._fetch_nothing,
-            "delete":             self._fetch_nothing,
-            "deleteid":           self._fetch_nothing,
-            "move":               self._fetch_nothing,
-            "moveid":             self._fetch_nothing,
-            "playlist":           self._fetch_playlist,
-            "playlistfind":       self._fetch_songs,
-            "playlistid":         self._fetch_songs,
-            "playlistinfo":       self._fetch_songs,
-            "playlistsearch":     self._fetch_songs,
-            "plchanges":          self._fetch_songs,
-            "plchangesposid":     self._fetch_changes,
-            "shuffle":            self._fetch_nothing,
-            "swap":               self._fetch_nothing,
-            "swapid":             self._fetch_nothing,
-            # Stored Playlist Commands
-            "listplaylist":       self._fetch_list,
-            "listplaylistinfo":   self._fetch_songs,
-            "listplaylists":      self._fetch_playlists,
-            "load":               self._fetch_nothing,
-            "playlistadd":        self._fetch_nothing,
-            "playlistclear":      self._fetch_nothing,
-            "playlistdelete":     self._fetch_nothing,
-            "playlistmove":       self._fetch_nothing,
-            "rename":             self._fetch_nothing,
-            "rm":                 self._fetch_nothing,
-            "save":               self._fetch_nothing,
-            # Database Commands
-            "count":              self._fetch_object,
-            "find":               self._fetch_songs,
-            "findadd":            self._fetch_nothing,
-            "list":               self._fetch_list,
-            "listall":            self._fetch_database,
-            "listallinfo":        self._fetch_database,
-            "lsinfo":             self._fetch_database,
-            "search":             self._fetch_songs,
-            "update":             self._fetch_item,
-            "rescan":             self._fetch_item,
-            # Sticker Commands
-            "sticker get":        self._fetch_item,
-            "sticker set":        self._fetch_nothing,
-            "sticker delete":     self._fetch_nothing,
-            "sticker list":       self._fetch_list,
-            "sticker find":       self._fetch_songs,
-            # Connection Commands
-            "close":              None,
-            "kill":               None,
-            "password":           self._fetch_nothing,
-            "ping":               self._fetch_nothing,
-            # Audio Output Commands
-            "disableoutput":      self._fetch_nothing,
-            "enableoutput":       self._fetch_nothing,
-            "outputs":            self._fetch_outputs,
-            # Reflection Commands
-            "commands":           self._fetch_list,
-            "notcommands":        self._fetch_list,
-            "tagtypes":           self._fetch_list,
-            "urlhandlers":        self._fetch_list,
-            "decoders":           self._fetch_plugins,
-        }
 
-    def __getattr__(self, attr):
-        if attr.startswith("send_"):
-            command = attr.replace("send_", "", 1)
-            wrapper = self._send
-        elif attr.startswith("fetch_"):
-            command = attr.replace("fetch_", "", 1)
-            wrapper = self._fetch
-        else:
-            command = attr
-            wrapper = self._execute
-        if command not in self._commands:
-            command = command.replace("_", " ")
-            if command not in self._commands:
-                raise AttributeError("'%s' object has no attribute '%s'" %
-                                     (self.__class__.__name__, attr))
-        return lambda *args: wrapper(command, args)
-
-    def _send(self, command, args):
+    def _send(self, command, args, retval):
         if self._command_list is not None:
             raise CommandListError("Cannot use send_%s in a command list" %
-                                   command.replace(" ", "_"))
+                                   command)
         self._write_command(command, args)
-        retval = self._commands[command]
         if retval is not None:
             self._pending.append(command)
 
-    def _fetch(self, command, args=None):
+    def _fetch(self, command, args, retval):
         if self._command_list is not None:
             raise CommandListError("Cannot use fetch_%s in a command list" %
-                                   command.replace(" ", "_"))
+                                   command)
         if self._iterating:
             raise IteratingError("Cannot use fetch_%s while iterating" %
-                                 command.replace(" ", "_"))
+                                 command)
         if not self._pending:
             raise PendingCommandError("No pending commands to fetch")
         if self._pending[0] != command:
             raise PendingCommandError("'%s' is not the currently "
                                       "pending command" % command)
         del self._pending[0]
-        retval = self._commands[command]
         if isinstance(retval, Callable):
             return retval()
         return retval
 
-    def _execute(self, command, args):
+    def _execute(self, command, args, retval):
         if self._iterating:
             raise IteratingError("Cannot execute '%s' while iterating" %
                                  command)
         if self._pending:
             raise PendingCommandError("Cannot execute '%s' with "
                                       "pending commands" % command)
-        retval = self._commands[command]
         if self._command_list is not None:
             if not isinstance(retval, Callable):
                 raise CommandListError("'%s' not allowed in command list" %
@@ -449,6 +430,41 @@ class MPDClient(object):
         self._write_command("command_list_end")
         return self._fetch_command_list()
 
+    @classmethod
+    def add_command(cls, name, callback):
+        method = newFunction(cls._execute, key, callback)
+        send_method = newFunction(cls._send, key, callback)
+        fetch_method = newFunction(cls._fetch, key, callback)
+
+        # create new mpd commands as function in the tree flavors:
+        # normal, with "send_"-prefix and with "fetch_"-prefix
+        escaped_name = name.replace(" ", "_")
+        setattr(cls, escaped_name, method)
+        setattr(cls, "send_"+escaped_name, send_method)
+        setattr(cls, "fetch_"+escaped_name, fetch_method)
+
+    @classmethod
+    def remove_command(cls, name):
+        if not hasattr(cls, name): return
+        name = name.replace(" ", "_")
+        delattr(cls, str(name))
+        delattr(cls, str("send_" + name))
+        delattr(cls, str("fetch_" + name))
+
+def bound_decorator(self, function):
+    """ bind decorator to self """
+    def decorator(*args, **kwargs):
+        return function(self, *args, **kwargs)
+    return decorator
+
+def newFunction(wrapper, name, returnValue):
+    def decorator(self, *args):
+        return wrapper(self, name, args, bound_decorator(self, returnValue))
+    return decorator
+
+for key, value in _commands.items():
+    returnValue = None if value is None else MPDClient.__dict__[value]
+    MPDClient.add_command(key, returnValue)
 
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
