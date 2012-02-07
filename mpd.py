@@ -15,7 +15,7 @@
 # along with python-mpd.  If not, see <http://www.gnu.org/licenses/>.
 
 import socket
-
+from collections import Callable
 
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
@@ -189,7 +189,7 @@ class MPDClient(object):
                                       "pending command" % command)
         del self._pending[0]
         retval = self._commands[command]
-        if callable(retval):
+        if isinstance(retval, Callable):
             return retval()
         return retval
 
@@ -202,19 +202,19 @@ class MPDClient(object):
                                       "pending commands" % command)
         retval = self._commands[command]
         if self._command_list is not None:
-            if not callable(retval):
+            if not isinstance(retval, Callable):
                 raise CommandListError("'%s' not allowed in command list" %
                                         command)
             self._write_command(command, args)
             self._command_list.append(retval)
         else:
             self._write_command(command, args)
-            if callable(retval):
+            if isinstance(retval, Callable):
                 return retval()
             return retval
 
     def _write_line(self, line):
-        self._wfile.write("%s\n" % line)
+        self._wfile.write(("%s\n" % line).encode('utf-8'))
         self._wfile.flush()
 
     def _write_command(self, command, args=[]):
@@ -224,7 +224,7 @@ class MPDClient(object):
         self._write_line(" ".join(parts))
 
     def _read_line(self):
-        line = self._rfile.readline()
+        line = self._rfile.readline().decode('utf-8')
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
@@ -356,7 +356,7 @@ class MPDClient(object):
         return self._wrap_iterator(self._read_command_list())
 
     def _hello(self):
-        line = self._rfile.readline()
+        line = self._rfile.readline().decode('utf-8')
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading MPD hello")
         line = line.rstrip("\n")
@@ -396,7 +396,7 @@ class MPDClient(object):
                 sock = socket.socket(af, socktype, proto)
                 sock.connect(sa)
                 return sock
-            except socket.error, err:
+            except socket.error as err:
                 if sock is not None:
                     sock.close()
         if err is not None:
