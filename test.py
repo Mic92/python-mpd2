@@ -34,24 +34,24 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsNone(self.client.ping())
         self.assertIsNone(self.client.clearerror())
     def test_fetch_list(self):
-        self.assertTrue(type(self.client.list("album")) == list)
+        self.assertIsInstance(self.client.list("album"), list)
     def test_fetch_item(self):
         self.assertIsNotNone(self.client.update())
     def test_fetch_object(self):
         status = self.client.status()
         stats = self.client.stats()
-        self.assertTrue(type(status) is dict)
+        self.assertIsInstance(status, dict)
         # some keys should be there
-        self.assertTrue("volume" in status)
-        self.assertTrue("song" in status)
-        self.assertTrue(type(stats) is dict)
-        self.assertTrue("artists" in stats)
-        self.assertTrue("uptime" in stats)
+        self.assertIn("volume", status)
+        self.assertIn("song", status)
+        self.assertIsInstance(stats, dict)
+        self.assertIn("artists", stats)
+        self.assertIn("uptime", stats)
     def test_fetch_songs(self):
         playlist = self.client.playlistinfo()
         self.assertTrue(type(playlist) is list)
         if len(playlist) > 0:
-                self.assertTrue(type(playlist[0]) is dict)
+                self.assertIsInstance(playlist[0], dict)
     def test_send_and_fetch(self):
         self.client.send_status()
         self.client.fetch_status()
@@ -82,7 +82,7 @@ class TestMPDClient(unittest.TestCase):
             return
         self.assertIsNone(self.client.subscribe("monty"))
         channels = self.client.channels()
-        self.assertTrue("monty" in channels)
+        self.assertIn("monty", channels)
 
         self.assertIsNone(self.client.sendmessage("monty", "SPAM"))
         msg = self.client.readmessages()
@@ -90,7 +90,7 @@ class TestMPDClient(unittest.TestCase):
 
         self.assertIsNone(self.client.unsubscribe("monty"))
         channels = self.client.channels()
-        self.assertFalse("monty" in channels)
+        self.assertNotIn("monty", channels)
 
 if __name__ == '__main__':
     unittest.main()
