@@ -27,6 +27,7 @@ playid             [<int>]                 -> fetch_nothing
 previous                                   -> fetch_nothing
 seek               <int> <int>             -> fetch_nothing
 seekid             <int> <int>             -> fetch_nothing
+seekcur            <int>                   -> fetch_nothing
 stop                                       -> fetch_nothing
 
 == Playlist Commands
@@ -44,6 +45,8 @@ playlistinfo       [<int>]                 -> fetch_songs
 playlistsearch     <locate>                -> fetch_songs
 plchanges          <int>                   -> fetch_songs
 plchangesposid     <int>                   -> fetch_changes
+prior              <int> <str>             -> fetch_nothing
+priorid            <int> <id>              -> fetch_nothing
 shuffle            [<str>]                 -> fetch_nothing
 swap               <int> <int>             -> fetch_nothing
 swapid             <int> <int>             -> fetch_nothing

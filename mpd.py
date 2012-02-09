@@ -80,6 +80,7 @@ _commands = {
     "previous":           "_fetch_nothing",
     "seek":               "_fetch_nothing",
     "seekid":             "_fetch_nothing",
+    "seekcur":            "_fetch_nothing",
     "stop":               "_fetch_nothing",
     # Playlist Commands
     "add":                "_fetch_nothing",
@@ -96,6 +97,8 @@ _commands = {
     "playlistsearch":     "_fetch_songs",
     "plchanges":          "_fetch_songs",
     "plchangesposid":     "_fetch_changes",
+    "prior":              "_fetch_nothing",
+    "priorid":            "_fetch_nothing",
     "shuffle":            "_fetch_nothing",
     "swap":               "_fetch_nothing",
     "swapid":             "_fetch_nothing",
