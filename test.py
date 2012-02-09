@@ -56,7 +56,11 @@ class TestMPDClient(unittest.TestCase):
         self.client.send_status()
         self.client.fetch_status()
     def test_idle(self):
+        # clean event mask
+        self.idleclient.idle()
+
         self.idleclient.send_idle()
+        # new event
         self.client.update()
         event = self.idleclient.fetch_idle()
         self.assertEqual(event, ['update'])
