@@ -76,6 +76,21 @@ class TestMPDClient(unittest.TestCase):
         self.assertFalse(hasattr(self.client, "awesome_command"))
         self.assertFalse(hasattr(self.client, "send_awesome_command"))
         self.assertFalse(hasattr(self.client, "fetch_awesome_command"))
+    def test_client_to_client(self):
+        # client to client is at this time in beta!
+        if not "channels" in self.client.commands():
+            return
+        self.assertIsNone(self.client.subscribe("monty"))
+        channels = self.client.channels()
+        self.assertTrue("monty" in channels)
+
+        self.assertIsNone(self.client.sendmessage("monty", "SPAM"))
+        msg = self.client.readmessages()
+        self.assertEqual(msg, [{"channel":"monty", "message": "SPAM"}])
+
+        self.assertIsNone(self.client.unsubscribe("monty"))
+        channels = self.client.channels()
+        self.assertFalse("monty" in channels)
 
 if __name__ == '__main__':
     unittest.main()

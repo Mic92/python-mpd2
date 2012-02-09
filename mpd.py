@@ -143,6 +143,12 @@ _commands = {
     "tagtypes":           "_fetch_list",
     "urlhandlers":        "_fetch_list",
     "decoders":           "_fetch_plugins",
+    # Client To Client
+    "subscribe":          "_fetch_nothing",
+    "unsubscribe":        "_fetch_nothing",
+    "channels":           "_fetch_list",
+    "readmessages":       "_fetch_messages",
+    "sendmessage":        "_fetch_nothing",
 }
 
 class MPDClient():
@@ -326,6 +332,9 @@ class MPDClient():
 
     def _fetch_database(self):
         return self._fetch_objects(["file", "directory", "playlist"])
+
+    def _fetch_messages(self):
+        return self._fetch_objects(["channel"])
 
     def _fetch_outputs(self):
         return self._fetch_objects(["outputid"])
