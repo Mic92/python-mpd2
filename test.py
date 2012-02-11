@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import unittest
+import types
 from mpd import MPDClient, CommandError
 
 # Alternate this to your setup
@@ -55,6 +56,13 @@ class TestMPDClient(unittest.TestCase):
     def test_send_and_fetch(self):
         self.client.send_status()
         self.client.fetch_status()
+    def test_iterating(self):
+        self.client.iterate = True
+        playlist = self.client.playlistinfo()
+        self.assertIsInstance(playlist, types.GeneratorType)
+        for song in playlist:
+                self.assertIsInstance(song, dict)
+        self.client.iterate = False
     def test_idle(self):
         # clean event mask
         self.idleclient.idle()
