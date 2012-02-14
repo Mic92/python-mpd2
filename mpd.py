@@ -389,7 +389,8 @@ class MPDClient():
                 sock = socket.socket(af, socktype, proto)
                 sock.connect(sa)
                 return sock
-            except socket.error as err:
+            except socket.error as e:
+                err = e
                 if sock is not None:
                     sock.close()
         if err is not None:
