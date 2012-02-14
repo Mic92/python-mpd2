@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
 from distutils.core import setup
+from setuptools import Extension
 
 
 DESCRIPTION = """\
@@ -49,6 +50,7 @@ setup(
     #license=LICENSE,
     keywords=["mpd"],
     #platforms=["Independant"],
+    test_suite="test"
 )
 
 
