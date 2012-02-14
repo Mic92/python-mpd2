@@ -1,20 +1,32 @@
 #!/usr/bin/env python
 import unittest
 import types
-from mpd import MPDClient, CommandError
+from socket import error as SocketError
+import sys
+from mpd import MPDClient, CommandError, ConnectionError
 
 # Alternate this to your setup
 # Make sure you have at least one song on your playlist
-MPD_HOST = "localhost"
-MPD_PORT = 6600
+MPD_HOST  = "localhost"
+MPD_PORT  = 6600
+MPD_PASSW = None
 
 class TestMPDClient(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.client = MPDClient()
         self.idleclient = MPDClient()
-        self.client.connect(MPD_HOST, MPD_PORT)
-        self.idleclient.connect(MPD_HOST, MPD_PORT)
+        try:
+            self.client.connect(MPD_HOST, MPD_PORT)
+            self.idleclient.connect(MPD_HOST, MPD_PORT)
+        except SocketError as e:
+            raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
+        if MPD_PASSW != None:
+            try:
+                self.client.password(MPD_PASSW)
+                self.idleclient.password(MPD_PASSW)
+            except CommandError as e:
+                raise Exception("Fail to authenticate to mpd.")
     @classmethod
     def tearDownClass(self):
         self.client.disconnect()
