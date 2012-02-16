@@ -68,6 +68,15 @@ for song in client.playlistinfo():
     print song["file"]
 ------------------------------------------------------------------------------
 
+Each command have a `send_` and a `fetch_` variant, which allows to send a
+mpd command and the fetch the result later. This is useful for the idle command:
+
+------------------------------------------------------------------------------
+client.send_idle()
+# do something else ...
+events = client.fetch_idle()
+------------------------------------------------------------------------------
+
 
 Contacting the author
 ---------------------
