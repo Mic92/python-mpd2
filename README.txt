@@ -77,6 +77,20 @@ client.send_idle()
 events = client.fetch_idle()
 ------------------------------------------------------------------------------
 
+*Future Compatible*
+New commands or special handling of commands can be easily implemented.
+Use `add_command()` or `remove_command()` to modify the commands of the
+MPDClient class and all its instances.
+
+------------------------------------------------------------------------------
+def fetch_cover(client):
+    """"Take a MPDClient instance as its arguments and return mimetype and image"""
+    # this command may come in the future.
+    pass
+self.client.add_command("get_cover", fetch_cover)
+# remove the command, because it doesn't exist already.
+self.client.remove_command("get_cover")
+------------------------------------------------------------------------------
 
 Contacting the author
 ---------------------
