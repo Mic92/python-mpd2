@@ -37,8 +37,8 @@ The client library can be used as follows:
 ------------------------------------------------------------------------------
 client = mpd.MPDClient()           # create client object
 client.connect("localhost", 6600)  # connect to localhost:6600
-print client.mpd_version           # print the mpd version
-print client.cmd("one", 2)         # print result of the command "cmd one 2"
+print(client.mpd_version)          # print the mpd version
+print(client.find("any", "house")) # print result of the command "find any house"
 client.close()                     # send the close command
 client.disconnect()                # disconnect from the server
 ------------------------------------------------------------------------------
