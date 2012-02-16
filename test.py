@@ -96,6 +96,9 @@ class TestMPDClient(unittest.TestCase):
         self.assertFalse(hasattr(self.client, "awesome_command"))
         self.assertFalse(hasattr(self.client, "send_awesome_command"))
         self.assertFalse(hasattr(self.client, "fetch_awesome_command"))
+        # remove non existing command
+        self.assertRaises(ValueError, self.client.remove_command,
+                          "awesome_command")
     def test_client_to_client(self):
         # client to client is at this time in beta!
         if not "channels" in self.client.commands():

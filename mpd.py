@@ -458,7 +458,8 @@ class MPDClient():
 
     @classmethod
     def remove_command(cls, name):
-        if not hasattr(cls, name): return
+        if not hasattr(cls, name):
+            raise ValueError("Can't remove not existent '%s' command" % name)
         name = name.replace(" ", "_")
         delattr(cls, str(name))
         delattr(cls, str("send_" + name))
