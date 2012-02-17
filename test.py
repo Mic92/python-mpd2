@@ -12,10 +12,11 @@ try:
 except ImportError:
     # required for python3
     # python2.7 works with this module too!
-    try:
+    if sys.version_info >= (2, 1, 7):
         import unittest
-    except ImportError:
+    else:
         print("Please install unittest2 from pypi to run tests!")
+        sys.exit(1)
 
 # Alternate this to your setup
 # Make sure you have at least one song on your playlist
