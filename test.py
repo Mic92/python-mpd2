@@ -12,7 +12,7 @@ try:
 except ImportError:
     # required for python3
     # python2.7 works with this module too!
-    if sys.version_info >= (2, 1, 7):
+    if sys.version_info >= (2, 7):
         import unittest
     else:
         print("Please install unittest2 from pypi to run tests!")
