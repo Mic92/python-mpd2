@@ -1,9 +1,21 @@
 #!/usr/bin/env python
-import unittest
+
 import types
 from socket import error as SocketError
 import sys
 from mpd import MPDClient, CommandError, ConnectionError
+
+try:
+    # is required for python2.6
+    # python2.7 works with this module too
+    import unittest2 as unittest
+except ImportError:
+    # required for python3
+    # python2.7 works with this module too!
+    try:
+        import unittest
+    except ImportError:
+        print("Please install unittest2 from pypi to run tests!")
 
 # Alternate this to your setup
 # Make sure you have at least one song on your playlist
