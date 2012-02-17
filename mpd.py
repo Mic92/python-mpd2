@@ -387,6 +387,7 @@ class MPDClient():
             sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 sock.connect(sa)
                 return sock
             except socket.error as e:
