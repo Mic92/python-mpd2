@@ -394,10 +394,10 @@ class MPDClient():
                 err = e
                 if sock is not None:
                     sock.close()
-        if err is not None:
-            raise err
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
+
+        raise err
 
     def connect(self, host, port):
         if self._sock is not None:
