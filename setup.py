@@ -20,6 +20,7 @@ CLASSIFIERS = [
 
 LICENSE = """\
 Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
+Copyright (C) 2012  J. Thalheim <jat@spatialrift.net>
 
 python-mpd is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -29,22 +30,19 @@ the Free Software Foundation, either version 3 of the License, or
 python-mpd is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Lesser General Public License for more details.
-
-You should have received a copy of the GNU Lesser General Public License
+GNU Lesser General Public License for more details.  You should have received a copy of the GNU Lesser General Public License
 along with python-mpd.  If not, see <http://www.gnu.org/licenses/>.\
 """
 
-
 setup(
-    name="python-mpd",
+    name="python-mpd2",
     version="0.3.0",
-    description="Python MPD client library",
+    description="A Python MPD client library",
     long_description=DESCRIPTION,
     author="J. Alexander Treuman",
-    author_email="jat@spatialrift.net",
-    url="http://jatreuman.indefero.net/p/python-mpd/",
-    download_url="http://pypi.python.org/pypi/python-mpd/",
+    author_email="jthalheim@gmail.com",
+    url="https://github.com/Mic92/python-mpd2",
+    download_url="https://github.com/Mic92/python-mpd2",
     py_modules=["mpd"],
     classifiers=CLASSIFIERS,
     #license=LICENSE,
