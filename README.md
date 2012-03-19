@@ -9,7 +9,7 @@ Current features list:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
- - adding new commands of mpd (seekcur, prior, priorid)
+ - adding new commands of mpd (seekcur, prio, prioid)
  - methods are explicit declared now, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
