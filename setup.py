@@ -36,7 +36,7 @@ along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.\
 
 setup(
     name="python-mpd2",
-    version="0.4.0",
+    version="0.4.1",
     description="A Python MPD client library",
     long_description=DESCRIPTION,
     author="J. Thalheim",
