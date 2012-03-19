@@ -72,7 +72,6 @@ _commands = {
     "single":             "_fetch_nothing",
     "replay_gain_mode":   "_fetch_nothing",
     "replay_gain_status": "_fetch_item",
-    "volume":             "_fetch_nothing",
     # Playback Control Commands
     "next":               "_fetch_nothing",
     "pause":              "_fetch_nothing",
@@ -142,6 +141,7 @@ _commands = {
     "enableoutput":       "_fetch_nothing",
     "outputs":            "_fetch_outputs",
     # Reflection Commands
+    "config":             "_fetch_item",
     "commands":           "_fetch_list",
     "notcommands":        "_fetch_list",
     "tagtypes":           "_fetch_list",
