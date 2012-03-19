@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import types
-from socket import error as SocketError
 import sys
-from mpd import MPDClient, CommandError, ConnectionError
+from socket import error as SocketError
+import mpd
 
 try:
     # is required for python2.6
@@ -27,18 +27,19 @@ MPD_PASSW = None
 class TestMPDClient(unittest.TestCase):
     @classmethod
     def setUpClass(self):
-        self.client = MPDClient()
-        self.idleclient = MPDClient()
+        self.client = mpd.MPDClient()
+        self.idleclient = mpd.MPDClient()
         try:
             self.client.connect(MPD_HOST, MPD_PORT)
             self.idleclient.connect(MPD_HOST, MPD_PORT)
-        except (ConnectionError, SocketError) as e:
+            self.commands = self.client.commands()
+        except (mpd.ConnectionError, SocketError) as e:
             raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
         if MPD_PASSW != None:
             try:
                 self.client.password(MPD_PASSW)
                 self.idleclient.password(MPD_PASSW)
-            except CommandError as e:
+            except mpd.CommandError as e:
                 raise Exception("Fail to authenticate to mpd.")
     @classmethod
     def tearDownClass(self):
@@ -98,12 +99,12 @@ class TestMPDClient(unittest.TestCase):
         event = self.idleclient.fetch_idle()
         self.assertEqual(event, ['update'])
     def test_add_and_remove_command(self):
-        self.client.add_command("awesome command", MPDClient._fetch_nothing)
+        self.client.add_command("awesome command", mpd.MPDClient._fetch_nothing)
         self.assertTrue(hasattr(self.client, "awesome_command"))
         self.assertTrue(hasattr(self.client, "send_awesome_command"))
         self.assertTrue(hasattr(self.client, "fetch_awesome_command"))
         # should be unknown by mpd
-        with self.assertRaises(CommandError):
+        with self.assertRaises(mpd.CommandError):
             self.client.awesome_command()
         self.client.remove_command("awesome_command")
         self.assertFalse(hasattr(self.client, "awesome_command"))
@@ -129,10 +130,30 @@ class TestMPDClient(unittest.TestCase):
         self.assertNotIn("monty", channels)
 
     def test_connection_error(self):
-        client2 = MPDClient()
-        with self.assertRaises(ConnectionError) as cm:
+        client2 = mpd.MPDClient()
+        with self.assertRaises(mpd.ConnectionError) as cm:
             # should never return getaddrinfo
             client2.connect("255.255.255.255", 6600)
+
+    def test_commands_list(self):
+        """
+        Test if all implemented commands are valid
+        and all avaible commands are implemented.
+        This test may fail, if a implement command isn't
+        avaible on older versions of mpd
+        """
+        avaible_cmds = set(self.client.commands() + self.client.notcommands())
+        imple_cmds   = set(mpd._commands.keys())
+        sticker_cmds = set(["sticker get", "sticker set", "sticker delete",
+                        "sticker list", "sticker find"])
+        imple_cmds = (imple_cmds - sticker_cmds)
+        imple_cmds.add("sticker")
+        imple_cmds.remove("noidle")
+        self.assertFalse(avaible_cmds - imple_cmds,
+                         "Not all commands supported by mpd are implemented!")
+        long_desc = "Not all commands implemented by this library are supported by the current mpd.\n" + \
+                "This either means the command list is wrong or mpd is not up-to-date."
+        self.assertFalse(imple_cmds - avaible_cmds, long_desc)
 
 if __name__ == '__main__':
     unittest.main()
