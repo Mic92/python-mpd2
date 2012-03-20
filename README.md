@@ -62,7 +62,7 @@ Then simply update/install *python-mpd2* with apt or aptitude:
 
 ###archlinux
 
-install [python-mpd-git](https://aur.archlinux.org/packages.php?ID=21531) from AUR
+install [python-mpd2-git](https://aur.archlinux.org/packages.php?ID=57738) from AUR
 
 Packages for other distributions are welcome!
 
