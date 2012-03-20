@@ -64,6 +64,15 @@ Then simply update/install *python-mpd2* with apt or aptitude:
 
 install [python-mpd2-git](https://aur.archlinux.org/packages.php?ID=57738) from AUR
 
+### Gentoo Linux
+
+An ebuid is available in the `laurentb` overlay.
+
+    echo 'dev-python/python-mpd::laurentb **' >> /etc/portage/accept_keywords
+    layman -a laurentb
+    emerge -av python-mpd
+
+
 Packages for other distributions are welcome!
 
 
