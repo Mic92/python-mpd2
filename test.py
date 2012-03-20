@@ -33,7 +33,7 @@ class TestMPDClient(unittest.TestCase):
             self.client.connect(MPD_HOST, MPD_PORT)
             self.idleclient.connect(MPD_HOST, MPD_PORT)
             self.commands = self.client.commands()
-        except (mpd.ConnectionError, SocketError) as e:
+        except SocketError as e:
             raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
         if MPD_PASSW != None:
             try:
@@ -128,12 +128,6 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsNone(self.client.unsubscribe("monty"))
         channels = self.client.channels()
         self.assertNotIn("monty", channels)
-
-    def test_connection_error(self):
-        client2 = mpd.MPDClient()
-        with self.assertRaises(mpd.ConnectionError) as cm:
-            # should never return getaddrinfo
-            client2.connect("255.255.255.255", 6600)
 
     def test_commands_list(self):
         """
