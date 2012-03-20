@@ -42,7 +42,7 @@ Using packages
 --------------
 Until the python community adapt this package, here are some ready to use packages to test your applications:
 
-###debian:
+### Debian
 
 just add this line to your */etc/apt/sources.list*:
 
@@ -60,7 +60,7 @@ Controls with *apt-key finger*.
 
 Then simply update/install *python-mpd2* with apt or aptitude:
 
-###archlinux
+### Arch Linux
 
 install [python-mpd2-git](https://aur.archlinux.org/packages.php?ID=57738) from AUR
 
