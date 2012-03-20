@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import types
 import sys
@@ -148,6 +149,9 @@ class TestMPDClient(unittest.TestCase):
         long_desc = "Not all commands implemented by this library are supported by the current mpd.\n" + \
                 "This either means the command list is wrong or mpd is not up-to-date."
         self.assertFalse(imple_cmds - avaible_cmds, long_desc)
+
+    def test_unicode_in_command_args(self):
+        self.assertIsInstance(self.client.find("file", "☯☾☝♖✽"), list)
 
 if __name__ == '__main__':
     unittest.main()
