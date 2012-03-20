@@ -211,7 +211,7 @@ class MPDClient():
     def _write_command(self, command, args=[]):
         parts = [command]
         for arg in args:
-            parts.append('"%s"' % escape(str(arg)))
+            parts.append('"%s"' % escape(unicode(arg)))
         self._write_line(" ".join(parts))
 
     def _read_line(self):
