@@ -155,5 +155,9 @@ class TestMPDClient(unittest.TestCase):
                 "This either means the command list is wrong or mpd is not up-to-date."
         self.assertFalse(imple_cmds - avaible_cmds, long_desc)
 
+    def test_unicode(self):
+        # the directory does not exist, so a CommandError is normal
+        self.assertRaises(mpd.CommandError, self.client.lsinfo, u'héhéhé')
+
 if __name__ == '__main__':
     unittest.main()
