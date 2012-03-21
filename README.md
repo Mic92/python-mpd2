@@ -1,8 +1,8 @@
 python-mpd2
-==========
+===========
 
-Difference to python-mpd
--------------------------
+Difference with python-mpd
+--------------------------
 
 python-mpd2 is a fork of the python-mpd. It is backward compatible to python-mpd, so it could act as drop-in replacement.
 Current features list:
@@ -11,11 +11,10 @@ Current features list:
  - support for the upcoming client-to-client protocol
  - adding new commands of mpd v0.17 (seekcur, prio, prioid, config)
  - remove of deprecated commands (volume)
- - methods are explicit declared now, so they are shown in ipython
+ - add explicit method declaration, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
 
-I attempted to merge my changes into the original project, but never get a reponse.
 If you like this module, you could try contact the original author <jat@spatialrift.net> or join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
 
 Getting the latest source code
@@ -44,7 +43,7 @@ Until the python community adapt this package, here are some ready to use packag
 
 ### Debian
 
-just add this line to your */etc/apt/sources.list*:
+Drop this line in */etc/apt/sources.list.d/python-mpd2.list*:
 
     deb http://sima.azylum.org/debian unstable main
 
@@ -58,7 +57,7 @@ Key fingerprint :
 
 Controls with *apt-key finger*.
 
-Then simply update/install *python-mpd2* with apt or aptitude:
+Then simply update/install *python-mpd2* or *python3-mpd* with apt or aptitude:
 
 ### Arch Linux
 
@@ -138,7 +137,7 @@ Contacting the author
 
 Just connect me (Mic92) on github or via email (jthalheim@gmail.com).
 
-Usally I hang around on jabber: sonata@conference.codingteam.net
+Usually I hang around on jabber: sonata@conference.codingteam.net
 
 You can contact the original author by emailing J. Alexander Treuman <jat@spatialrift.net>.
 

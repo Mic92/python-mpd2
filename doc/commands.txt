@@ -17,7 +17,6 @@ setvol             <int>                   -> fetch_nothing
 single             <bool>                  -> fetch_nothing
 replay_gain_mode   <str>                   -> fetch_nothing
 replay_gain_status                         -> fetch_item
-volume             <int>                   -> fetch_nothing
 
 == Playback Control Commands
 next                                       -> fetch_nothing
