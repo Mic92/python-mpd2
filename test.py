@@ -151,7 +151,11 @@ class TestMPDClient(unittest.TestCase):
         self.assertFalse(imple_cmds - avaible_cmds, long_desc)
 
     def test_unicode_in_command_args(self):
-        self.assertIsInstance(self.client.find("file", "☯☾☝♖✽"), list)
+        if sys.version_info < (3, 0):
+            arg = "☯☾☝♖✽".decode("utf-8")
+        else:
+            arg = "☯☾☝♖✽"
+        self.assertIsInstance(self.client.find("file",arg), list)
 
 if __name__ == '__main__':
     unittest.main()

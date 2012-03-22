@@ -23,6 +23,12 @@ ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
 NEXT = "list_OK"
 
+try:
+    # workaround to get unicode strings in all python versions
+    str = unicode
+except NameError:
+    pass
+
 
 class MPDError(Exception):
     pass
