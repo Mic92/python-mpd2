@@ -4,16 +4,18 @@ python-mpd2
 Difference with python-mpd
 --------------------------
 
-python-mpd2 is a fork of the python-mpd. It is backward compatible to python-mpd, so it could act as drop-in replacement.
+python-mpd2 is a fork of the python-mpd.
 Current features list:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
  - adding new commands of mpd v0.17 (seekcur, prio, prioid, config)
  - remove of deprecated commands (volume)
- - add explicit method declaration, so they are shown in ipython
+ - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
+ - expect and returns unicode strings in all commands instead of unicode encoded strings,
+   so use u"♥" instead of "♥" in python2 - no change in python3 as it use unicode strings by default
 
 If you like this module, you could try contact the original author <jat@spatialrift.net> or join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
 
