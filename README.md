@@ -5,6 +5,8 @@ Difference with python-mpd
 --------------------------
 
 python-mpd2 is a fork of the python-mpd.
+It is backward compatible to python-mpd, so it could act as drop-in replacement.
+
 Current features list:
 
  - python3 support (python2.6 is minimum python version required)
@@ -14,8 +16,7 @@ Current features list:
  - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
- - expect and returns unicode strings in all commands instead of unicode encoded strings,
-   so use u"♥" instead of "♥" in python2 - no change in python3 as it use unicode strings by default
+ - use unicode strings in all commands instead of utf-8 encoded strings optionally in python2 and by default in python3 (see Unicode Handling)
 
 If you like this module, you could try contact the original author <jat@spatialrift.net> or join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
 
@@ -98,27 +99,61 @@ them), and the functions used to parse their responses can be found in
 Command lists are also supported using *command_list_ok_begin()* and
 *command_list_end()*:
 
-    client.command_list_ok_begin()       # start a command list
-    client.update()                      # insert the update command into the list
-    client.status()                      # insert the status command into the list
-    results = client.command_list_end()  # results will be a list with the results
+```python
+client.command_list_ok_begin()       # start a command list
+client.update()                      # insert the update command into the list
+client.status()                      # insert the status command into the list
+results = client.command_list_end()  # results will be a list with the results
+```
 
 Commands may also return iterators instead of lists if *iterate* is set to
 *True*:
 
-    client.iterate = True
-    for song in client.playlistinfo():
-        print song["file"]
+```python
+client.iterate = True
+for song in client.playlistinfo():
+    print song["file"]
+```
 
 Each command have a *send_* and a *fetch_* variant, which allows to send a
 mpd command and the fetch the result later. This is useful for the idle
 command:
 
-    client.send_idle()
-    # do something else ...
-    events = client.fetch_idle()
+```python
+client.send_idle()
+# do something else ...
+events = client.fetch_idle()
+```
 
 Some more complex usage example can be found [here](http://jatreuman.indefero.net/p/python-mpd/doc/)
+
+
+Unicode Handling
+----------------
+To quote the mpd protocol documentation:
+
+> All data to be sent between the client and server must be encoded in UTF-8.
+
+In python3 unicode strings are default string type. So just pass these strings as arguments for mpd commands.
+
+For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicoded encoded 8-bit strings (ex. "♥").
+It returns unicode encoded strings by default for the same reason.
+
+Using unicode strings should be prefered as it makes the transition to python3 easier.
+This way, decoding and encoding strings outside the library, is not needed to make function like len() behave correctly.
+To make MPDClient return unicode strings in python2 create the instance with the use_unicode parameter set to true.
+
+```python
+>>> import mpd
+>>> client = MPDClient(use_unicode=True)
+>>> client.urlhandlers()[0]
+u'http'
+>>> client.use_unicode = False # Can be switched back later
+>>> client.urlhandlers()[0]
+'http'
+```
+
+Use this option in python3 doesn't have an effect.
 
 Future Compatible
 -----------------

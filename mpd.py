@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import socket
 from collections import Callable
 
@@ -23,12 +24,13 @@ ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
 NEXT = "list_OK"
 
-try:
-    # workaround to get unicode strings in all python versions
-    str = unicode
-except NameError:
-    pass
-
+IS_PYTHON2 = sys.version_info < (3, 0)
+if IS_PYTHON2:
+    decode_str = lambda s: s.decode("utf-8")
+    encode_str = lambda s: s if type(s) == str else (unicode(s)).encode("utf-8")
+else:
+    decode_str = lambda s: s
+    encode_str = lambda s: str(s)
 
 class MPDError(Exception):
     pass
@@ -162,8 +164,9 @@ _commands = {
 }
 
 class MPDClient():
-    def __init__(self):
+    def __init__(self, use_unicode=False):
         self.iterate = False
+        self.use_unicode = use_unicode
         self._reset()
 
     def _send(self, command, args, retval):
@@ -211,17 +214,19 @@ class MPDClient():
             return retval
 
     def _write_line(self, line):
-        self._wfile.write(("%s\n" % line).encode('utf-8'))
+        self._wfile.write("%s\n" % line)
         self._wfile.flush()
 
     def _write_command(self, command, args=[]):
         parts = [command]
         for arg in args:
-            parts.append('"%s"' % escape(str(arg)))
+            parts.append('"%s"' % escape(encode_str(arg)))
         self._write_line(" ".join(parts))
 
     def _read_line(self):
-        line = self._rfile.readline().decode('utf-8')
+        line = self._rfile.readline()
+        if self.use_unicode:
+            line = decode_str(line)
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
@@ -356,7 +361,7 @@ class MPDClient():
         return self._wrap_iterator(self._read_command_list())
 
     def _hello(self):
-        line = self._rfile.readline().decode('utf-8')
+        line = self._rfile.readline()
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading MPD hello")
         line = line.rstrip("\n")
@@ -413,8 +418,8 @@ class MPDClient():
             self._sock = self._connect_unix(host)
         else:
             self._sock = self._connect_tcp(host, port)
-        self._rfile = self._sock.makefile("rb")
-        self._wfile = self._sock.makefile("wb")
+        self._rfile = self._sock.makefile("r")
+        self._wfile = self._sock.makefile("w")
         try:
             self._hello()
         except:

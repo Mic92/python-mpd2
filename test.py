@@ -150,12 +150,29 @@ class TestMPDClient(unittest.TestCase):
                 "This either means the command list is wrong or mpd is not up-to-date."
         self.assertFalse(imple_cmds - avaible_cmds, long_desc)
 
-    def test_unicode_in_command_args(self):
+    def test_unicode_as_command_args(self):
         if sys.version_info < (3, 0):
-            arg = "☯☾☝♖✽".decode("utf-8")
+            raw_unicode = "☯☾☝♖✽".decode("utf-8")
+            res = self.client.find("file", raw_unicode)
+            self.assertIsInstance(res, list)
+
+            encoded_str = "☯☾☝♖✽"
+            res2 = self.client.find("file", encoded_str)
+            self.assertIsInstance(res2, list)
         else:
-            arg = "☯☾☝♖✽"
-        self.assertIsInstance(self.client.find("file",arg), list)
+            res = self.client.find("file","☯☾☝♖✽")
+            self.assertIsInstance(res, list)
+
+    @unittest.skipIf(sys.version_info >= (3, 0),
+                     "Test special unicode handling only if python2")
+    def test_unicode_as_reponse(self):
+        self.client.use_unicode = True
+        self.assertIsInstance(self.client.urlhandlers()[0], unicode)
+        self.client.use_unicode = False
+        self.assertIsInstance(self.client.urlhandlers()[0], str)
+
+    def test_numbers_as_command_args(self):
+        res = self.client.find("file", 1)
 
 if __name__ == '__main__':
     unittest.main()
