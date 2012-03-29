@@ -82,12 +82,14 @@ Using the client library
 
 The client library can be used as follows:
 
-    client = mpd.MPDClient()           # create client object
-    client.connect("localhost", 6600)  # connect to localhost:6600
-    print(client.mpd_version)          # print the mpd version
-    print(client.find("any", "house")) # print result of the command "find any house"
-    client.close()                     # send the close command
-    client.disconnect()                # disconnect from the server
+```python
+client = mpd.MPDClient()           # create client object
+client.connect("localhost", 6600)  # connect to localhost:6600
+print(client.mpd_version)          # print the mpd version
+print(client.find("any", "house")) # print result of the command "find any house"
+client.close()                     # send the close command
+client.disconnect()                # disconnect from the server
+```
 
 A list of supported commands, their arguments (as MPD currently understands
 them), and the functions used to parse their responses can be found in
@@ -125,14 +127,15 @@ New commands or special handling of commands can be easily implemented.
 Use *add_command()* or *remove_command()* to modify the commands of the
 *MPDClient* class and all its instances.
 
-
-    def fetch_cover(client):
-        """"Take a MPDClient instance as its arguments and return mimetype and image"""
-        # this command may come in the future.
-        pass
-    self.client.add_command("get_cover", fetch_cover)
-    # remove the command, because it doesn't exist already.
-    self.client.remove_command("get_cover")
+```python
+def fetch_cover(client):
+    """"Take a MPDClient instance as its arguments and return mimetype and image"""
+    # this command may come in the future.
+    pass
+self.client.add_command("get_cover", fetch_cover)
+# remove the command, because it doesn't exist already.
+self.client.remove_command("get_cover")
+```
 
 Contacting the author
 ---------------------
