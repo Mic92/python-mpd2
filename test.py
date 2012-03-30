@@ -197,5 +197,10 @@ class TestMPDClient(unittest.TestCase):
     def test_numbers_as_command_args(self):
         res = self.client.find("file", 1)
 
+    def test_timeout(self):
+        self.client.disconnect()
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)
+        self.assertEqual(self.client._sock.gettimeout(), 5)
+
 if __name__ == '__main__':
     unittest.main()

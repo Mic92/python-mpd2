@@ -378,15 +378,16 @@ class MPDClient():
         self._rfile = _NotConnected()
         self._wfile = _NotConnected()
 
-    def _connect_unix(self, path):
+    def _connect_unix(self, path, timeout):
         if not hasattr(socket, "AF_UNIX"):
             raise ConnectionError("Unix domain sockets not supported "
                                   "on this platform")
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
         sock.connect(path)
         return sock
 
-    def _connect_tcp(self, host, port):
+    def _connect_tcp(self, host, port, timeout):
         try:
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
@@ -400,6 +401,7 @@ class MPDClient():
             try:
                 sock = socket.socket(af, socktype, proto)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                sock.settimeout(timeout)
                 sock.connect(sa)
                 return sock
             except socket.error as e:
@@ -411,13 +413,13 @@ class MPDClient():
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
 
-    def connect(self, host, port):
+    def connect(self, host, port, timeout=None):
         if self._sock is not None:
             raise ConnectionError("Already connected")
         if host.startswith("/"):
-            self._sock = self._connect_unix(host)
+            self._sock = self._connect_unix(host, timeout)
         else:
-            self._sock = self._connect_tcp(host, port)
+            self._sock = self._connect_tcp(host, port, timeout)
         self._rfile = self._sock.makefile("r")
         self._wfile = self._sock.makefile("w")
         try:
