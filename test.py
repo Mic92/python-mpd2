@@ -39,6 +39,9 @@ setup_environment()
 
 
 class TestMPDClient(unittest.TestCase):
+
+    longMessage = True
+
     @classmethod
     def setUpClass(self):
         global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
@@ -158,11 +161,17 @@ class TestMPDClient(unittest.TestCase):
         imple_cmds = (imple_cmds - sticker_cmds)
         imple_cmds.add("sticker")
         imple_cmds.remove("noidle")
-        self.assertFalse(avaible_cmds - imple_cmds,
+
+        self.assertEqual(set(), avaible_cmds - imple_cmds,
                          "Not all commands supported by mpd are implemented!")
-        long_desc = "Not all commands implemented by this library are supported by the current mpd.\n" + \
-                "This either means the command list is wrong or mpd is not up-to-date."
-        self.assertFalse(imple_cmds - avaible_cmds, long_desc)
+
+        long_desc = (
+            "Not all commands implemented by this library are supported by "
+            "the current mpd.\n"  +
+            "This either means the command list is wrong or mpd is not "
+            "up-to-date.")
+
+        self.assertEqual(set(), imple_cmds - avaible_cmds, long_desc)
 
     def test_unicode_as_command_args(self):
         if sys.version_info < (3, 0):
