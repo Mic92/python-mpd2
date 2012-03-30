@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import types
 import sys
 from socket import error as SocketError
@@ -19,27 +20,40 @@ except ImportError:
         print("Please install unittest2 from pypi to run tests!")
         sys.exit(1)
 
-# Alternate this to your setup
-# Make sure you have at least one song on your playlist
-MPD_HOST  = "localhost"
-MPD_PORT  = 6600
-MPD_PASSW = None
+def setup_environment():
+    # Alternate this to your setup
+    # Make sure you have at least one song on your playlist
+    global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
+
+    if 'TEST_MPD_PORT' not in os.environ:
+        sys.stderr.write(
+            "You should set the TEST_MPD_PORT environment variable to point "
+            "to your test MPD running instance.\n")
+        sys.exit(255)
+
+    TEST_MPD_HOST     = os.environ.get('TEST_MPD_HOST', "localhost")
+    TEST_MPD_PORT     = int(os.environ['TEST_MPD_PORT'])
+    TEST_MPD_PASSWORD = os.environ.get('TEST_MPD_PASSWORD')
+
+setup_environment()
+
 
 class TestMPDClient(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+        global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
         self.client = mpd.MPDClient()
         self.idleclient = mpd.MPDClient()
         try:
-            self.client.connect(MPD_HOST, MPD_PORT)
-            self.idleclient.connect(MPD_HOST, MPD_PORT)
+            self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+            self.idleclient.connect(TEST_MPD_HOST, TEST_MPD_PORT)
             self.commands = self.client.commands()
         except SocketError as e:
             raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
-        if MPD_PASSW != None:
+        if TEST_MPD_PASSWORD != None:
             try:
-                self.client.password(MPD_PASSW)
-                self.idleclient.password(MPD_PASSW)
+                self.client.password(TEST_MPD_PASSWORD)
+                self.idleclient.password(TEST_MPD_PASSWORD)
             except mpd.CommandError as e:
                 raise Exception("Fail to authenticate to mpd.")
     @classmethod
