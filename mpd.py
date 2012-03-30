@@ -386,7 +386,7 @@ class MPDClient():
         sock.connect(path)
         return sock
 
-    def _connect_tcp(self, host, port):
+    def _connect_tcp(self, host, port, timeout = None):
         try:
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
@@ -399,6 +399,8 @@ class MPDClient():
             sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
+                if timeout is not None:
+                    sock.settimeout(timeout)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 sock.connect(sa)
                 return sock
@@ -411,13 +413,13 @@ class MPDClient():
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
 
-    def connect(self, host, port):
+    def connect(self, host, port, timeout = None):
         if self._sock is not None:
             raise ConnectionError("Already connected")
         if host.startswith("/"):
             self._sock = self._connect_unix(host)
         else:
-            self._sock = self._connect_tcp(host, port)
+            self._sock = self._connect_tcp(host, port, timeout)
         self._rfile = self._sock.makefile("r")
         self._wfile = self._sock.makefile("w")
         try:
