@@ -400,8 +400,6 @@ class MPDClient():
             sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
-                if timeout is not None:
-                    sock.settimeout(timeout)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 sock.settimeout(timeout)
                 sock.connect(sa)
