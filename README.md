@@ -5,7 +5,8 @@ Difference with python-mpd
 --------------------------
 
 python-mpd2 is a fork of the python-mpd.
-It is backward compatible to python-mpd, so it could act as drop-in replacement.
+It is backward compatible to python-mpd, so it could act as drop-in replacement
+(tested with [sonata](http://sonata.berlios.de/)).
 
 Current features list:
 
@@ -16,9 +17,10 @@ Current features list:
  - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
- - use unicode strings in all commands instead of utf-8 encoded strings optionally in python2 and by default in python3 (see Unicode Handling)
+ - use unicode strings in all commands (optionally in python2, default in python3 - see Unicode Handling)
 
-If you like this module, you could try contact the original author <jat@spatialrift.net> or join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
+If you like this module, you could try contact the original author <jat@spatialrift.net> or
+join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
 
 Getting the latest source code
 ------------------------------
