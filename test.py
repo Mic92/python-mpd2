@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import types
 import sys
 from socket import error as SocketError
@@ -19,27 +20,43 @@ except ImportError:
         print("Please install unittest2 from pypi to run tests!")
         sys.exit(1)
 
-# Alternate this to your setup
-# Make sure you have at least one song on your playlist
-MPD_HOST  = "localhost"
-MPD_PORT  = 6600
-MPD_PASSW = None
+def setup_environment():
+    # Alternate this to your setup
+    # Make sure you have at least one song on your playlist
+    global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
+
+    if 'TEST_MPD_PORT' not in os.environ:
+        sys.stderr.write(
+            "You should set the TEST_MPD_PORT environment variable to point "
+            "to your test MPD running instance.\n")
+        sys.exit(255)
+
+    TEST_MPD_HOST     = os.environ.get('TEST_MPD_HOST', "localhost")
+    TEST_MPD_PORT     = int(os.environ['TEST_MPD_PORT'])
+    TEST_MPD_PASSWORD = os.environ.get('TEST_MPD_PASSWORD')
+
+setup_environment()
+
 
 class TestMPDClient(unittest.TestCase):
+
+    longMessage = True
+
     @classmethod
     def setUpClass(self):
+        global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
         self.client = mpd.MPDClient()
         self.idleclient = mpd.MPDClient()
         try:
-            self.client.connect(MPD_HOST, MPD_PORT)
-            self.idleclient.connect(MPD_HOST, MPD_PORT)
+            self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+            self.idleclient.connect(TEST_MPD_HOST, TEST_MPD_PORT)
             self.commands = self.client.commands()
         except SocketError as e:
             raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
-        if MPD_PASSW != None:
+        if TEST_MPD_PASSWORD != None:
             try:
-                self.client.password(MPD_PASSW)
-                self.idleclient.password(MPD_PASSW)
+                self.client.password(TEST_MPD_PASSWORD)
+                self.idleclient.password(TEST_MPD_PASSWORD)
             except mpd.CommandError as e:
                 raise Exception("Fail to authenticate to mpd.")
     @classmethod
@@ -144,11 +161,17 @@ class TestMPDClient(unittest.TestCase):
         imple_cmds = (imple_cmds - sticker_cmds)
         imple_cmds.add("sticker")
         imple_cmds.remove("noidle")
-        self.assertFalse(avaible_cmds - imple_cmds,
+
+        self.assertEqual(set(), avaible_cmds - imple_cmds,
                          "Not all commands supported by mpd are implemented!")
-        long_desc = "Not all commands implemented by this library are supported by the current mpd.\n" + \
-                "This either means the command list is wrong or mpd is not up-to-date."
-        self.assertFalse(imple_cmds - avaible_cmds, long_desc)
+
+        long_desc = (
+            "Not all commands implemented by this library are supported by "
+            "the current mpd.\n"  +
+            "This either means the command list is wrong or mpd is not "
+            "up-to-date.")
+
+        self.assertEqual(set(), imple_cmds - avaible_cmds, long_desc)
 
     def test_unicode_as_command_args(self):
         if sys.version_info < (3, 0):
@@ -173,6 +196,11 @@ class TestMPDClient(unittest.TestCase):
 
     def test_numbers_as_command_args(self):
         res = self.client.find("file", 1)
+
+    def test_timeout(self):
+        self.client.disconnect()
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)
+        self.assertEqual(self.client._sock.gettimeout(), 5)
 
 if __name__ == '__main__':
     unittest.main()
