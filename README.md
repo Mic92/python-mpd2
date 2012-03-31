@@ -40,9 +40,17 @@ You can use the *--help* switch to *setup.py* for a complete list of commands
 and their options.  See the [Installing Python Modules](http://docs.python.org/inst/inst.html) document for more details.
 
 
-Using packages
---------------
-Until the python community adapt this package, here are some ready to use packages to test your applications:
+Getting the latest release
+--------------------------
+
+This python-mpd2 can be found on [pypi](http://pypi.python.org/pypi?:action=display&name=python-mpd2)
+
+###pypi:
+
+    $ pip install python-mpd2
+
+
+Until linux distributions adapt this package, here are some ready to use packages to test your applications:
 
 ### Debian
 
