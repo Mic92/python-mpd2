@@ -85,7 +85,8 @@ The client library can be used as follows:
 
 ```python
 client = mpd.MPDClient()           # create client object
-client.connect("localhost", 6600)  # connect to localhost:6600
+client.connect("localhost", 6600,  # connect to localhost:6600
+                timeout=10)        # optional timeout in seconds (floats allowed), default: None
 print(client.mpd_version)          # print the mpd version
 print(client.find("any", "house")) # print result of the command "find any house"
 client.close()                     # send the close command
