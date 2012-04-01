@@ -44,8 +44,8 @@ playlistinfo       [<int>]                 -> fetch_songs
 playlistsearch     <locate>                -> fetch_songs
 plchanges          <int>                   -> fetch_songs
 plchangesposid     <int>                   -> fetch_changes
-prior              <int> <str>             -> fetch_nothing
-priorid            <int> <id>              -> fetch_nothing
+prio               <int> <str>             -> fetch_nothing
+prioid             <int> <id>              -> fetch_nothing
 shuffle            [<str>]                 -> fetch_nothing
 swap               <int> <int>             -> fetch_nothing
 swapid             <int> <int>             -> fetch_nothing
@@ -94,6 +94,7 @@ enableoutput       <int>                   -> fetch_nothing
 outputs                                    -> fetch_outputs
 
 == Reflection Commands
+config                                     -> fetch_item
 commands                                   -> fetch_list
 notcommands                                -> fetch_list
 tagtypes                                   -> fetch_list
