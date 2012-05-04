@@ -147,7 +147,7 @@ To quote the mpd protocol documentation:
 
 In python3 unicode strings are default string type. So just pass these strings as arguments for mpd commands.
 
-For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicoded encoded 8-bit strings (ex. "♥").
+For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicode encoded 8-bit strings (ex. "♥").
 It returns unicode encoded strings by default for the same reason.
 
 Using unicode strings should be prefered as it makes the transition to python3 easier.
