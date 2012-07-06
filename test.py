@@ -197,6 +197,11 @@ class TestMPDClient(unittest.TestCase):
     def test_numbers_as_command_args(self):
         res = self.client.find("file", 1)
 
+    def test_empty_callbacks(self):
+        self.client.close()
+        self.client._reset()
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+
     def test_timeout(self):
         self.client.disconnect()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)

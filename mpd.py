@@ -482,6 +482,9 @@ class MPDClient():
 
 def bound_decorator(self, function):
     """ bind decorator to self """
+    if not isinstance(function, Callable):
+        return None
+
     def decorator(*args, **kwargs):
         return function(self, *args, **kwargs)
     return decorator
