@@ -163,7 +163,7 @@ _commands = {
     "sendmessage":        "_fetch_nothing",
 }
 
-class MPDClient():
+class MPDClient(object):
     def __init__(self, use_unicode=False):
         self.iterate = False
         self.use_unicode = use_unicode
