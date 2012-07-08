@@ -131,6 +131,8 @@ _commands = {
     "listallinfo":        "_fetch_database",
     "lsinfo":             "_fetch_database",
     "search":             "_fetch_songs",
+    "searchadd":          "_fetch_nothing",
+    "searchaddpl":        "_fetch_nothing",
     "update":             "_fetch_item",
     "rescan":             "_fetch_item",
     # Sticker Commands

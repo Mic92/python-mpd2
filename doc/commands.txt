@@ -72,6 +72,8 @@ listall            [<str>]                 -> fetch_database
 listallinfo        [<str>]                 -> fetch_database
 lsinfo             [<str>]                 -> fetch_database
 search             <locate>                -> fetch_songs
+searchadd          <locate>                -> fetch_songs
+searchaddpl        <str> <locate>          -> fetch_songs
 update             [<str>]                 -> fetch_item
 rescan             [<str>]                 -> fetch_item
 
