@@ -12,7 +12,8 @@ Current features list:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
- - adding new commands of mpd v0.17 (seekcur, prio, prioid, config)
+ - adding new commands of mpd v0.17 (seekcur, prio, prioid, config, searchadd,
+   searchaddpl)
  - remove of deprecated commands (volume)
  - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
@@ -182,6 +183,12 @@ self.client.add_command("get_cover", fetch_cover)
 # remove the command, because it doesn't exist already.
 self.client.remove_command("get_cover")
 ```
+
+Known Issues
+------------
+
+Currently python-mpd is **NOT** thread-safe. If you need to access the library from multiple threads, you have to either use [locks](http://docs.python.org/library/threading.html#lock-objects) or use one mpd client per thread.
+
 
 Contacting the author
 ---------------------

@@ -1,6 +1,13 @@
 python-mpd2 Changes List
 ========================
 
+Changes in 0.4.3
+----------------
+
+* add searchadd and searchaddpl command
+* fix commands without a callback function
+* transform MPDClient to new style class
+
 Changes in 0.4.2
 ----------------
 
