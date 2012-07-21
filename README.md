@@ -42,7 +42,6 @@ To install python-mpd from source, simply run the command:
 You can use the *--help* switch to *setup.py* for a complete list of commands
 and their options.  See the [Installing Python Modules](http://docs.python.org/inst/inst.html) document for more details.
 
-
 Getting the latest release
 --------------------------
 
@@ -75,14 +74,13 @@ Then simply update/install *python-mpd2* or *python3-mpd* with apt or aptitude:
 
 ### Arch Linux
 
-install [python-mpd2-git](https://aur.archlinux.org/packages.php?ID=57738) from AUR
+install [python-mpd2](http://aur.archlinux.org/packages.php?ID=59276) from AUR
 
 ### Gentoo Linux
 
-An ebuid is available in the `laurentb` overlay.
+Replaces the original python-mpd beginning with version 0.4.2 (currently masked):
 
-    echo 'dev-python/python-mpd::laurentb **' >> /etc/portage/accept_keywords
-    layman -a laurentb
+    echo dev-python/python-mpd _ARCH_ >> /etc/portage/accept_keywords  # Replace \_ARCH\_ with your architecture (~amd64, ~x86, ...)
     emerge -av python-mpd
 
 
