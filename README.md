@@ -80,7 +80,7 @@ install [python-mpd2](http://aur.archlinux.org/packages.php?ID=59276) from AUR
 
 Replaces the original python-mpd beginning with version 0.4.2 (currently masked):
 
-    echo dev-python/python-mpd _ARCH_ >> /etc/portage/accept_keywords  # Replace \_ARCH\_ with your architecture (~amd64, ~x86, ...)
+    echo dev-python/python-mpd >> /etc/portage/accept_keywords
     emerge -av python-mpd
 
 
