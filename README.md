@@ -5,20 +5,23 @@ Difference with python-mpd
 --------------------------
 
 python-mpd2 is a fork of the python-mpd.
-It is backward compatible to python-mpd, so it could act as drop-in replacement.
+It is backward compatible to python-mpd, so it could act as drop-in replacement
+(tested with [sonata](http://sonata.berlios.de/)).
 
 Current features list:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
- - adding new commands of mpd v0.17 (seekcur, prio, prioid, config)
+ - adding new commands of mpd v0.17 (seekcur, prio, prioid, config, searchadd,
+   searchaddpl)
  - remove of deprecated commands (volume)
  - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
- - use unicode strings in all commands instead of utf-8 encoded strings optionally in python2 and by default in python3 (see Unicode Handling)
+ - use unicode strings in all commands (optionally in python2, default in python3 - see Unicode Handling)
 
-If you like this module, you could try contact the original author <jat@spatialrift.net> or join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
+If you like this module, you could try contact the original author <jat@spatialrift.net> or
+join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
 
 Getting the latest source code
 ------------------------------
@@ -39,10 +42,17 @@ To install python-mpd from source, simply run the command:
 You can use the *--help* switch to *setup.py* for a complete list of commands
 and their options.  See the [Installing Python Modules](http://docs.python.org/inst/inst.html) document for more details.
 
+Getting the latest release
+--------------------------
 
-Using packages
---------------
-Until the python community adapt this package, here are some ready to use packages to test your applications:
+This python-mpd2 can be found on [pypi](http://pypi.python.org/pypi?:action=display&name=python-mpd2)
+
+###pypi:
+
+    $ pip install python-mpd2
+
+
+Until linux distributions adapt this package, here are some ready to use packages to test your applications:
 
 ### Debian
 
@@ -64,14 +74,13 @@ Then simply update/install *python-mpd2* or *python3-mpd* with apt or aptitude:
 
 ### Arch Linux
 
-install [python-mpd2-git](https://aur.archlinux.org/packages.php?ID=57738) from AUR
+install [python-mpd2](http://aur.archlinux.org/packages.php?ID=59276) from AUR
 
 ### Gentoo Linux
 
-An ebuid is available in the `laurentb` overlay.
+Replaces the original python-mpd beginning with version 0.4.2 (currently masked):
 
-    echo 'dev-python/python-mpd::laurentb **' >> /etc/portage/accept_keywords
-    layman -a laurentb
+    echo dev-python/python-mpd >> /etc/portage/accept_keywords
     emerge -av python-mpd
 
 
@@ -137,7 +146,7 @@ To quote the mpd protocol documentation:
 
 In python3 unicode strings are default string type. So just pass these strings as arguments for mpd commands.
 
-For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicoded encoded 8-bit strings (ex. "♥").
+For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicode encoded 8-bit strings (ex. "♥").
 It returns unicode encoded strings by default for the same reason.
 
 Using unicode strings should be prefered as it makes the transition to python3 easier.
@@ -172,6 +181,12 @@ self.client.add_command("get_cover", fetch_cover)
 # remove the command, because it doesn't exist already.
 self.client.remove_command("get_cover")
 ```
+
+Known Issues
+------------
+
+Currently python-mpd is **NOT** thread-safe. If you need to access the library from multiple threads, you have to either use [locks](http://docs.python.org/library/threading.html#lock-objects) or use one mpd client per thread.
+
 
 Contacting the author
 ---------------------

@@ -131,6 +131,8 @@ _commands = {
     "listallinfo":        "_fetch_database",
     "lsinfo":             "_fetch_database",
     "search":             "_fetch_songs",
+    "searchadd":          "_fetch_nothing",
+    "searchaddpl":        "_fetch_nothing",
     "update":             "_fetch_item",
     "rescan":             "_fetch_item",
     # Sticker Commands
@@ -163,7 +165,7 @@ _commands = {
     "sendmessage":        "_fetch_nothing",
 }
 
-class MPDClient():
+class MPDClient(object):
     def __init__(self, use_unicode=False):
         self.iterate = False
         self.use_unicode = use_unicode
@@ -482,6 +484,9 @@ class MPDClient():
 
 def bound_decorator(self, function):
     """ bind decorator to self """
+    if not isinstance(function, Callable):
+        return None
+
     def decorator(*args, **kwargs):
         return function(self, *args, **kwargs)
     return decorator
