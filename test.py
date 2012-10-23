@@ -207,5 +207,18 @@ class TestMPDClient(unittest.TestCase):
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)
         self.assertEqual(self.client._sock.gettimeout(), 5)
 
+    def test_connection_lost(self):
+        client = mpd.MPDClient()
+        client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+        # simulate a disconnect
+        client._sock.send("close\n")
+        client._sock.recv(4096)
+        with self.assertRaises(mpd.ConnectionError):
+            client.status()
+        # consistent behaviour, solves bug #11 (github)
+        with self.assertRaises(mpd.ConnectionError):
+            client.status()
+        self.assertIs(client._sock, None)
+
 if __name__ == '__main__':
     unittest.main()

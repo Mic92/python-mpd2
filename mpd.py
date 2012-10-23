@@ -230,6 +230,7 @@ class MPDClient(object):
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
+            self.disconnect()
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
@@ -365,6 +366,7 @@ class MPDClient(object):
     def _hello(self):
         line = self._rfile.readline()
         if not line.endswith("\n"):
+            self.disconnect()
             raise ConnectionError("Connection lost while reading MPD hello")
         line = line.rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
@@ -431,9 +433,12 @@ class MPDClient(object):
             raise
 
     def disconnect(self):
-        self._rfile.close()
-        self._wfile.close()
-        self._sock.close()
+        if not self._rfile is None:
+            self._rfile.close()
+        if not self._wfile is None:
+            self._wfile.close()
+        if not self._sock is None:
+            self._sock.close()
         self._reset()
 
     def fileno(self):
