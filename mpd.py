@@ -65,7 +65,7 @@ _commands = {
     # Status Commands
     "clearerror":         "_fetch_nothing",
     "currentsong":        "_fetch_object",
-    "idle":               "_fetch_list",
+    "idle":               "_fetch_idle",
     "noidle":             None,
     "status":             "_fetch_object",
     "stats":              "_fetch_object",
@@ -341,6 +341,12 @@ class MPDClient(object):
     def _fetch_changes(self):
         return self._fetch_objects(["cpos"])
 
+    def _fetch_idle(self):
+        self._sock.settimeout(None)
+        ret = self._fetch_list()
+        self._sock.settimeout(self.timeout)
+        return ret
+    
     def _fetch_songs(self):
         return self._fetch_objects(["file"])
 
@@ -424,6 +430,7 @@ class MPDClient(object):
             self._sock = self._connect_tcp(host, port, timeout)
         self._rfile = self._sock.makefile("r")
         self._wfile = self._sock.makefile("w")
+        self.timeout = timeout
         try:
             self._hello()
         except:
