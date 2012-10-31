@@ -211,7 +211,7 @@ class TestMPDClient(unittest.TestCase):
         client = mpd.MPDClient()
         client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
         # simulate a disconnect
-        client._sock.send("close\n")
+        client._sock.send(b"close\n")
         client._sock.recv(4096)
         with self.assertRaises(mpd.ConnectionError):
             client.status()
