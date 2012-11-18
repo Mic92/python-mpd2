@@ -131,7 +131,8 @@ command:
 
 ```python
 client.send_idle()
-# do something else ...
+# do something else or use function like [select()](http://docs.python.org/howto/sockets.html#non-blocking-sockets)
+# ex. select([client], [], []) or with [gobject](http://jatreuman.indefero.net/p/python-mpd/page/ExampleIdle/)
 events = client.fetch_idle()
 ```
 
@@ -147,11 +148,11 @@ To quote the mpd protocol documentation:
 In python3 unicode strings are default string type. So just pass these strings as arguments for mpd commands.
 
 For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicode encoded 8-bit strings (ex. "♥").
-It returns unicode encoded strings by default for the same reason.
+The python3 version returns unicode encoded strings by default for the same reason.
 
+To make MPDClient return unicode strings in python2 create the instance with the use_unicode parameter set to true.
 Using unicode strings should be prefered as it makes the transition to python3 easier.
 This way, decoding and encoding strings outside the library, is not needed to make function like len() behave correctly.
-To make MPDClient return unicode strings in python2 create the instance with the use_unicode parameter set to true.
 
 ```python
 >>> import mpd
@@ -191,7 +192,7 @@ Currently python-mpd is **NOT** thread-safe. If you need to access the library f
 Contacting the author
 ---------------------
 
-Just connect me (Mic92) on github or via email (jthalheim@gmail.com).
+Just contact me (Mic92) on github or via email (<joerg@higgsboson.tk>).
 
 Usually I hang around on jabber: sonata@conference.codingteam.net
 
