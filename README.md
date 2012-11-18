@@ -8,7 +8,7 @@ python-mpd2 is a fork of the python-mpd.
 It is backward compatible to python-mpd, so it could act as drop-in replacement
 (tested with [sonata](http://sonata.berlios.de/)).
 
-Current features list:
+The following features was added:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
@@ -19,6 +19,7 @@ Current features list:
  - add unit tests
  - documented API to add new commands (see Future Compatible)
  - use unicode strings in all commands (optionally in python2, default in python3 - see Unicode Handling)
+ - configureable timeout
 
 If you like this module, you could try contact the original author <jat@spatialrift.net> or
 join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
@@ -94,8 +95,9 @@ The client library can be used as follows:
 
 ```python
 client = mpd.MPDClient()           # create client object
-client.connect("localhost", 6600,  # connect to localhost:6600
-                timeout=10)        # optional timeout in seconds (floats allowed), default: None
+client.timeout = 10                # network timeout in seconds (floats allowed), default: None
+client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperat, default: None
+client.connect("localhost", 6600)  # connect to localhost:6600
 print(client.mpd_version)          # print the mpd version
 print(client.find("any", "house")) # print result of the command "find any house"
 client.close()                     # send the close command

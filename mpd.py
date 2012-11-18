@@ -17,6 +17,7 @@
 
 import sys
 import socket
+import warnings
 from collections import Callable
 
 HELLO_PREFIX = "OK MPD "
@@ -65,7 +66,7 @@ _commands = {
     # Status Commands
     "clearerror":         "_fetch_nothing",
     "currentsong":        "_fetch_object",
-    "idle":               "_fetch_list",
+    "idle":               "_fetch_idle",
     "noidle":             None,
     "status":             "_fetch_object",
     "stats":              "_fetch_object",
@@ -342,6 +343,12 @@ class MPDClient(object):
     def _fetch_changes(self):
         return self._fetch_objects(["cpos"])
 
+    def _fetch_idle(self):
+        self._sock.settimeout(self.idletimeout)
+        ret = self._fetch_list()
+        self._sock.settimeout(self._timeout)
+        return ret
+
     def _fetch_songs(self):
         return self._fetch_objects(["file"])
 
@@ -382,16 +389,16 @@ class MPDClient(object):
         self._rfile = _NotConnected()
         self._wfile = _NotConnected()
 
-    def _connect_unix(self, path, timeout):
+    def _connect_unix(self, path):
         if not hasattr(socket, "AF_UNIX"):
             raise ConnectionError("Unix domain sockets not supported "
                                   "on this platform")
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
+        sock.settimeout(self.timeout)
         sock.connect(path)
         return sock
 
-    def _connect_tcp(self, host, port, timeout):
+    def _connect_tcp(self, host, port):
         try:
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
@@ -405,7 +412,7 @@ class MPDClient(object):
             try:
                 sock = socket.socket(af, socktype, proto)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                sock.settimeout(timeout)
+                sock.settimeout(self.timeout)
                 sock.connect(sa)
                 return sock
             except socket.error as e:
@@ -417,13 +424,28 @@ class MPDClient(object):
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
 
+    def _settimeout(self, timeout):
+        self._timeout = timeout
+        if self._sock != None:
+            self._sock.settimeout(timeout)
+    def _gettimeout(self):
+        return self._timeout
+    timeout = property(_gettimeout, _settimeout)
+    _timeout = None
+    idletimeout = None
+
     def connect(self, host, port, timeout=None):
         if self._sock is not None:
             raise ConnectionError("Already connected")
+        if timeout != None:
+            warnings.warn("The timeout parameter in connect() is deprecated! "
+                          "Use MPDClient.timeout = yourtimeout instead.",
+                          DeprecationWarning)
+            self.timeout = timeout
         if host.startswith("/"):
-            self._sock = self._connect_unix(host, timeout)
+            self._sock = self._connect_unix(host)
         else:
-            self._sock = self._connect_tcp(host, port, timeout)
+            self._sock = self._connect_tcp(host, port)
         self._rfile = self._sock.makefile("r")
         self._wfile = self._sock.makefile("w")
         try:

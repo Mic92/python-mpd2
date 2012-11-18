@@ -6,6 +6,7 @@ import types
 import sys
 from socket import error as SocketError
 import mpd
+import warnings
 
 try:
     # is required for python2.6
@@ -19,6 +20,9 @@ except ImportError:
     else:
         print("Please install unittest2 from pypi to run tests!")
         sys.exit(1)
+
+# show deprecation warnings
+warnings.simplefilter('default')
 
 def setup_environment():
     # Alternate this to your setup
@@ -37,6 +41,20 @@ def setup_environment():
 
 setup_environment()
 
+def createMpdClient():
+    global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
+    client = mpd.MPDClient()
+    try:
+        client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+        commands = client.commands()
+    except SocketError as e:
+        raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
+    if TEST_MPD_PASSWORD != None:
+        try:
+            client.password(TEST_MPD_PASSWORD)
+        except mpd.CommandError as e:
+            raise Exception("Fail to authenticate to mpd.")
+    return client
 
 class TestMPDClient(unittest.TestCase):
 
@@ -44,25 +62,10 @@ class TestMPDClient(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        global TEST_MPD_HOST, TEST_MPD_PORT, TEST_MPD_PASSWORD
-        self.client = mpd.MPDClient()
-        self.idleclient = mpd.MPDClient()
-        try:
-            self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-            self.idleclient.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-            self.commands = self.client.commands()
-        except SocketError as e:
-            raise Exception("Can't connect mpd! Start it or check the configuration: %s" % e)
-        if TEST_MPD_PASSWORD != None:
-            try:
-                self.client.password(TEST_MPD_PASSWORD)
-                self.idleclient.password(TEST_MPD_PASSWORD)
-            except mpd.CommandError as e:
-                raise Exception("Fail to authenticate to mpd.")
+        self.client = createMpdClient()
     @classmethod
     def tearDownClass(self):
         self.client.disconnect()
-        self.idleclient.disconnect()
     def test_metaclass_commands(self):
         # just some random functions
         self.assertTrue(hasattr(self.client, "commands"))
@@ -108,13 +111,13 @@ class TestMPDClient(unittest.TestCase):
                 self.assertIsInstance(song, dict)
         self.client.iterate = False
     def test_idle(self):
+        idleclient = createMpdClient()
         # clean event mask
-        self.idleclient.idle()
-
-        self.idleclient.send_idle()
+        idleclient.idle()
+        idleclient.send_idle()
         # new event
         self.client.update()
-        event = self.idleclient.fetch_idle()
+        event = idleclient.fetch_idle()
         self.assertEqual(event, ['update'])
     def test_add_and_remove_command(self):
         self.client.add_command("awesome command", mpd.MPDClient._fetch_nothing)
@@ -197,15 +200,22 @@ class TestMPDClient(unittest.TestCase):
     def test_numbers_as_command_args(self):
         res = self.client.find("file", 1)
 
-    def test_empty_callbacks(self):
+    def test_commands_without_callbacks(self):
         self.client.close()
         self.client._reset()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
 
     def test_timeout(self):
         self.client.disconnect()
-        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)
-        self.assertEqual(self.client._sock.gettimeout(), 5)
+        self.client.timeout = 1
+        self.assertEqual(self.client.timeout, 1)
+        with warnings.catch_warnings(record=True) as w:
+            self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, timeout=5)
+            self.assertEqual(self.client._sock.gettimeout(), 5)
+            self.assertEqual(len(w), 1)
+
+        self.client.timeout = None
+        self.assertEqual(self.client._sock.gettimeout(), None)
 
     def test_connection_lost(self):
         client = mpd.MPDClient()
