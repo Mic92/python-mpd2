@@ -133,8 +133,8 @@ command:
 
 ```python
 client.send_idle()
-# do something else or use function like [select()](http://docs.python.org/howto/sockets.html#non-blocking-sockets)
-# ex. select([client], [], []) or with [gobject](http://jatreuman.indefero.net/p/python-mpd/page/ExampleIdle/)
+# do something else or use function like select(): http://docs.python.org/howto/sockets.html#non-blocking-sockets
+# ex. select([client], [], []) or with gobject: http://jatreuman.indefero.net/p/python-mpd/page/ExampleIdle/
 events = client.fetch_idle()
 ```
 
