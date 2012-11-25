@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import sys
 import socket
 import warnings
@@ -169,6 +170,7 @@ _commands = {
 class MPDClient(object):
     def __init__(self, use_unicode=False):
         self.iterate = False
+        self.logger = logging.getLogger("mpd.MPDClient")
         self.use_unicode = use_unicode
         self._reset()
 
@@ -224,6 +226,10 @@ class MPDClient(object):
         parts = [command]
         for arg in args:
             parts.append('"%s"' % escape(encode_str(arg)))
+
+        self.logger.isEnabledFor(logging.DEBUG):
+            # Minimize logging cost if the logging is not activated.
+            self.logger.debug("Calling MPD %s%r", command, args)
         self._write_line(" ".join(parts))
 
     def _read_line(self):
@@ -435,6 +441,8 @@ class MPDClient(object):
     idletimeout = None
 
     def connect(self, host, port, timeout=None):
+        self.logger.debug("Calling MPD connect(%r, %r, timeout=%r)", host,
+                          port, timeout)
         if self._sock is not None:
             raise ConnectionError("Already connected")
         if timeout != None:
@@ -455,6 +463,7 @@ class MPDClient(object):
             raise
 
     def disconnect(self):
+        self.logger.debug("Calling MPD disconnect()")
         if not self._rfile is None:
             self._rfile.close()
         if not self._wfile is None:
