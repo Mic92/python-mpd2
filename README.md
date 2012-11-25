@@ -14,7 +14,7 @@ The following features was added:
  - support for the upcoming client-to-client protocol
  - adding new commands of mpd v0.17 (seekcur, prio, prioid, config, searchadd,
    searchaddpl)
- - remove of deprecated commands (volume)
+ - remove deprecated commands (volume)
  - declare mpd commands explicit as method, so they are shown in ipython
  - add unit tests
  - documented API to add new commands (see Future Compatible)
@@ -206,8 +206,25 @@ self.client.remove_command("get_cover")
 Known Issues
 ------------
 
-Currently python-mpd is **NOT** thread-safe. If you need to access the library from multiple threads, you have to either use [locks](http://docs.python.org/library/threading.html#lock-objects) or use one mpd client per thread.
+Currently python-mpd is **NOT** thread-safe.
+If you need to access the library from multiple threads,
+you have to either use [locks](http://docs.python.org/library/threading.html#lock-objects)
+or use one mpd client per thread.
 
+Testing
+-------
+To run the unit tests with python 2.7 and higher just use:
+(replace TEST_MPD_HOST and TEST_MPD_PORT with your settings)
+
+```
+$ TEST_MPD_HOST=localhost TEST_MPD_PORT=6600 python test.py
+```
+
+For python2.6 the module `unittest2` is needed:
+
+```
+$ pip install unittest2
+```
 
 Contacting the author
 ---------------------
