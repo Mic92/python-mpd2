@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import sys
 import socket
 import warnings
@@ -32,6 +33,16 @@ if IS_PYTHON2:
 else:
     decode_str = lambda s: s
     encode_str = lambda s: str(s)
+
+try:
+    from logging import NullHandler
+except ImportError: # NullHandler was introduced in python2.7
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
 
 class MPDError(Exception):
     pass
@@ -224,6 +235,12 @@ class MPDClient(object):
         parts = [command]
         for arg in args:
             parts.append('"%s"' % escape(encode_str(arg)))
+        # Minimize logging cost if the logging is not activated.
+        if logger.isEnabledFor(logging.DEBUG):
+            if command == "password":
+                logger.debug("Calling MPD password(******)")
+            else:
+                logger.debug("Calling MPD %s%r", command, args)
         self._write_line(" ".join(parts))
 
     def _read_line(self):
@@ -435,6 +452,8 @@ class MPDClient(object):
     idletimeout = None
 
     def connect(self, host, port, timeout=None):
+        logger.info("Calling MPD connect(%r, %r, timeout=%r)", host,
+                     port, timeout)
         if self._sock is not None:
             raise ConnectionError("Already connected")
         if timeout != None:
@@ -455,6 +474,7 @@ class MPDClient(object):
             raise
 
     def disconnect(self):
+        logger.info("Calling MPD disconnect()")
         if not self._rfile is None:
             self._rfile.close()
         if not self._wfile is None:

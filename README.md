@@ -20,6 +20,7 @@ The following features was added:
  - documented API to add new commands (see Future Compatible)
  - use unicode strings in all commands (optionally in python2, default in python3 - see Unicode Handling)
  - configureable timeout
+ - support for logging
 
 If you like this module, you could try contact the original author <jat@spatialrift.net> or
 join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
@@ -167,6 +168,23 @@ u'http'
 ```
 
 Use this option in python3 doesn't have an effect.
+
+Logging
+-------
+
+By default messages are sent to the logger named `mpd`:
+
+```python
+>>> import logging, mpd
+>>> logging.basicConfig(level=logging.DEBUG)
+>>> client = mpd.MPDClient()
+>>> client.connect("localhost", 6600)
+INFO:mpd:Calling MPD connect('localhost', 6600, timeout=None)
+>>> client.find('any', 'dubstep')
+DEBUG:mpd:Calling MPD find('any', 'dubstep')
+```
+
+For more information about logging configuration, see http://docs.python.org/2/howto/logging.html
 
 Future Compatible
 -----------------
