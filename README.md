@@ -203,13 +203,14 @@ self.client.add_command("get_cover", fetch_cover)
 self.client.remove_command("get_cover")
 ```
 
-Known Issues
+Thread-Safety
 ------------
 
-Currently python-mpd is **NOT** thread-safe.
-If you need to access the library from multiple threads,
-you have to either use [locks](http://docs.python.org/library/threading.html#lock-objects)
-or use one mpd client per thread.
+Currently MPDClient is **NOT** thread-safe.
+As it use a socket internal, only one thread can send or receive at the time.
+
+But MPDClient can be easily extended to be thread-safe using [locks](http://docs.python.org/library/threading.html#lock-objects).
+Take a look at examples/locking.py for further informations.
 
 Testing
 -------
