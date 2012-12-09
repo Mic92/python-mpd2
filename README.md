@@ -8,7 +8,7 @@ python-mpd2 is a fork of the python-mpd.
 It is backward compatible to python-mpd, so it could act as drop-in replacement
 (tested with [sonata](http://sonata.berlios.de/)).
 
-The following features was added:
+The following features were added:
 
  - python3 support (python2.6 is minimum python version required)
  - support for the upcoming client-to-client protocol
