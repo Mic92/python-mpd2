@@ -63,9 +63,11 @@ class TestMPDClient(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         self.client = createMpdClient()
+
     @classmethod
     def tearDownClass(self):
         self.client.disconnect()
+
     def test_metaclass_commands(self):
         # just some random functions
         self.assertTrue(hasattr(self.client, "commands"))
@@ -78,13 +80,17 @@ class TestMPDClient(unittest.TestCase):
         self.assertTrue(hasattr(self.client, "close"))
         self.assertTrue(hasattr(self.client, "fetch_close"))
         self.assertTrue(hasattr(self.client, "send_close"))
+
     def test_fetch_nothing(self):
         self.assertIsNone(self.client.ping())
         self.assertIsNone(self.client.clearerror())
+
     def test_fetch_list(self):
         self.assertIsInstance(self.client.list("album"), list)
+
     def test_fetch_item(self):
         self.assertIsNotNone(self.client.update())
+
     def test_fetch_object(self):
         status = self.client.status()
         stats = self.client.stats()
@@ -95,14 +101,17 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsInstance(stats, dict)
         self.assertIn("artists", stats)
         self.assertIn("uptime", stats)
+
     def test_fetch_songs(self):
         playlist = self.client.playlistinfo()
         self.assertTrue(type(playlist) is list)
         if len(playlist) > 0:
                 self.assertIsInstance(playlist[0], dict)
+
     def test_send_and_fetch(self):
         self.client.send_status()
         self.client.fetch_status()
+
     def test_iterating(self):
         self.client.iterate = True
         playlist = self.client.playlistinfo()
@@ -110,6 +119,7 @@ class TestMPDClient(unittest.TestCase):
         for song in playlist:
                 self.assertIsInstance(song, dict)
         self.client.iterate = False
+
     def test_idle(self):
         idleclient = createMpdClient()
         # clean event mask
@@ -119,6 +129,7 @@ class TestMPDClient(unittest.TestCase):
         self.client.update()
         event = idleclient.fetch_idle()
         self.assertEqual(event, ['update'])
+
     def test_add_and_remove_command(self):
         self.client.add_command("awesome command", mpd.MPDClient._fetch_nothing)
         self.assertTrue(hasattr(self.client, "awesome_command"))
