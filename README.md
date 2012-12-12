@@ -214,17 +214,23 @@ Take a look at examples/locking.py for further informations.
 
 Testing
 -------
-To run the unit tests with python 2.7 and higher just use:
-(replace TEST_MPD_HOST and TEST_MPD_PORT with your settings)
 
+To run the unit tests you need the mock module:
 ```
-$ TEST_MPD_HOST=localhost TEST_MPD_PORT=6600 python test.py
+$ pip install mock
 ```
 
-For python2.6 the module `unittest2` is needed:
+For python2.6 the module `unittest2` is additionally needed:
 
 ```
 $ pip install unittest2
+```
+
+Because test suite use mocking, no real mpd server is needed.
+Just run:
+
+```
+$ python test.py
 ```
 
 Contacting the author
