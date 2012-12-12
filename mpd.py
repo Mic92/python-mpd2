@@ -521,7 +521,7 @@ class MPDClient(object):
         send_method = newFunction(cls._send, key, callback)
         fetch_method = newFunction(cls._fetch, key, callback)
 
-        # create new mpd commands as function in the tree flavors:
+        # create new mpd commands as function in three flavors:
         # normal, with "send_"-prefix and with "fetch_"-prefix
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, method)
