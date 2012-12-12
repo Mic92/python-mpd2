@@ -465,8 +465,16 @@ class MPDClient(object):
             self._sock = self._connect_unix(host)
         else:
             self._sock = self._connect_tcp(host, port)
-        self._rfile = self._sock.makefile("r")
-        self._wfile = self._sock.makefile("w")
+
+        if IS_PYTHON2:
+            self._rfile = self._sock.makefile("r")
+            self._wfile = self._sock.makefile("w")
+        else:
+            # Force UTF-8 encoding, since this is dependant from the LC_CTYPE
+            # locale.
+            self._rfile = self._sock.makefile("r", encoding="utf-8")
+            self._wfile = self._sock.makefile("w", encoding="utf-8")
+
         try:
             self._hello()
         except:
