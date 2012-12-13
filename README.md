@@ -1,35 +1,36 @@
 python-mpd2
 ===========
 
+*python-mpd2* is a Python library which provides a client interface for the [Music Player Daemon](http://musicpd.org).
+
+
 Difference with python-mpd
 --------------------------
 
-python-mpd2 is a fork of the python-mpd.
-It is backward compatible to python-mpd, so it could act as drop-in replacement
-(tested with [sonata](http://sonata.berlios.de/)).
+python-mpd2 is a fork of [python-mpd](http://jatreuman.indefero.net/p/python-mpd/). It is backward compatible with the original module, so it could act as drop-in replacement (tested with [Sonata](http://sonata.berlios.de/)).
 
 The following features were added:
 
- - python3 support (python2.6 is minimum python version required)
+ - Python 3 support (but you neead at least Python 2.6)
  - support for the upcoming client-to-client protocol
- - adding new commands of mpd v0.17 (seekcur, prio, prioid, config, searchadd,
+ - support for new commands from MPD v0.17 (seekcur, prio, prioid, config, searchadd,
    searchaddpl)
  - remove deprecated commands (volume)
- - declare mpd commands explicit as method, so they are shown in ipython
- - add unit tests
- - documented API to add new commands (see Future Compatible)
- - use unicode strings in all commands (optionally in python2, default in python3 - see Unicode Handling)
- - configureable timeout
- - support for logging
+ - explicitly declared MPD commands (which is handy when using for example [IPython](http://ipython.org)
+ - a test suite
+ - API documentation to add new commands (see [Future Compatible](#future-compatible))
+ - support for Unicode strings in all commands (optionally in python2, default in python3 - see [Unicode Handling](#unicode-handling))
+ - configureable timeouts
+ - support for [logging](#logging)
 
 If you like this module, you could try contact the original author <jat@spatialrift.net> or
-join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/)
+join the discussion on the [issue tracker](http://jatreuman.indefero.net/p/python-mpd/issues/7/) so that it gets merged upstream.
 
 Getting the latest source code
 ------------------------------
 
 If you would instead like to use the latest source code, you can grab a copy
-of the development version from git by running the command:
+of the development version from Git by running the command:
 
     $ git clone git://github.com/Mic92/python-mpd2.git
 
@@ -37,7 +38,7 @@ of the development version from git by running the command:
 Installing from source
 ----------------------
 
-To install python-mpd from source, simply run the command:
+To install *python-mpd2* from source, simply run the command:
 
     $ python setup.py install
 
@@ -47,14 +48,14 @@ and their options.  See the [Installing Python Modules](http://docs.python.org/i
 Getting the latest release
 --------------------------
 
-This python-mpd2 can be found on [pypi](http://pypi.python.org/pypi?:action=display&name=python-mpd2)
+The latest stable release of *python-mpd2* can be found on [PyPI](http://pypi.python.org/pypi?:action=display&name=python-mpd2)
 
-###pypi:
+### PyPI:
 
     $ pip install python-mpd2
 
 
-Until linux distributions adapt this package, here are some ready to use packages to test your applications:
+Until Linux distributions adapt this package, here are some ready to use packages to test your applications:
 
 ### Debian
 
@@ -68,7 +69,7 @@ Import the gpg key as root
 
 Key fingerprint :
 
-2255 310A D1A2 48A0 7B59  7638 065F E539 32DC 551D
+    2255 310A D1A2 48A0 7B59  7638 065F E539 32DC 551D
 
 Controls with *apt-key finger*.
 
@@ -76,7 +77,7 @@ Then simply update/install *python-mpd2* or *python3-mpd* with apt or aptitude:
 
 ### Arch Linux
 
-install [python-mpd2](http://aur.archlinux.org/packages.php?ID=59276) from AUR
+Install [python-mpd2](http://aur.archlinux.org/packages.php?ID=59276) from AUR.
 
 ### Gentoo Linux
 
@@ -97,9 +98,9 @@ The client library can be used as follows:
 ```python
 client = mpd.MPDClient()           # create client object
 client.timeout = 10                # network timeout in seconds (floats allowed), default: None
-client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperat, default: None
+client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperately, default: None
 client.connect("localhost", 6600)  # connect to localhost:6600
-print(client.mpd_version)          # print the mpd version
+print(client.mpd_version)          # print the MPD version
 print(client.find("any", "house")) # print result of the command "find any house"
 client.close()                     # send the close command
 client.disconnect()                # disconnect from the server
@@ -129,7 +130,7 @@ for song in client.playlistinfo():
 ```
 
 Each command have a *send_* and a *fetch_* variant, which allows to send a
-mpd command and the fetch the result later. This is useful for the idle
+MPD command and then fetch the result later. This is useful for the idle
 command:
 
 ```python
@@ -139,23 +140,27 @@ client.send_idle()
 events = client.fetch_idle()
 ```
 
-Some more complex usage example can be found [here](http://jatreuman.indefero.net/p/python-mpd/doc/)
+Some more complex usage examples can be found [here](http://jatreuman.indefero.net/p/python-mpd/doc/)
 
 
-Unicode Handling
-----------------
+<a id="unicode-handling">Unicode Handling</a>
+---------------------------------------------
+
 To quote the mpd protocol documentation:
 
 > All data to be sent between the client and server must be encoded in UTF-8.
 
-In python3 unicode strings are default string type. So just pass these strings as arguments for mpd commands.
+### With Python 3:
 
-For backward compatibility with python-mpd the python2 version accept both unicode strings (ex. u"♥") and unicode encoded 8-bit strings (ex. "♥").
-The python3 version returns unicode encoded strings by default for the same reason.
+In Python 3, Unicode string is the default string type. So just pass these strings as arguments for MPD commands and *python-mpd2* will also return such Unicode string.
 
-To make MPDClient return unicode strings in python2 create the instance with the use_unicode parameter set to true.
-Using unicode strings should be prefered as it makes the transition to python3 easier.
-This way, decoding and encoding strings outside the library, is not needed to make function like len() behave correctly.
+### With Python 2.x
+
+For backward compatibility with *python-mpd*, when running with Python 2.x, *python-mpd2* accepts both Unicode strings (ex. u"♥") and UTF-8 encoded strings (ex. "♥").
+
+In order for *MPDClient* to return Unicode strings with Python 2, create the instance with the `use_unicode` parameter set to `True`.
+
+Using Unicode strings should be prefered as it is done transparently by the library for you, and makes the transition to Python 3 easier.
 
 ```python
 >>> import mpd
@@ -166,11 +171,10 @@ u'http'
 >>> client.urlhandlers()[0]
 'http'
 ```
+Using this option in Python 3 doesn't have any effect.
 
-Use this option in python3 doesn't have an effect.
-
-Logging
--------
+<a id="logging">Logging</a>
+---------------------------
 
 By default messages are sent to the logger named `mpd`:
 
@@ -186,11 +190,11 @@ DEBUG:mpd:Calling MPD find('any', 'dubstep')
 
 For more information about logging configuration, see http://docs.python.org/2/howto/logging.html
 
-Future Compatible
------------------
+<a id="future-compatible">Future Compatible</a>
+-----------------------------------------------
 
 New commands or special handling of commands can be easily implemented.
-Use *add_command()* or *remove_command()* to modify the commands of the
+Use `add_command()` or `remove_command()` to modify the commands of the
 *MPDClient* class and all its instances.
 
 ```python
@@ -198,7 +202,11 @@ def fetch_cover(client):
     """"Take a MPDClient instance as its arguments and return mimetype and image"""
     # this command may come in the future.
     pass
+
 self.client.add_command("get_cover", fetch_cover)
+# you can then use:
+self.client.fetch_cover()
+
 # remove the command, because it doesn't exist already.
 self.client.remove_command("get_cover")
 ```
@@ -206,39 +214,33 @@ self.client.remove_command("get_cover")
 Thread-Safety
 ------------
 
-Currently MPDClient is **NOT** thread-safe.
-As it use a socket internal, only one thread can send or receive at the time.
+Currently `MPDClient` is **NOT** thread-safe.
+As it use a socket internaly, only one thread can send or receive at the time.
 
-But MPDClient can be easily extended to be thread-safe using [locks](http://docs.python.org/library/threading.html#lock-objects).
-Take a look at examples/locking.py for further informations.
+But `MPDClient` can be easily extended to be thread-safe using [locks](http://docs.python.org/library/threading.html#lock-objects).
+Take a look at `examples/locking.py` for further informations.
 
 Testing
 -------
 
-To run the unit tests you need the mock module:
-```
+There is a test suite which requires the [mock](http://pypi.python.org/pypi/mock) module.
+
 $ pip install mock
-```
 
-For python2.6 the module `unittest2` is additionally needed:
+For Python 2.6, you will also need the `unittest2` module:
 
-```
 $ pip install unittest2
-```
 
-Because test suite use mocking, no real mpd server is needed.
-Just run:
+Then, you can simply run the following command:
 
-```
 $ python test.py
-```
 
 Contacting the author
 ---------------------
 
-Just contact me (Mic92) on github or via email (<joerg@higgsboson.tk>).
+Just contact me (Mic92) on Github or via email (<joerg@higgsboson.tk>).
 
-Usually I hang around on jabber: sonata@conference.codingteam.net
+Usually I hang around on Jabber: sonata@conference.codingteam.net
 
 You can contact the original author by emailing J. Alexander Treuman <jat@spatialrift.net>.
 
