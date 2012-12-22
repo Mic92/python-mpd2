@@ -227,7 +227,9 @@ You can test the project using [Tox](http://tox.testrun.org/), this will take
 care of testing against all the supported Python versions (at least available)
 on our computer,  with the required dependencies:
 
-* tox
+    $ pip install tox
+    $ cd /path/to/python-mpd2
+    $ tox
 
 
 Contacting the author
