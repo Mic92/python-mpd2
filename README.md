@@ -223,17 +223,12 @@ Take a look at `examples/locking.py` for further informations.
 Testing
 -------
 
-There is a test suite which requires the [mock](http://pypi.python.org/pypi/mock) module.
+You can test the project using [Tox](http://tox.testrun.org/), this will take
+care of testing against all the supported Python versions (at least available)
+on our computer,  with the required dependencies:
 
-$ pip install mock
+* tox
 
-For Python 2.6, you will also need the `unittest2` module:
-
-$ pip install unittest2
-
-Then, you can simply run the following command:
-
-$ python test.py
 
 Contacting the author
 ---------------------
