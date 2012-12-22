@@ -1,5 +1,6 @@
-python-mpd2
+python-mpd2 [![Build Status](https://travis-ci.org/Mic92/python-mpd2.png)](https://travis-ci.org/Mic92/python-mpd2)
 ===========
+
 
 *python-mpd2* is a Python library which provides a client interface for the [Music Player Daemon](http://musicpd.org).
 
