@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 import sys
 import socket
+import warnings
 from collections import Callable
 
 HELLO_PREFIX = "OK MPD "
@@ -31,6 +33,16 @@ if IS_PYTHON2:
 else:
     decode_str = lambda s: s
     encode_str = lambda s: str(s)
+
+try:
+    from logging import NullHandler
+except ImportError: # NullHandler was introduced in python2.7
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
 
 class MPDError(Exception):
     pass
@@ -223,6 +235,12 @@ class MPDClient(object):
         parts = [command]
         for arg in args:
             parts.append('"%s"' % escape(encode_str(arg)))
+        # Minimize logging cost if the logging is not activated.
+        if logger.isEnabledFor(logging.DEBUG):
+            if command == "password":
+                logger.debug("Calling MPD password(******)")
+            else:
+                logger.debug("Calling MPD %s%r", command, args)
         self._write_line(" ".join(parts))
 
     def _read_line(self):
@@ -230,6 +248,7 @@ class MPDClient(object):
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
+            self.disconnect()
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
@@ -342,11 +361,11 @@ class MPDClient(object):
         return self._fetch_objects(["cpos"])
 
     def _fetch_idle(self):
-        self._sock.settimeout(None)
+        self._sock.settimeout(self.idletimeout)
         ret = self._fetch_list()
-        self._sock.settimeout(self.timeout)
+        self._sock.settimeout(self._timeout)
         return ret
-    
+
     def _fetch_songs(self):
         return self._fetch_objects(["file"])
 
@@ -371,6 +390,7 @@ class MPDClient(object):
     def _hello(self):
         line = self._rfile.readline()
         if not line.endswith("\n"):
+            self.disconnect()
             raise ConnectionError("Connection lost while reading MPD hello")
         line = line.rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
@@ -386,16 +406,16 @@ class MPDClient(object):
         self._rfile = _NotConnected()
         self._wfile = _NotConnected()
 
-    def _connect_unix(self, path, timeout):
+    def _connect_unix(self, path):
         if not hasattr(socket, "AF_UNIX"):
             raise ConnectionError("Unix domain sockets not supported "
                                   "on this platform")
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        sock.settimeout(timeout)
+        sock.settimeout(self.timeout)
         sock.connect(path)
         return sock
 
-    def _connect_tcp(self, host, port, timeout):
+    def _connect_tcp(self, host, port):
         try:
             flags = socket.AI_ADDRCONFIG
         except AttributeError:
@@ -409,7 +429,7 @@ class MPDClient(object):
             try:
                 sock = socket.socket(af, socktype, proto)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                sock.settimeout(timeout)
+                sock.settimeout(self.timeout)
                 sock.connect(sa)
                 return sock
             except socket.error as e:
@@ -421,16 +441,40 @@ class MPDClient(object):
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
 
+    def _settimeout(self, timeout):
+        self._timeout = timeout
+        if self._sock != None:
+            self._sock.settimeout(timeout)
+    def _gettimeout(self):
+        return self._timeout
+    timeout = property(_gettimeout, _settimeout)
+    _timeout = None
+    idletimeout = None
+
     def connect(self, host, port, timeout=None):
+        logger.info("Calling MPD connect(%r, %r, timeout=%r)", host,
+                     port, timeout)
         if self._sock is not None:
             raise ConnectionError("Already connected")
+        if timeout != None:
+            warnings.warn("The timeout parameter in connect() is deprecated! "
+                          "Use MPDClient.timeout = yourtimeout instead.",
+                          DeprecationWarning)
+            self.timeout = timeout
         if host.startswith("/"):
-            self._sock = self._connect_unix(host, timeout)
+            self._sock = self._connect_unix(host)
         else:
-            self._sock = self._connect_tcp(host, port, timeout)
-        self._rfile = self._sock.makefile("r")
-        self._wfile = self._sock.makefile("w")
-        self.timeout = timeout
+            self._sock = self._connect_tcp(host, port)
+
+        if IS_PYTHON2:
+            self._rfile = self._sock.makefile("r")
+            self._wfile = self._sock.makefile("w")
+        else:
+            # Force UTF-8 encoding, since this is dependant from the LC_CTYPE
+            # locale.
+            self._rfile = self._sock.makefile("r", encoding="utf-8")
+            self._wfile = self._sock.makefile("w", encoding="utf-8")
+
         try:
             self._hello()
         except:
@@ -438,9 +482,13 @@ class MPDClient(object):
             raise
 
     def disconnect(self):
-        self._rfile.close()
-        self._wfile.close()
-        self._sock.close()
+        logger.info("Calling MPD disconnect()")
+        if not self._rfile is None:
+            self._rfile.close()
+        if not self._wfile is None:
+            self._wfile.close()
+        if not self._sock is None:
+            self._sock.close()
         self._reset()
 
     def fileno(self):
@@ -473,7 +521,7 @@ class MPDClient(object):
         send_method = newFunction(cls._send, key, callback)
         fetch_method = newFunction(cls._fetch, key, callback)
 
-        # create new mpd commands as function in the tree flavors:
+        # create new mpd commands as function in three flavors:
         # normal, with "send_"-prefix and with "fetch_"-prefix
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, method)

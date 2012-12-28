@@ -1,6 +1,21 @@
 python-mpd2 Changes List
 ========================
 
+Changes in 0.4.6
+----------------
+* enforce utf8 for encoding/decoding in python3
+
+Changes in 0.4.5
+----------------
+* support for logging
+
+Changes in 0.4.4
+----------------
+
+* fix cleanup after broken connection
+* deprecate timeout parameter added in v0.4.2
+* add timeout and idletimeout property
+
 Changes in 0.4.3
 ----------------
 

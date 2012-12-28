@@ -15,12 +15,13 @@ CLASSIFIERS = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 LICENSE = """\
 Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
-Copyright (C) 2012  J. Thalheim <jat@spatialrift.net>
+Copyright (C) 2012  J. Thalheim <joerg@higgsboson.tk>
 
 python-mpd2 is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -36,7 +37,7 @@ along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.\
 
 setup(
     name="python-mpd2",
-    version="0.4.3",
+    version="0.4.6",
     description="A Python MPD client library",
     long_description=DESCRIPTION,
     author="J. Thalheim",
