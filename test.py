@@ -301,5 +301,34 @@ class TestMPDClient(unittest.TestCase):
                          # otherwise we get all the readline() & co...
                          self.client._sock.makefile.call_args_list[0:2])
 
+    def test_read_stickers(self):
+        self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
+        res = self.client._read_stickers()
+        self.assertEqual([('foo', 'bar')], list(res))
+
+        self.MPDWillReturn("sticker: foo=bar\n", "sticker: l=b\n", "OK\n")
+        res = self.client._read_stickers()
+        self.assertEqual([('foo', 'bar'), ('l', 'b')], list(res))
+
+    def test_parse_sticket_get_one(self):
+        self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
+        res = self.client.sticker_get('song', 'baz', 'foo')
+        self.assertEqual('bar', res)
+
+    def test_parse_sticket_get_no_sticker(self):
+        self.MPDWillReturn("ACK [50@0] {sticker} no such sticker\n")
+        self.assertRaises(mpd.CommandError,
+                          self.client.sticker_get, 'song', 'baz', 'foo')
+
+    def test_parse_sticker_list(self):
+        self.MPDWillReturn("sticker: foo=bar\n", "sticker: lom=bok\n", "OK\n")
+        res = self.client.sticker_list('song', 'baz')
+        self.assertEqual({'foo': 'bar', 'lom': 'bok'}, res)
+
+        # Even with only one sticker, we get a dict
+        self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
+        res = self.client.sticker_list('song', 'baz')
+        self.assertEqual({'foo': 'bar'}, res)
+
 if __name__ == '__main__':
     unittest.main()
