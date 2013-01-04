@@ -310,6 +310,11 @@ class TestMPDClient(unittest.TestCase):
         res = self.client._read_stickers()
         self.assertEqual([('foo', 'bar'), ('l', 'b')], list(res))
 
+    def test_read_sticker_with_special_value(self):
+        self.MPDWillReturn("sticker: foo==uv=vu\n", "OK\n")
+        res = self.client._read_stickers()
+        self.assertEqual([('foo', '=uv=vu')], list(res))
+
     def test_parse_sticket_get_one(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client.sticker_get('song', 'baz', 'foo')
