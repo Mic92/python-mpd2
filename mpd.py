@@ -149,10 +149,10 @@ _commands = {
     "update":             "_fetch_item",
     "rescan":             "_fetch_item",
     # Sticker Commands
-    "sticker get":        "_fetch_item",
+    "sticker get":        "_fetch_sticker",
     "sticker set":        "_fetch_nothing",
     "sticker delete":     "_fetch_nothing",
-    "sticker list":       "_fetch_list",
+    "sticker list":       "_fetch_stickers",
     "sticker find":       "_fetch_songs",
     # Connection Commands
     "close":              None,
@@ -319,6 +319,15 @@ class MPDClient(object):
             self._command_list = None
         self._fetch_nothing()
 
+    def _read_stickers(self):
+        for key, sticker in self._read_pairs():
+            value = sticker.split('=', 1)
+
+            if len(value) < 2:
+                raise ProtocolError("Could not parse sticker: %r" % sticker)
+
+            yield tuple(value)
+
     def _iterator_wrapper(self, iterator):
         try:
             for item in iterator:
@@ -342,6 +351,14 @@ class MPDClient(object):
         if len(pairs) != 1:
             return
         return pairs[0][1]
+
+    def _fetch_sticker(self):
+        # Either we get one or we get an error while reading the line
+        key, value = list(self._read_stickers())[0]
+        return value
+
+    def _fetch_stickers(self):
+        return dict(self._read_stickers())
 
     def _fetch_list(self):
         return self._wrap_iterator(self._read_list())
