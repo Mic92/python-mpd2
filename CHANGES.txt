@@ -1,6 +1,10 @@
 python-mpd2 Changes List
 ========================
 
+Changes in 0.5.0
+----------------
+* improved support for sticker
+
 Changes in 0.4.6
 ----------------
 * enforce utf8 for encoding/decoding in python3
