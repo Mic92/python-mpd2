@@ -107,8 +107,14 @@ Gentoo Linux
 
 Replaces the original python-mpd beginning with version 0.4.2::
 
-    echo dev-python/python-mpd >> /etc/portage/accept_keywords
     emerge -av python-mpd
+
+FreeBSD
+~~~~~~~
+
+Install *py-mpd2*::
+
+    pkg_add -r py-mpd2
 
 Packages for other distributions are welcome!
 
