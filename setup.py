@@ -2,7 +2,9 @@
 
 from distutils.core import setup
 from setuptools import Extension
-
+from setuptools.command.test import test as TestCommand
+import sys
+import mpd
 
 DESCRIPTION = """\
 An MPD (Music Player Daemon) client library written in pure Python.\
@@ -35,6 +37,17 @@ GNU Lesser General Public License for more details.  You should have received a 
 along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.\
 """
 
+class Tox(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import tox
+        errno = tox.cmdline(self.test_args)
+        sys.exit(errno)
+
 setup(
     name="python-mpd2",
     version="0.5.0",
@@ -48,8 +61,8 @@ setup(
     classifiers=CLASSIFIERS,
     #license=LICENSE,
     keywords=["mpd"],
-    #platforms=["Independant"],
-    test_suite="test"
+    tests_require=['tox'],
+    cmdclass = {'test': Tox},
 )
 
 

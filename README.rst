@@ -238,13 +238,12 @@ Take a look at ``examples/locking.py`` for further informations.
 Testing
 -------
 
-You can test the project using `Tox <http://tox.testrun.org/>`_, this
-will take care of testing against all the supported Python versions (at
-least available) on our computer, with the required dependencies::
+Just run::
 
-    $ pip install tox
-    $ cd /path/to/python-mpd2
-    $ tox
+    $ python setup.py test
+
+This will install `Tox <http://tox.testrun.org/>`_.
+Tox will take care of testing against all the supported Python versions (at least available) on our computer, with the required dependencies
 
 Contacting the author
 ---------------------
