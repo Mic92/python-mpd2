@@ -50,7 +50,7 @@ class Tox(TestCommand):
 
 setup(
     name="python-mpd2",
-    version="0.5.0",
+    version=".".join(map(str, mpd.VERSION)),
     description="A Python MPD client library",
     long_description=DESCRIPTION,
     author="J. Thalheim",
