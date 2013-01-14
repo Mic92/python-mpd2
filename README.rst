@@ -26,7 +26,7 @@ The following features were added:
    config, searchadd, searchaddpl)
 -  remove deprecated commands (volume)
 -  explicitly declared MPD commands (which is handy when using for
-   example `IPython <http://ipython.org>`_
+   example `IPython <http://ipython.org>`_)
 -  a test suite
 -  API documentation to add new commands (see `Future
    Compatible <#future-compatible>`_)
@@ -44,7 +44,7 @@ it gets merged upstream.
 Getting the latest source code
 ------------------------------
 
-If you would instead like to use the latest source code, you can grab a
+If you would like to use the latest source code, you can grab a
 copy of the development version from Git by running the command::
 
     $ git clone git://github.com/Mic92/python-mpd2.git
@@ -106,8 +106,7 @@ from AUR.
 Gentoo Linux
 ~~~~~~~~~~~~
 
-Replaces the original python-mpd beginning with version 0.4.2 (currently
-masked)::
+Replaces the original python-mpd beginning with version 0.4.2::
 
     echo dev-python/python-mpd >> /etc/portage/accept_keywords
     emerge -av python-mpd
