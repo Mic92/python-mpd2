@@ -12,7 +12,7 @@ Difference with python-mpd
 --------------------------
 
 python-mpd2 is a fork of
-`python-mpd <http://jatreuman.indefero.net/p/python-mpd/>`_. 
+`python-mpd`_.
 python-mpd2 is a fork of `python-mpd`_. While 0.4.x was backwards compatible
 with python-mpd, starting with 0.5 provides enhanced features
 which are *NOT* backward compatibles with the original `python-mpd`_ package.
@@ -28,12 +28,11 @@ The following features were added:
 -  explicitly declared MPD commands (which is handy when using for
    example `IPython <http://ipython.org>`_)
 -  a test suite
--  API documentation to add new commands (see `Future
-   Compatible <#future-compatible>`_)
+-  API documentation to add new commands (see `Future Compatible`_
 -  support for Unicode strings in all commands (optionally in python2,
-   default in python3 - see `Unicode Handling <#unicode-handling>`_)
+   default in python3 - see `Unicode Handling`_)
 -  configureable timeouts
--  support for `logging <#logging>`_
+-  support for `logging`_
 -  improved support for sticker
 
 If you like this module, you could try contact the original author
@@ -184,9 +183,16 @@ In order for *MPDClient* to return Unicode strings with Python 2, create
 the instance with the ``use_unicode`` parameter set to ``True``.
 
 Using Unicode strings should be prefered as it is done transparently by
-the library for you, and makes the transition to Python 3 easier.
+the library for you, and makes the transition to Python 3 easier::
 
-``python >>> import mpd >>> client = MPDClient(use_unicode=True) >>> client.urlhandlers()[0] u'http' >>> client.use_unicode = False # Can be switched back later >>> client.urlhandlers()[0] 'http'``
+    >>> import mpd
+    >>> client = MPDClient(use_unicode=True)
+    >>> client.urlhandlers()[0]
+    u'http'
+    >>> client.use_unicode = False # Can be switched back later
+    >>> client.urlhandlers()[0]
+    'http'
+
 Using this option in Python 3 doesn't have any effect.
 
 Logging
@@ -257,3 +263,5 @@ jat@spatialrift.net.
 He can also be found idling in #mpd on irc.freenode.net as jat.
 
 .. |Build Status| image:: https://travis-ci.org/Mic92/python-mpd2.png
+
+.. _python-mpd: http://jatreuman.indefero.net/p/python-mpd/

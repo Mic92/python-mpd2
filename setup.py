@@ -3,12 +3,8 @@
 from distutils.core import setup
 from setuptools import Extension
 from setuptools.command.test import test as TestCommand
-import sys
+import sys,os
 import mpd
-
-DESCRIPTION = """\
-An MPD (Music Player Daemon) client library written in pure Python.\
-"""
 
 CLASSIFIERS = [
     "Development Status :: 5 - Production/Stable",
@@ -48,15 +44,20 @@ class Tox(TestCommand):
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
 
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+
+VERSION = ".".join(map(str, mpd.VERSION))
+
 setup(
     name="python-mpd2",
-    version=".".join(map(str, mpd.VERSION)),
+    version=VERSION,
     description="A Python MPD client library",
-    long_description=DESCRIPTION,
+    long_description=read('README.rst'),
     author="J. Thalheim",
     author_email="jthalheim@gmail.com",
     url="https://github.com/Mic92/python-mpd2",
-    download_url="https://github.com/Mic92/python-mpd2",
+    download_url="https://github.com/Mic92/python-mpd2/archive/v%s.zip" % VERSION,
     py_modules=["mpd"],
     classifiers=CLASSIFIERS,
     #license=LICENSE,

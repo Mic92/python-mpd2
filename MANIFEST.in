@@ -1,3 +1,4 @@
 exclude setup.cfg
 include *.txt
-recursive-include doc *.txt
+include *.rst
+recursive-include doc *.rst
