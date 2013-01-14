@@ -149,10 +149,10 @@ decoders     -> fetch_plugins
 Client To Client
 ----------------
 
-===========  ===========  =================
-subscribe    <str>        -> fetch_nothing
-unsubscribe  <str>        -> fetch_nothing
-channels                  -> fetch_list
-readmessages              -> fetch_messages
-sendmessage  <str> <str>  -> fetch_nothing
-===========  ===========  =================
+============  ===========  =================
+subscribe     <str>        -> fetch_nothing
+unsubscribe   <str>        -> fetch_nothing
+channels                   -> fetch_list
+readmessages               -> fetch_messages
+sendmessage   <str> <str>  -> fetch_nothing
+============  ===========  =================
