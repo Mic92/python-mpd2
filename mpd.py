@@ -235,7 +235,13 @@ class MPDClient(object):
     def _write_command(self, command, args=[]):
         parts = [command]
         for arg in args:
-            parts.append('"%s"' % escape(encode_str(arg)))
+            if type(arg) is tuple:
+                if len(arg) == 1:
+                    parts.append('"%d:"' % int(arg[0]))
+                else:
+                    parts.append('"%d:%d"' % (int(arg[0]), int(arg[1])))
+            else:
+                parts.append('"%s"' % escape(encode_str(arg)))
         # Minimize logging cost if the logging is not activated.
         if logger.isEnabledFor(logging.DEBUG):
             if command == "password":

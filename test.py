@@ -301,6 +301,25 @@ class TestMPDClient(unittest.TestCase):
                          # otherwise we get all the readline() & co...
                          self.client._sock.makefile.call_args_list[0:2])
 
+    def test_ranges_as_argument(self):
+        self.MPDWillReturn('OK\n')
+        self.client.move((1,2), 2)
+        self.assertMPDReceived('move "1:2" "2"\n')
+
+        self.MPDWillReturn('OK\n')
+        self.client.move((1,), 2)
+        self.assertMPDReceived('move "1:" "2"\n')
+
+        # old code still works!
+        self.MPDWillReturn('OK\n')
+        self.client.move("1:2", 2)
+        self.assertMPDReceived('move "1:2" "2"\n')
+
+        with self.assertRaises(ValueError):
+            self.MPDWillReturn('OK\n')
+            self.client.move((1,"garbage"), 2)
+            self.assertMPDReceived('move "1:" "2"\n')
+
     def test_read_stickers(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client._read_stickers()
