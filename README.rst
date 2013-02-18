@@ -6,7 +6,7 @@ python-mpd2
     :alt: Build Status
 
 *python-mpd2* is a Python library which provides a client interface for
-the `Music Player Daemon <http://musicpd.org>`_.
+the `Music Player Daemon <http://musicpd.org>`__.
 
 Difference with python-mpd
 --------------------------
@@ -26,7 +26,7 @@ The following features were added:
    config, searchadd, searchaddpl)
 -  remove deprecated commands (volume)
 -  explicitly declared MPD commands (which is handy when using for
-   example `IPython <http://ipython.org>`_)
+   example `IPython <http://ipython.org>`__)
 -  a test suite
 -  API documentation to add new commands (see `Future Compatible`_
 -  support for Unicode strings in all commands (optionally in python2,
@@ -37,7 +37,7 @@ The following features were added:
 
 If you like this module, you could try contact the original author
 jat@spatialrift.net or join the discussion on the `issue
-tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`_ so that
+tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
 it gets merged upstream.
 
 Getting the latest source code
@@ -57,14 +57,14 @@ To install *python-mpd2* from source, simply run the command::
 
 You can use the *--help* switch to *setup.py* for a complete list of
 commands and their options. See the `Installing Python
-Modules <http://docs.python.org/inst/inst.html>`_ document for more
+Modules <http://docs.python.org/inst/inst.html>`__ document for more
 details.
 
 Getting the latest release
 --------------------------
 
 The latest stable release of *python-mpd2* can be found on
-`PyPI <http://pypi.python.org/pypi?:action=display&name=python-mpd2>`_
+`PyPI <http://pypi.python.org/pypi?:action=display&name=python-mpd2>`__
 
 PyPI:
 ~~~~~
@@ -99,7 +99,7 @@ aptitude:
 Arch Linux
 ~~~~~~~~~~
 
-Install `python-mpd2 <http://aur.archlinux.org/packages.php?ID=59276>`_
+Install `python-mpd2 <http://aur.archlinux.org/packages.php?ID=59276>`__
 from AUR.
 
 Gentoo Linux
@@ -134,8 +134,8 @@ The client library can be used as follows::
 
 A list of supported commands, their arguments (as MPD currently
 understands them), and the functions used to parse their responses can
-be found in *doc/commands.txt*. See the `MPD protocol
-documentation <http://www.musicpd.org/doc/protocol/>`_ for more details.
+be found in *doc/commands.txt*.
+See the `MPD protocol documentation <http://www.musicpd.org/doc/protocol/>`__ for more details.
 
 Command lists are also supported using *command\_list\_ok\_begin()* and
 *command\_list\_end()*::
@@ -243,7 +243,7 @@ Currently ``MPDClient`` is **NOT** thread-safe. As it use a socket
 internaly, only one thread can send or receive at the time.
 
 But ``MPDClient`` can be easily extended to be thread-safe using
-`locks <http://docs.python.org/library/threading.html#lock-objects>`_.
+`locks <http://docs.python.org/library/threading.html#lock-objects>`__.
 Take a look at ``examples/locking.py`` for further informations.
 
 Testing
@@ -253,7 +253,7 @@ Just run::
 
     $ python setup.py test
 
-This will install `Tox <http://tox.testrun.org/>`_.
+This will install `Tox <http://tox.testrun.org/>`__.
 Tox will take care of testing against all the supported Python versions (at least available) on our computer, with the required dependencies
 
 Contacting the author
