@@ -167,13 +167,23 @@ Range
 Some commands support integer ranges as argument.  This is done in python-mpd2
 by using two element tuple::
 
-    # move the first and the second songs
-    # after the third in the playlist
-    >>> client.move((1:2), 3)
+    # move the first three songs
+    # after the last in the playlist
+    >>> client.status()
+    ['file: song1.mp3',
+     'file: song2.mp3',
+     'file: song3.mp3',
+     'file: song4.mp3']
+    >>> client.move((0:3), 1)
+    >>> client.status()
+    ['file: song4.mp3'
+     'file: song1.mp3',
+     'file: song2.mp3',
+     'file: song3.mp3',]
 
 Second element can be omitted. MPD will assumes the biggest possible number then (don't forget the comma!)::
 
-    >>> client.delete((2,))     # delete all songs, but the first.
+    >>> client.delete((1,))     # delete all songs, but the first.
 
 
 Unicode Handling
