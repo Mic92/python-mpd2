@@ -11,12 +11,10 @@ the `Music Player Daemon <http://musicpd.org>`__.
 Difference with python-mpd
 --------------------------
 
-python-mpd2 is a fork of
-`python-mpd`_.
-python-mpd2 is a fork of `python-mpd`_. While 0.4.x was backwards compatible
-with python-mpd, starting with 0.5 provides enhanced features
-which are *NOT* backward compatibles with the original `python-mpd`_ package.
-(see PORTING.txt for more information)
+python-mpd2 is a fork of `python-mpd`_.  While 0.4.x was backwards compatible
+with python-mpd, starting with 0.5 provides enhanced features which are *NOT*
+backward compatibles with the original `python-mpd`_ package.  (see PORTING.txt
+for more information)
 
 The following features were added:
 
@@ -34,10 +32,11 @@ The following features were added:
 -  configureable timeouts
 -  support for `logging`_
 -  improved support for sticker
+-  improved support for ranges
 
 If you like this module, you could try contact the original author
-jat@spatialrift.net or join the discussion on the `issue
-tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
+jat@spatialrift.net or join the discussion on the 
+`issue tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
 it gets merged upstream.
 
 Getting the latest source code
@@ -55,10 +54,9 @@ To install *python-mpd2* from source, simply run the command::
 
     $ python setup.py install
 
-You can use the *--help* switch to *setup.py* for a complete list of
-commands and their options. See the `Installing Python
-Modules <http://docs.python.org/inst/inst.html>`__ document for more
-details.
+You can use the *--help* switch to *setup.py* for a complete list of commands
+and their options. See the `Installing Python Modules
+<http://docs.python.org/inst/inst.html>`__ document for more details.
 
 Getting the latest release
 --------------------------
@@ -107,14 +105,14 @@ Gentoo Linux
 
 Replaces the original python-mpd beginning with version 0.4.2::
 
-    emerge -av python-mpd
+    $ emerge -av python-mpd
 
 FreeBSD
 ~~~~~~~
 
 Install *py-mpd2*::
 
-    pkg_add -r py-mpd2
+    $ pkg_add -r py-mpd2
 
 Packages for other distributions are welcome!
 
@@ -123,27 +121,27 @@ Using the client library
 
 The client library can be used as follows::
 
-    client = mpd.MPDClient()           # create client object
-    client.timeout = 10                # network timeout in seconds (floats allowed), default: None
-    client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperately, default: None
-    client.connect("localhost", 6600)  # connect to localhost:6600
-    print(client.mpd_version)          # print the MPD version
-    print(client.find("any", "house")) # print result of the command "find any house"
-    client.close()                     # send the close command
-    client.disconnect()                # disconnect from the server
+    >>> client = mpd.MPDClient()           # create client object
+    >>> client.timeout = 10                # network timeout in seconds (floats allowed), default: None
+    >>> client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperately, default: None
+    >>> client.connect("localhost", 6600)  # connect to localhost:6600
+    >>> print(client.mpd_version)          # print the MPD version
+    >>> print(client.find("any", "house")) # print result of the command "find any house"
+    >>> client.close()                     # send the close command
+    >>> client.disconnect()                # disconnect from the server
 
-A list of supported commands, their arguments (as MPD currently
-understands them), and the functions used to parse their responses can
-be found in *doc/commands.txt*.
-See the `MPD protocol documentation <http://www.musicpd.org/doc/protocol/>`__ for more details.
+A list of supported commands, their arguments (as MPD currently understands
+them), and the functions used to parse their responses can be found in
+*doc/commands.txt*.  See the `MPD protocol documentation
+<http://www.musicpd.org/doc/protocol/>`__ for more details.
 
 Command lists are also supported using *command\_list\_ok\_begin()* and
 *command\_list\_end()*::
 
-    client.command_list_ok_begin()       # start a command list
-    client.update()                      # insert the update command into the list
-    client.status()                      # insert the status command into the list
-    results = client.command_list_end()  # results will be a list with the results
+    >>> client.command_list_ok_begin()       # start a command list
+    >>> client.update()                      # insert the update command into the list
+    >>> client.status()                      # insert the status command into the list
+    >>> results = client.command_list_end()  # results will be a list with the results
 
 Commands may also return iterators instead of lists if *iterate* is set
 to *True*::
@@ -152,14 +150,13 @@ to *True*::
     for song in client.playlistinfo():
         print song["file"]
 
-Each command have a *send\_* and a *fetch\_* variant, which allows to
-send a MPD command and then fetch the result later. This is useful for
-the idle command::
+Each command have a *send\_* and a *fetch\_* variant, which allows to send a MPD
+command and then fetch the result later. This is useful for the idle command::
 
-    client.send_idle()
+    >>> client.send_idle()
     # do something else or use function like select(): http://docs.python.org/howto/sockets.html#non-blocking-sockets
     # ex. select([client], [], []) or with gobject: http://jatreuman.indefero.net/p/python-mpd/page/ExampleIdle/
-    events = client.fetch_idle()
+    >>> events = client.fetch_idle()
 
 Some more complex usage examples can be found
 `here <http://jatreuman.indefero.net/p/python-mpd/doc/>`_
@@ -167,8 +164,8 @@ Some more complex usage examples can be found
 Range
 -----
 
-Some commands support integer ranges as argument.
-This is done in python-mpd2 by using two element tuple::
+Some commands support integer ranges as argument.  This is done in python-mpd2
+by using two element tuple::
 
     # move the first and the second songs
     # after the third in the playlist
@@ -189,22 +186,22 @@ To quote the mpd protocol documentation:
 With Python 3:
 ~~~~~~~~~~~~~~
 
-In Python 3, Unicode string is the default string type. So just pass
-these strings as arguments for MPD commands and *python-mpd2* will also
-return such Unicode string.
+In Python 3, Unicode string is the default string type. So just pass these
+strings as arguments for MPD commands and *python-mpd2* will also return such
+Unicode string.
 
 With Python 2.x
 ~~~~~~~~~~~~~~~
 
-For backward compatibility with *python-mpd*, when running with Python
-2.x, *python-mpd2* accepts both Unicode strings (ex. u"♥") and UTF-8
-encoded strings (ex. "♥").
+For backward compatibility with *python-mpd*, when running with Python 2.x,
+*python-mpd2* accepts both Unicode strings (ex. u"♥") and UTF-8 encoded strings
+(ex. "♥").
 
-In order for *MPDClient* to return Unicode strings with Python 2, create
-the instance with the ``use_unicode`` parameter set to ``True``.
+In order for *MPDClient* to return Unicode strings with Python 2, create the
+instance with the ``use_unicode`` parameter set to ``True``.
 
-Using Unicode strings should be prefered as it is done transparently by
-the library for you, and makes the transition to Python 3 easier::
+Using Unicode strings should be prefered as it is done transparently by the
+library for you, and makes the transition to Python 3 easier::
 
     >>> import mpd
     >>> client = MPDClient(use_unicode=True)
@@ -235,9 +232,9 @@ http://docs.python.org/2/howto/logging.html
 Future Compatible
 -----------------
 
-New commands or special handling of commands can be easily implemented.
-Use ``add_command()`` or ``remove_command()`` to modify the commands of
-the *MPDClient* class and all its instances.::
+New commands or special handling of commands can be easily implemented.  Use
+``add_command()`` or ``remove_command()`` to modify the commands of the
+*MPDClient* class and all its instances.::
 
     def fetch_cover(client):
         """"Take a MPDClient instance as its arguments and return mimetype and image"""
@@ -254,12 +251,12 @@ the *MPDClient* class and all its instances.::
 Thread-Safety
 -------------
 
-Currently ``MPDClient`` is **NOT** thread-safe. As it use a socket
-internaly, only one thread can send or receive at the time.
+Currently ``MPDClient`` is **NOT** thread-safe. As it use a socket internaly,
+only one thread can send or receive at the time.
 
-But ``MPDClient`` can be easily extended to be thread-safe using
-`locks <http://docs.python.org/library/threading.html#lock-objects>`__.
-Take a look at ``examples/locking.py`` for further informations.
+But ``MPDClient`` can be easily extended to be thread-safe using `locks
+<http://docs.python.org/library/threading.html#lock-objects>`__.  Take a look at
+``examples/locking.py`` for further informations.
 
 Testing
 -------
@@ -268,8 +265,9 @@ Just run::
 
     $ python setup.py test
 
-This will install `Tox <http://tox.testrun.org/>`__.
-Tox will take care of testing against all the supported Python versions (at least available) on our computer, with the required dependencies
+This will install `Tox <http://tox.testrun.org/>`__. Tox will take care of
+testing against all the supported Python versions (at least available) on our
+computer, with the required dependencies
 
 Contacting the author
 ---------------------
@@ -278,8 +276,8 @@ Just contact me (Mic92) on Github or via email (joerg@higgsboson.tk).
 
 Usually I hang around on Jabber: sonata@conference.codingteam.net
 
-You can contact the original author by emailing J. Alexander Treuman
-jat@spatialrift.net.
+You can contact the original author by emailing
+J. Alexander Treuman jat@spatialrift.net.
 
 He can also be found idling in #mpd on irc.freenode.net as jat.
 
