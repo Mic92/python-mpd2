@@ -174,7 +174,7 @@ by using two element tuple::
      'file: song2.mp3',
      'file: song3.mp3',
      'file: song4.mp3']
-    >>> client.move((0:3), 1)
+    >>> client.move((0,3), 1)
     >>> client.status()
     ['file: song4.mp3'
      'file: song1.mp3',
