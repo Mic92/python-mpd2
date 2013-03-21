@@ -182,6 +182,7 @@ by using two element tuple::
      'file: song3.mp3',]
 
 Second element can be omitted. MPD will assumes the biggest possible number then (don't forget the comma!)::
+NOTE: mpd versions between 0.16.8 and 0.17.3 contains a bug, so ommiting doesn't work.
 
     >>> client.delete((1,))     # delete all songs, but the first.
 

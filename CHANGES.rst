@@ -1,6 +1,10 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v0.5.1
+-----------------
+* add support for ranges
+
 Changes in 0.5.0
 ----------------
 * improved support for sticker
