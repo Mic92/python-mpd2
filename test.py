@@ -167,6 +167,11 @@ class TestMPDClient(unittest.TestCase):
         event = self.client.fetch_idle()
         self.assertEqual(event, ['update'])
 
+    def test_noidle(self):
+        self.MPDWillReturn('OK\n') # nothing changed after idle-ing
+        self.client.send_idle()
+        self.client.noidle()
+
     def test_add_and_remove_command(self):
         self.MPDWillReturn("ACK awesome command\n")
 
