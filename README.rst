@@ -18,7 +18,7 @@ for more information)
 
 The following features were added:
 
--  Python 3 support (but you neead at least Python 2.6)
+-  Python 3 support (but you need at least Python 2.6)
 -  support for the upcoming client-to-client protocol
 -  support for new commands from MPD v0.17 (seekcur, prio, prioid,
    config, searchadd, searchaddpl)
@@ -26,7 +26,7 @@ The following features were added:
 -  explicitly declared MPD commands (which is handy when using for
    example `IPython <http://ipython.org>`__)
 -  a test suite
--  API documentation to add new commands (see `Future Compatible`_
+-  API documentation to add new commands (see `Future Compatible`_)
 -  support for Unicode strings in all commands (optionally in python2,
    default in python3 - see `Unicode Handling`_)
 -  configureable timeouts
