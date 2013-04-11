@@ -167,6 +167,31 @@ class TestMPDClient(unittest.TestCase):
         event = self.client.fetch_idle()
         self.assertEqual(event, ['update'])
 
+    def test_noidle(self):
+        self.MPDWillReturn('OK\n') # nothing changed after idle-ing
+        self.client.send_idle()
+        self.MPDWillReturn('OK\n') # nothing changed after noidle
+        self.assertIsNone(self.client.noidle())
+        self.assertMPDReceived('noidle\n')
+        self.MPDWillReturn("volume: 50\n", "OK\n")
+        self.client.status()
+        self.assertMPDReceived('status\n')
+
+    def test_noidle_while_idle_started_sending(self):
+        self.MPDWillReturn('OK\n') # nothing changed after idle-ing
+        self.client.send_idle()
+        self.MPDWillReturn('CHANGED: player\n') # started to change
+        self.MPDWillReturn('OK\n') # noidle response
+        self.assertIsNone(self.client.noidle())
+        self.MPDWillReturn("volume: 50\n", "OK\n")
+        status = self.client.status()
+        self.assertEqual({'volume': '50'}, status)
+
+    def test_throw_when_calling_noidle_withoutidling(self):
+        self.assertRaises(mpd.CommandError, self.client.noidle)
+        self.client.send_status()
+        self.assertRaises(mpd.CommandError, self.client.noidle)
+
     def test_add_and_remove_command(self):
         self.MPDWillReturn("ACK awesome command\n")
 
