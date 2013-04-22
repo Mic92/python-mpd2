@@ -79,7 +79,6 @@ _commands = {
     "clearerror":         "_fetch_nothing",
     "currentsong":        "_fetch_object",
     "idle":               "_fetch_idle",
-    "noidle":             None,
     "status":             "_fetch_object",
     "stats":              "_fetch_object",
     # Playback Option Commands
@@ -410,6 +409,18 @@ class MPDClient(object):
 
     def _fetch_command_list(self):
         return self._wrap_iterator(self._read_command_list())
+
+    def noidle(self):
+        if not self._pending or self._pending[0] != 'idle':
+          raise CommandError('cannot send noidle if send_idle was not called')
+        del self._pending[0]
+        self._write_command("noidle")
+        status = self._read_list()
+        # In some case mpd has already write the changed line
+        if status is not None:
+            # So we need to fetch the result of the noidle
+            self._fetch_nothing()
+        return None
 
     def _hello(self):
         line = self._rfile.readline()
