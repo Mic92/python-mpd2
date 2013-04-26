@@ -6,6 +6,9 @@ from setuptools.command.test import test as TestCommand
 import sys,os
 import mpd
 
+if sys.version_info[0] == 2:
+    from io import open
+
 CLASSIFIERS = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -45,7 +48,7 @@ class Tox(TestCommand):
         sys.exit(errno)
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return open(os.path.join(os.path.dirname(__file__),  fname),  encoding="utf8").read()
 
 VERSION = ".".join(map(str, mpd.VERSION))
 
