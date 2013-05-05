@@ -215,7 +215,7 @@ Using Unicode strings should be prefered as it is done transparently by the
 library for you, and makes the transition to Python 3 easier::
 
     >>> import mpd
-    >>> client = MPDClient(use_unicode=True)
+    >>> client = mpd.MPDClient(use_unicode=True)
     >>> client.urlhandlers()[0]
     u'http'
     >>> client.use_unicode = False # Can be switched back later
