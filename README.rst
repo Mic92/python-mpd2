@@ -87,6 +87,8 @@ Documentation
 
 `Command Reference <http://pythonhosted.org/python-mpd2/topics/commands.html>`__
 
+`Examples <examples>`__
+
 Testing
 -------
 
