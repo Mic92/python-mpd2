@@ -44,6 +44,13 @@ A quick guide for getting started python-mpd2:
 
 .. _python-mpd: http://jatreuman.indefero.net/p/python-mpd/
 
+Command Reference
+=================
+
+A complete list of all available commands:
+
+* :doc:`Commands <topics/commands>`
+
 Changelog
 =========
 

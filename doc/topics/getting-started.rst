@@ -43,9 +43,6 @@ command and then fetch the result later. This is useful for the idle command::
 Some more complex usage examples can be found
 `here <http://jatreuman.indefero.net/p/python-mpd/doc/>`_
 
-Range
------
-
 Some commands support integer ranges as argument.  This is done in python-mpd2
 by using two element tuple::
 
