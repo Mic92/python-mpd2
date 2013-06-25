@@ -26,11 +26,11 @@ The following features were added:
 -  explicitly declared MPD commands (which is handy when using for
    example `IPython <http://ipython.org>`__)
 -  a test suite
--  API documentation to add new commands (see `Future Compatible`_)
+-  API documentation to add new commands (see `Future Compatible <http://pythonhosted.org/python-mpd2/topics/advanced.html#future-compatible>`__)
 -  support for Unicode strings in all commands (optionally in python2,
-   default in python3 - see `Unicode Handling`_)
+   default in python3 - see `Unicode Handling <http://pythonhosted.org/python-mpd2/topics/advanced.html#unicode-handling>`__)
 -  configureable timeouts
--  support for `logging`_
+-  support for `logging <http://pythonhosted.org/python-mpd2/topics/logging.html>`__
 -  improved support for sticker
 -  improved support for ranges
 
@@ -76,17 +76,16 @@ To install *python-mpd2* from source, simply run the command::
     $ python setup.py install
 
 You can use the *--help* switch to *setup.py* for a complete list of commands
-and their options. See the `Installing Python Modules
-<http://docs.python.org/inst/inst.html>`__ document for more details.
+and their options. See the `Installing Python Modules <http://docs.python.org/inst/inst.html>`__ document for more details.
 
 Documentation
 -------------
 
-`Documentation <http://pythonhosted.org/python-mpd2/index.html>`
+`Documentation <http://pythonhosted.org/python-mpd2/index.html>`__
 
-`Getting Started <http://pythonhosted.org/python-mpd2/topics/getting-started.html>`
+`Getting Started <http://pythonhosted.org/python-mpd2/topics/getting-started.html>`__
 
-`Command Reference <http://pythonhosted.org/python-mpd2/topics/commands.html>`
+`Command Reference <http://pythonhosted.org/python-mpd2/topics/commands.html>`__
 
 Testing
 -------
