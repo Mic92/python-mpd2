@@ -3,7 +3,8 @@ Using the client library
 
 The client library can be used as follows::
 
-    >>> client = mpd.MPDClient()           # create client object
+    >>> from mpd import MPDClient
+    >>> client = MPDClient()               # create client object
     >>> client.timeout = 10                # network timeout in seconds (floats allowed), default: None
     >>> client.idletimeout = None          # timeout for fetching the result of the idle command is handled seperately, default: None
     >>> client.connect("localhost", 6600)  # connect to localhost:6600
