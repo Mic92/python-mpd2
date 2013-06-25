@@ -82,9 +82,11 @@ and their options. See the `Installing Python Modules
 Documentation
 -------------
 
-`Getting Started`
+`Documentation <http://pythonhosted.org/python-mpd2/index.html>`
 
-`Command Reference`
+`Getting Started <http://pythonhosted.org/python-mpd2/topics/getting-started.html>`
+
+`Command Reference <http://pythonhosted.org/python-mpd2/topics/commands.html>`
 
 Testing
 -------
