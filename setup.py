@@ -69,5 +69,4 @@ setup(
     cmdclass = {'test': Tox},
 )
 
-
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

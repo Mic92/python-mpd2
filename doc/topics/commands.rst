@@ -97,6 +97,7 @@ list         <str> [<locate>]  fetch_list
 listall      [<str>]           fetch_database
 listallinfo  [<str>]           fetch_database
 lsinfo       [<str>]           fetch_database
+readcomments <str>             fetch_object
 search       <locate>          fetch_songs
 searchadd    <locate>          fetch_songs
 searchaddpl  <str> <locate>    fetch_songs

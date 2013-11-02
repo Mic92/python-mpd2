@@ -139,6 +139,14 @@ class TestMPDClient(unittest.TestCase):
         self.assertEqual(1, self.client._wfile.write.call_count)
         self.assertEqual({'volume': '50'}, status)
 
+    def test_readcomments(self):
+        self.MPDWillReturn("major_brand: M4V\n", "minor_version: 1\n", "lyrics: Lalala\n", "OK\n")
+        comments = self.client.readcomments()
+        self.assertMPDReceived('readcomments\n')
+        self.assertEqual(comments['major_brand'], "M4V")
+        self.assertEqual(comments['minor_version'], "1")
+        self.assertEqual(comments['lyrics'], "Lalala")
+
     def test_iterating(self):
         self.MPDWillReturn("file: my-song.ogg\n", "Pos: 0\n", "Id: 66\n", "OK\n")
         self.client.iterate = True

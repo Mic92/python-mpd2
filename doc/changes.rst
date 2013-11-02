@@ -1,6 +1,10 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v0.5.2
+-----------------
+* add support for readcomments
+
 Changes in v0.5.1
 -----------------
 * add support for ranges
