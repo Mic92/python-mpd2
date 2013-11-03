@@ -21,7 +21,7 @@ import socket
 import warnings
 from collections import Callable
 
-VERSION = (0, 5, 1)
+VERSION = (0, 5, 2)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
