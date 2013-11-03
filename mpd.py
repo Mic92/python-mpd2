@@ -162,6 +162,7 @@ _commands = {
     # Audio Output Commands
     "disableoutput":      "_fetch_nothing",
     "enableoutput":       "_fetch_nothing",
+    "toggleoutput":       "_fetch_nothing",
     "outputs":            "_fetch_outputs",
     # Reflection Commands
     "config":             "_fetch_item",
