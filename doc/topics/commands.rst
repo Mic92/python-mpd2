@@ -132,6 +132,7 @@ Audio Output Commands
 =============  =====  =============
 disableoutput  <int>  fetch_nothing
 enableoutput   <int>  fetch_nothing
+toggleoutput   <int>  fetch_nothing
 outputs               fetch_outputs
 =============  =====  =============
 
