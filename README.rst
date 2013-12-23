@@ -35,7 +35,7 @@ The following features were added:
 -  improved support for ranges
 
 If you like this module, you could try contact the original author
-jat@spatialrift.net or join the discussion on the 
+jat@spatialrift.net or join the discussion on the
 `issue tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
 it gets merged upstream.
 
@@ -110,6 +110,11 @@ Install Sphinx::
 Change to the source directory an run::
 
     $ python ./setup.py build_sphinx
+
+The command reference is generated from the official mpd protocol documentation.
+In order to update it, install python-lxml and run the following command::
+
+    $ python ./doc/generate_command_reference.py > ./doc/topics/commands.rst
 
 Contacting the author
 ---------------------
