@@ -417,12 +417,7 @@ class MPDClient(object):
           raise CommandError('cannot send noidle if send_idle was not called')
         del self._pending[0]
         self._write_command("noidle")
-        status = self._read_list()
-        # In some case mpd has already write the changed line
-        if status is not None:
-            # So we need to fetch the result of the noidle
-            self._fetch_nothing()
-        return None
+        return self._fetch_list()
 
     def _hello(self):
         line = self._rfile.readline()
