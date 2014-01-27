@@ -179,7 +179,7 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturn('OK\n') # nothing changed after idle-ing
         self.client.send_idle()
         self.MPDWillReturn('OK\n') # nothing changed after noidle
-        self.assertIsNone(self.client.noidle())
+        self.assertEqual(self.client.noidle(), [])
         self.assertMPDReceived('noidle\n')
         self.MPDWillReturn("volume: 50\n", "OK\n")
         self.client.status()
@@ -188,9 +188,8 @@ class TestMPDClient(unittest.TestCase):
     def test_noidle_while_idle_started_sending(self):
         self.MPDWillReturn('OK\n') # nothing changed after idle-ing
         self.client.send_idle()
-        self.MPDWillReturn('CHANGED: player\n') # started to change
-        self.MPDWillReturn('OK\n') # noidle response
-        self.assertIsNone(self.client.noidle())
+        self.MPDWillReturn('changed: player\n', 'OK\n') # noidle response
+        self.assertEqual(self.client.noidle(), ['player'])
         self.MPDWillReturn("volume: 50\n", "OK\n")
         status = self.client.status()
         self.assertEqual({'volume': '50'}, status)
