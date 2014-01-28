@@ -1,6 +1,10 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v0.5.3
+-----------------
+* noidle command does returns pending changes now
+
 Changes in v0.5.2
 -----------------
 * add support for readcomments and toggleoutput
