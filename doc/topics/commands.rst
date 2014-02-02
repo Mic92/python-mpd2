@@ -1,6 +1,11 @@
 ========
 Commands
 ========
+.. note::
+
+    Each command have a *send_* and a *fetch_* variant, which allows to send a
+    MPD command and then fetch the result later. See :ref:`getting-started` for
+    examples and more information.
 
 Querying MPD's status
 ---------------------
@@ -456,6 +461,9 @@ The music database
               the list of stored playlists.  This behavior is
               deprecated; use "listplaylists" instead.
 
+              This command may be used to list metadata of remote
+              files (e.g. URI beginning with "http://" or "smb://").
+
               Clients that are connected via UNIX domain socket may
               use this command to read the tags of an arbitrary local
               file (URI beginning with "file:///").
@@ -467,6 +475,9 @@ The music database
               specified by "URI".  This "URI" can be a path relative
               to the music directory or a URL in the form
               "file:///foo/bar.ogg".
+
+              This command may be used to list metadata of remote
+              files (e.g. URI beginning with "http://" or "smb://").
 
               The response consists of lines in the form "KEY: VALUE".
               Comments with suspicious characters (e.g. newlines) are

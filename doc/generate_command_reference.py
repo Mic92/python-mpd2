@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import re, sys
+import os.path
 try:
     from lxml import etree
 except ImportError:
@@ -12,12 +13,13 @@ url = "http://git.musicpd.org/cgit/cirrus/mpd.git/plain/doc/protocol.xml"
 if len(sys.argv) > 1:
     url += "?id=release-" + sys.argv[1]
 
+DIR = os.path.dirname(os.path.realpath(__file__))
+header_file = os.path.join(DIR, "commands_header.txt")
+
+with open(header_file, 'r') as f:
+    print(f.read())
+
 tree = etree.parse(url)
-
-print("========")
-print("Commands")
-print("========\n")
-
 chapter = tree.xpath('/book/chapter/title[text()= "Command reference"]/..')[0]
 for section in chapter.xpath("section"):
     title = section.xpath("title")[0].text

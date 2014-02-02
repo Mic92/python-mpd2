@@ -1,0 +1,8 @@
+========
+Commands
+========
+.. note::
+
+    Each command have a *send_* and a *fetch_* variant, which allows to send a
+    MPD command and then fetch the result later. See :ref:`getting-started` for
+    examples and more information.

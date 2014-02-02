@@ -1,3 +1,5 @@
+.. _getting-started:
+
 Using the client library
 ------------------------
 
