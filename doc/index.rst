@@ -30,10 +30,6 @@ The following features were added:
 -  improved support for sticker
 -  improved support for ranges
 
-If you like this module, you could try contact the original author
-jat@spatialrift.net or join the discussion on the
-`issue tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
-it gets merged upstream.
 
 Getting Started
 ===============

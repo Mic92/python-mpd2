@@ -34,11 +34,6 @@ The following features were added:
 -  improved support for sticker
 -  improved support for ranges
 
-If you like this module, you could try contact the original author
-jat@spatialrift.net or join the discussion on the
-`issue tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
-it gets merged upstream.
-
 Getting the latest source code
 ------------------------------
 
@@ -121,12 +116,7 @@ Contacting the author
 
 Just contact me (Mic92) on Github or via email (joerg@higgsboson.tk).
 
-Usually I hang around on Jabber: sonata@conference.codingteam.net
-
-You can contact the original author by emailing
-J. Alexander Treuman jat@spatialrift.net.
-
-He can also be found idling in #mpd on irc.freenode.net as jat.
+Usually I hang around on Jabber in the channel ist@higgsboson.tk
 
 .. |Build Status| image:: https://travis-ci.org/Mic92/python-mpd2.png
 
