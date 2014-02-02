@@ -120,4 +120,4 @@ Usually I hang around on Jabber in the channel ist@higgsboson.tk
 
 .. |Build Status| image:: https://travis-ci.org/Mic92/python-mpd2.png
 
-.. _python-mpd: http://jatreuman.indefero.net/p/python-mpd/
+.. _python-mpd: https://pypi.python.org/pypi/python-mpd/
