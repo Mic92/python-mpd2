@@ -14,7 +14,7 @@ backward compatibles with the original `python-mpd`_ package.  See
 
 The following features were added:
 
--  Python 3 support (but you neead at least Python 2.6)
+-  Python 3 support (but you need at least Python 2.6)
 -  support for the upcoming client-to-client protocol
 -  support for new commands from MPD v0.17 (seekcur, prio, prioid,
    config, searchadd, searchaddpl) and MPD v0.18 (readcomments, toggleoutput)
@@ -25,13 +25,13 @@ The following features were added:
 -  API documentation to add new commands (see :doc:`Future Compatible <topics/advanced>`)
 -  support for Unicode strings in all commands (optionally in python2,
    default in python3 - see :doc:`Unicode Handling <topics/advanced>`)
--  configureable timeouts
+-  configurable timeouts
 -  support for :doc:`logging <topics/logging>`
 -  improved support for sticker
 -  improved support for ranges
 
 If you like this module, you could try contact the original author
-jat@spatialrift.net or join the discussion on the 
+jat@spatialrift.net or join the discussion on the
 `issue tracker <http://jatreuman.indefero.net/p/python-mpd/issues/7/>`__ so that
 it gets merged upstream.
 
