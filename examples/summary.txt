@@ -1,0 +1,24 @@
+:Python scripts examples
+
+Here follows some scripts using python-mpd to connect and play with your MPD server.
+
+MPD server used in the script is localhost:6600, please adapt to your own configuration changing the proper var in the script header.
+Examples
+
+    Print out general stats: ExampleStats
+    Random queue: ExampleRandomQueue
+    Handling errors: ExampleErrorhandling
+    Deal with mutli-tag files. Some sound files may define the same tag multiple times, here is a function to deal with it in your client: ExampleMultiTags
+    idle command (python-mpd > 0.3 & mpd > 0.14) ExampleIdle
+    Manipulate and query stickers: ExampleStickers
+
+
+ExampleErrorhandling  demo of handling errors in long-running client
+2010-11-29
+ExampleIdle Using idle command  2010-12-14
+ExampleMultiTags  How to deal with multi tag file 2009-09-15
+ExampleRandomQueue  Queue song at random  2009-09-24
+ExampleStats  Get general information of your MPD server  2009-09-12
+ExampleStickers A command-line client for manipulating and querying stickers
+2010-12-18
+Examples  Some example scripts to show how to play with python-mpd  2010-12-18
