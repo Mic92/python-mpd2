@@ -549,9 +549,9 @@ class MPDClient(object):
 
     @classmethod
     def add_command(cls, name, callback):
-        method = newFunction(cls._execute, key, callback)
-        send_method = newFunction(cls._send, key, callback)
-        fetch_method = newFunction(cls._fetch, key, callback)
+        method = newFunction(cls._execute, name, callback)
+        send_method = newFunction(cls._send, name, callback)
+        fetch_method = newFunction(cls._fetch, name, callback)
 
         # create new mpd commands as function in three flavors:
         # normal, with "send_"-prefix and with "fetch_"-prefix
