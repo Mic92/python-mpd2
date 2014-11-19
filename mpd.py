@@ -105,6 +105,8 @@ _commands = {
     # Playlist Commands
     "add":                "_fetch_nothing",
     "addid":              "_fetch_item",
+    "addtagid":           "_fetch_nothing",
+    "cleartagid":         "_fetch_nothing",
     "clear":              "_fetch_nothing",
     "delete":             "_fetch_nothing",
     "deleteid":           "_fetch_nothing",
