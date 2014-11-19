@@ -110,6 +110,7 @@ _commands = {
     "clear":              "_fetch_nothing",
     "delete":             "_fetch_nothing",
     "deleteid":           "_fetch_nothing",
+    "insert":             "_fetch_nothing",
     "move":               "_fetch_nothing",
     "moveid":             "_fetch_nothing",
     "playlist":           "_fetch_playlist",
