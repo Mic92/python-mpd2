@@ -121,6 +121,7 @@ _commands = {
     "plchangesposid":     "_fetch_changes",
     "prio":               "_fetch_nothing",
     "prioid":             "_fetch_nothing",
+    "rangeid":            "_fetch_nothing",
     "shuffle":            "_fetch_nothing",
     "swap":               "_fetch_nothing",
     "swapid":             "_fetch_nothing",
@@ -239,7 +240,9 @@ class MPDClient(object):
         parts = [command]
         for arg in args:
             if type(arg) is tuple:
-                if len(arg) == 1:
+                if len(arg) == 0:
+                    parts.append('":"')
+                elif len(arg) == 1:
                     parts.append('"%d:"' % int(arg[0]))
                 else:
                     parts.append('"%d:%d"' % (int(arg[0]), int(arg[1])))

@@ -347,6 +347,11 @@ class TestMPDClient(unittest.TestCase):
         self.client.move("1:2", 2)
         self.assertMPDReceived('move "1:2" "2"\n')
 
+        # empty ranges
+        self.MPDWillReturn('OK\n')
+        self.client.rangeid(1, ())
+        self.assertMPDReceived('rangeid "1" ":"\n')
+
         with self.assertRaises(ValueError):
             self.MPDWillReturn('OK\n')
             self.client.move((1,"garbage"), 2)

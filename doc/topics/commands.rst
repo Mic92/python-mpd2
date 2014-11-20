@@ -7,8 +7,8 @@ Commands
     MPD command and then fetch the result later. See :ref:`getting-started` for
     examples and more information.
 
-Querying MPD's status
----------------------
+Querying 
+---------
 
 
 .. function:: MPDClient.clearerror()
@@ -26,20 +26,23 @@ Querying MPD's status
 .. function:: MPDClient.idle([subsystems])
  
               Waits until there is a noteworthy change in one or more
-              of MPD's subsystems.  As soon as there is one, it lists
-              all changed systems in a line in the format , where
-              SUBSYSTEM is one of the following::
+              of 's subsystems.  As soon
+              as there is one, it lists all changed systems in a line
+              in the format , where SUBSYSTEM is one of the
+              following::
 
               While a client is waiting for idle 
               results, the server disables timeouts, allowing a client
               to wait for events as long as mpd runs.  The idle  command can be canceled by
               sending the command noidle  (no other
-              commands are allowed). MPD will then leave idle  mode and print results
-              immediately; might be empty at this time.
+              commands are allowed). 
+              will then leave idle  mode and print
+              results immediately; might be empty at this time.
 
-              If the optional SUBSYSTEMS  argument is used,
-              MPD will only send notifications when something changed in
-              one of the specified subsytems.
+              If the optional SUBSYSTEMS  argument
+              is used,  will only send
+              notifications when something changed in one of the
+              specified subsytems.
 
 
 .. function:: MPDClient.status()
@@ -156,21 +159,21 @@ Controlling playback
 .. function:: MPDClient.seek(songpos, time)
 
               Seeks to the position TIME  (in
-              seconds) of entry SONGPOS  in the
-              playlist.
+              seconds; fractions allowed) of entry SONGPOS  in the playlist.
 
 
 .. function:: MPDClient.seekid(songid, time)
 
               Seeks to the position TIME  (in
-              seconds) of song SONGID .
+              seconds; fractions allowed) of song SONGID .
 
 
 .. function:: MPDClient.seekcur(time)
 
-              Seeks to the position TIME  within the
-              current song.  If prefixed by '+' or '-', then the time
-              is relative to the current playing position.
+              Seeks to the position TIME  (in
+              seconds; fractions allowed) within the current song.  If
+              prefixed by '+' or '-', then the time is relative to the
+              current playing position.
 
 
 .. function:: MPDClient.stop()
@@ -295,6 +298,15 @@ The current playlist
               but address the songs with their id.
 
 
+.. function:: MPDClient.rangeid(id, start:end)
+  Specifies the portion of the
+              song that shall be played. START  and END  are offsets in seconds
+              (fractional seconds allowed); both are optional.
+              Omitting both (i.e. sending just ":") means "remove the
+              range, play everything".  A song that is currently
+              playing cannot be manipulated this way.
+
+
 .. function:: MPDClient.shuffle(start:end)
 
               Shuffles the current playlist. START:END  is optional and specifies
@@ -410,22 +422,27 @@ The music database
 ------------------
 
 
-.. function:: MPDClient.count(tag, needle)
+.. function:: MPDClient.count(tag, needle[, "group", grouptype])
 
               Counts the number of songs and their total playtime in
               the db matching TAG  exactly.
 
+              The group  keyword may be used to
+              group the results by a tag.  The following prints
+              per-artist counts::
 
-.. function:: MPDClient.find(type, what[, ...])
+
+                count group artist
+.. function:: MPDClient.find(type, what[, ..., startend])
 
               Finds songs in the db that are exactly WHAT . TYPE  can
-              be any tag supported by MPD, or one of the three special
-              parameters — file  to search by
-
-              full path (relative to the music directory), in  to restrict the search to
-              songs in the given directory (also relative to the music
-              directory) and any  to match against all
-              available tags. WHAT  is what to find.
+              be any tag supported by , or one of the special
+              parameters::
+ WHAT  is what to find.
+ window  can be used to query only a
+              portion of the real response.  The parameter is two
+              zero-based record numbers; a start number and an end
+              number.
 
 
 .. function:: MPDClient.findadd(type, what[, ...])
@@ -434,23 +451,56 @@ The music database
               Parameters have the same meaning as for find .
 
 
-.. function:: MPDClient.list(type, artist)
+.. function:: MPDClient.list(type[, filtertype, filterwhat, ..., "group", grouptype, ...])
 
-              Lists all tags of the specified type. TYPE  can be any tag supported by MPD or file .
- ARTIST  is an optional parameter when
-              type is album, this specifies to list albums by an
-              artist.
+              Lists unique tags values of the specified type. TYPE  can be any tag supported by  or file .
+
+              Additional arguments may specify a filter like the one
+              in the .
+
+              The group  keyword may be used
+              (repeatedly) to group the results by one or more tags.
+              The following example lists all album names,
+              grouped by their respective (album) artist::
 
 
+                list album group albumartist
 .. function:: MPDClient.listall(uri)
 
               Lists all songs and directories in URI .
+
+              Do not use this command.  Do not manage a client-side
+              copy of 's database.  That
+              is fragile and adds huge overhead.  It will break with
+              large databases.  Instead, query  whenever you need
+              something.
 
 
 .. function:: MPDClient.listallinfo(uri)
 
               Same as listall , except it also
               returns metadata info in the same format as lsinfo .
+
+              Do not use this command.  Do not manage a client-side
+              copy of 's database.  That
+              is fragile and adds huge overhead.  It will break with
+              large databases.  Instead, query  whenever you need
+              something.
+
+
+.. function:: MPDClient.listfiles(uri)
+
+              Lists the contents of the directory URI , including files are not
+              recognized by . URI  can be a path relative to the
+              music directory or an URI understood by one of the
+              storage plugins.  The response contains at least one
+              line for each directory entry with the prefix "file: "
+              or "directory: ", and may be followed by file attributes
+              such as "Last-Modified" and "size".
+
+              For example, "smb://SERVER" returns a list of all shares
+              on the given SMB/CIFS server; "nfs://servername/path"
+              obtains a directory listing from the NFS server.
 
 
 .. function:: MPDClient.lsinfo(uri)
@@ -488,7 +538,7 @@ The music database
               this lists the Vorbis comments.
 
 
-.. function:: MPDClient.search(type, what[, ...])
+.. function:: MPDClient.search(type, what[, ..., startend])
 
               Searches for any song that contains WHAT . Parameters have the same meaning
               as for find , except that search is not
@@ -543,7 +593,7 @@ Stickers
         The goal is to allow clients to share additional (possibly
         dynamic) information about songs, which is neither stored on
         the client (not available to other clients), nor stored in the
-        song files (MPD has no write access).
+        song files (
 
         Client developers should create a standard for common sticker
         names, to ensure interoperability.
@@ -552,31 +602,31 @@ Stickers
         type ("song" for song objects) and their URI (the path within
         the database for songs).
 
-.. function:: MPDClient.sticker(type, uri, name)
+.. function:: MPDClient.sticker_get(type, uri, name)
 
               Reads a sticker value for the specified object.
 
 
-.. function:: MPDClient.sticker(type, uri, name, value)
+.. function:: MPDClient.sticker_set(type, uri, name, value)
 
               Adds a sticker value to the specified object.  If a
               sticker item with that name already exists, it is
               replaced.
 
 
-.. function:: MPDClient.sticker(type, uri[, name])
+.. function:: MPDClient.sticker_delete(type, uri[, name])
 
               Deletes a sticker value from the specified object.  If
               you do not specify a sticker name, all sticker values
               are deleted.
 
 
-.. function:: MPDClient.sticker(type, uri)
+.. function:: MPDClient.sticker_list(type, uri)
 
               Lists the stickers for the specified object.
 
 
-.. function:: MPDClient.sticker(type, uri, name)
+.. function:: MPDClient.sticker_find(type, uri, name)
 
               Searches the sticker database for stickers with the
               specified name, below the specified directory (URI).
@@ -590,7 +640,7 @@ Connection settings
 
 .. function:: MPDClient.close()
 
-              Closes the connection to MPD.  MPD will try to send the
+              Closes the connection to .  will try to send the
               remaining output buffer before it actually closes the
               connection, but that cannot be guaranteed.  This command
               will not generate a response.
@@ -598,7 +648,7 @@ Connection settings
 
 .. function:: MPDClient.kill()
 
-              Kills MPD.
+              Kills .
 
 
 .. function:: MPDClient.password(password)

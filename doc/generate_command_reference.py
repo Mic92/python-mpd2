@@ -36,8 +36,11 @@ for section in chapter.xpath("section"):
 
     for entry in section.xpath("variablelist/varlistentry"):
         cmd = entry.xpath("term/cmdsynopsis/command")[0].text
+        subcommand = ""
         args = ""
-        begin_optional=False
+        begin_optional = False
+        first_argument = True
+
         for arg in entry.xpath("term/cmdsynopsis/arg"):
             choice = arg.attrib.get("choice", None)
             if choice == "opt" and not begin_optional:
@@ -45,10 +48,19 @@ for section in chapter.xpath("section"):
                 args += "["
             if args != "" and args != "[":
                 args += ", "
-            for text in arg.xpath("./*/text()"):
-                args += text.lower()
+            replaceables = arg.xpath("replaceable")
+            if len(replaceables) > 0:
+                for replaceable in replaceables:
+                  args += replaceable.text.lower()
+            elif first_argument:
+                subcommand = arg.text
+            else:
+                args += '"{}"'.format(arg.text)
+            first_argument = False
         if begin_optional:
             args += "]"
+        if subcommand != "":
+            cmd += "_" + subcommand
         print(".. function:: MPDClient." + cmd + "(" + args + ")")
         lines = []
         for para in entry.xpath("listitem/para"):
