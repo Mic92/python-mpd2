@@ -20,8 +20,9 @@ The following features were added:
 
 -  Python 3 support (but you need at least Python 2.6)
 -  support for the upcoming client-to-client protocol
--  support for new commands from MPD v0.17 (seekcur, prio, prioid,
-   config, searchadd, searchaddpl)
+-  support for new commands from MPD (seekcur, prio, prioid,
+   config, searchadd, searchaddpl, listfiles, rangeid, addtagid, cleartagid,
+   mount, umount, listmounts, listneighbors)
 -  remove deprecated commands (volume)
 -  explicitly declared MPD commands (which is handy when using for
    example `IPython <http://ipython.org>`__)
