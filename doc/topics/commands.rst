@@ -585,6 +585,56 @@ The music database
               unmodified files.
 
 
+Mounts and neighbors
+--------------------
+
+        A "storage" provides access to files in a directory tree.  The
+        most basic storage plugin is the "local" storage plugin which
+        accesses the local file system, and there are plugins to
+        access NFS and SMB servers.
+
+        Multiple storages can be "mounted" together, similar to the
+
+.. function:: MPDClient.mount(path, uri)
+
+              Mount the specified remote storage URI at the given
+              path.  Example::
+
+
+                mount foo nfs://192.168.1.4/export/mp3
+.. function:: MPDClient.unmount(path)
+
+              Unmounts the specified path.  Example::
+
+
+                unmount foo
+.. function:: MPDClient.listmounts()
+
+              Queries a list of all mounts.  By default, this contains
+              just the configured music_directory .
+              Example::
+
+
+                listmounts
+                mount: 
+                storage: /home/foo/music
+                mount: foo
+                storage: nfs://192.168.1.4/export/mp3
+                OK
+                
+.. function:: MPDClient.listneighbors()
+
+              Queries a list of "neighbors" (e.g. accessible file
+              servers on the local net).  Items on that list may be
+              used with the 
+              command.  Example::
+
+
+                listneighbors
+                neighbor: smb://FOO
+                name: FOO (Samba 4.1.11-Debian)
+                OK
+                
 Stickers
 --------
 

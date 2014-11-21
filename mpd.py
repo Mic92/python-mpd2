@@ -152,6 +152,11 @@ _commands = {
     "searchaddpl":        "_fetch_nothing",
     "update":             "_fetch_item",
     "rescan":             "_fetch_item",
+    # Mounts and neighbors
+    "mount":              "_fetch_nothing",
+    "umount":             "_fetch_nothing",
+    "listmounts":         "_fetch_mounts",
+    "listneighbors":      "_fetch_neighbors",
     # Sticker Commands
     "sticker get":        "_fetch_sticker",
     "sticker set":        "_fetch_nothing",
@@ -399,6 +404,12 @@ class MPDClient(object):
 
     def _fetch_songs(self):
         return self._fetch_objects(["file"])
+
+    def _fetch_mounts(self):
+        return self._fetch_objects(["mount"])
+
+    def _fetch_neighbors(self):
+        return self._fetch_objects(["neighbor"])
 
     def _fetch_playlists(self):
         return self._fetch_objects(["playlist"])

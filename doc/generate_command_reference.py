@@ -32,7 +32,7 @@ for section in chapter.xpath("section"):
         text = paragraph.text.rstrip()
         paragraphs.append(text)
     print("\n".join(paragraphs))
-    print()
+    print("")
 
     for entry in section.xpath("variablelist/varlistentry"):
         cmd = entry.xpath("term/cmdsynopsis/command")[0].text
