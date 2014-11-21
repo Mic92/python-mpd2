@@ -366,6 +366,12 @@ class TestMPDClient(unittest.TestCase):
         res = self.client._read_stickers()
         self.assertEqual([('foo', 'bar'), ('l', 'b')], list(res))
 
+    def test_fetch_database(self):
+        self.MPDWillReturn('directory: foo\n', 'Last-Modified: 2014-01-23T16:42:46Z\n',
+            'file: bar.mp3\n', 'size: 59618802\n', 'Last-Modified: 2014-11-02T19:57:00Z\n',
+            'OK\n')
+        res = self.client.listfiles("/")
+
     def test_read_sticker_with_special_value(self):
         self.MPDWillReturn("sticker: foo==uv=vu\n", "OK\n")
         res = self.client._read_stickers()

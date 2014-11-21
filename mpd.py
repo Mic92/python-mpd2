@@ -144,6 +144,7 @@ _commands = {
     "list":               "_fetch_list",
     "listall":            "_fetch_database",
     "listallinfo":        "_fetch_database",
+    "listfiles":          "_fetch_database",
     "lsinfo":             "_fetch_database",
     "readcomments":       "_fetch_object",
     "search":             "_fetch_songs",
