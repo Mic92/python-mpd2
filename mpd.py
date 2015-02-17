@@ -26,6 +26,8 @@ HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
 NEXT = "list_OK"
+COUNT_GROUPING = ['artist', 'albumartist', 'album', 'genre']
+
 
 IS_PYTHON2 = sys.version_info < (3, 0)
 if IS_PYTHON2:
@@ -138,7 +140,7 @@ _commands = {
     "rm":                 "_fetch_nothing",
     "save":               "_fetch_nothing",
     # Database Commands
-    "count":              "_fetch_object",
+    "count":              "_fetch_count",
     "find":               "_fetch_songs",
     "findadd":            "_fetch_nothing",
     "list":               "_fetch_list",
@@ -428,6 +430,9 @@ class MPDClient(object):
 
     def _fetch_command_list(self):
         return self._wrap_iterator(self._read_command_list())
+
+    def _fetch_count(self):
+        return self._fetch_objects(COUNT_GROUPING)
 
     def noidle(self):
         if not self._pending or self._pending[0] != 'idle':
