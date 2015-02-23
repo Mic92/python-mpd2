@@ -26,8 +26,11 @@ except ImportError:
 try:
     import mock
 except ImportError:
-    print("Please install mock from PyPI to run tests!")
-    sys.exit(1)
+    if sys.version_info >= (3, 3):
+        import unittest.mock as mock
+    else:
+       print("Please install mock from PyPI to run tests!")
+       sys.exit(1)
 
 # show deprecation warnings
 warnings.simplefilter('default')
@@ -396,6 +399,44 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client.sticker_list('song', 'baz')
         self.assertEqual({'foo': 'bar'}, res)
+
+    def __format_lines(self, data):
+        """
+        Format and returns lines as MPD should send them
+        Returns the expected python object as well
+        """
+        mpd_lines = list()
+        obj = list()
+        for item in data:
+            obj.append(dict(item))
+            for k, v in item:
+                mpd_lines.extend(['{}: {}\n'.format(k, v)])
+        mpd_lines.append('OK\n')
+        return (mpd_lines, obj)
+
+    def test_count_grouping(self):
+        data = [
+                (('artist','The Dandy Warhols'), ('songs', '40'), ('playtime', '102',)),
+                (('artist', 'The Specials'),     ('songs', '13'), ('playtime', '310',)),
+                (('artist', 'The Strokes'),      ('songs', '23'), ('playtime', '434',)),
+                (('artist', 'Tool'),             ('songs', '30'), ('playtime', '441',)),
+              ]
+        mpd_lines, expected = self.__format_lines(data)
+        self.MPDWillReturn(*mpd_lines)
+        res = self.client.count('group', 'artist')
+        self.assertEqual(expected, res)
+        # Now use a new grouping tag
+        mpd.COUNT_GROUPING += ['musicbrainz_artistid']
+        data = [
+                (('musicbrainz_artistid', 'uuid4'), ('songs', '40'), ('playtime', '102',)),
+                (('musicbrainz_artistid', 'uuid4'), ('songs', '13'), ('playtime', '310',)),
+                (('musicbrainz_artistid', 'uuid4'), ('songs', '23'), ('playtime', '434',)),
+                (('musicbrainz_artistid', 'uuid4'), ('songs', '30'), ('playtime', '441',)),
+              ]
+        mpd_lines, expected = self.__format_lines(data)
+        self.MPDWillReturn(*mpd_lines)
+        res = self.client.count('group', 'musicbrainz_artistid')
+        self.assertEqual(expected, res)
 
 if __name__ == '__main__':
     unittest.main()
