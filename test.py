@@ -84,6 +84,13 @@ class TestMPDClient(unittest.TestCase):
         self.assertTrue(hasattr(self.client, "fetch_close"))
         self.assertTrue(hasattr(self.client, "send_close"))
 
+    def test_duplicate_tags(self):
+        self.MPDWillReturn('Track: file1\n', 'Track: file2\n', 'OK\n')
+        song = self.client.currentsong()
+        self.assertIsInstance(song, dict)
+        self.assertIsInstance(song["track"], list)
+        self.assertMPDReceived('currentsong\n')
+
     def test_fetch_nothing(self):
         self.MPDWillReturn('OK\n', 'OK\n')
 
