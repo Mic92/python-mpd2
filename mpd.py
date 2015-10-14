@@ -532,9 +532,11 @@ class MPDClient(object):
 
     def disconnect(self):
         logger.info("Calling MPD disconnect()")
-        if self._rfile is not None:
+        if (self._rfile is not None
+                and not isinstance(self._rfile, _NotConnected)):
             self._rfile.close()
-        if self._wfile is not None:
+        if (self._wfile is not None
+                and not isinstance(self._wfile, _NotConnected)):
             self._wfile.close()
         if self._sock is not None:
             self._sock.close()
