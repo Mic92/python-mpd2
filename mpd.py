@@ -29,15 +29,23 @@ NEXT = "list_OK"
 
 IS_PYTHON2 = sys.version_info < (3, 0)
 if IS_PYTHON2:
-    decode_str = lambda s: s.decode("utf-8")
-    encode_str = lambda s: s if type(s) == str else (unicode(s)).encode("utf-8")
+    def decode_str(s):
+        return s.decode("utf-8")
+
+    def encode_str(s):
+        if type(s) == str:
+            return s
+        else:
+            return (unicode(s)).encode("utf-8")
 else:
-    decode_str = lambda s: s
-    encode_str = lambda s: str(s)
+
+    def decode_str(s):
+        return s
+    encode_str = str
 
 try:
     from logging import NullHandler
-except ImportError: # NullHandler was introduced in python2.7
+except ImportError:  # NullHandler was introduced in python2.7
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
@@ -45,23 +53,30 @@ except ImportError: # NullHandler was introduced in python2.7
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
 
+
 class MPDError(Exception):
     pass
+
 
 class ConnectionError(MPDError):
     pass
 
+
 class ProtocolError(MPDError):
     pass
+
 
 class CommandError(MPDError):
     pass
 
+
 class CommandListError(MPDError):
     pass
 
+
 class PendingCommandError(MPDError):
     pass
+
 
 class IteratingError(MPDError):
     pass
@@ -188,6 +203,7 @@ _commands = {
     "sendmessage":        "_fetch_nothing",
 }
 
+
 class MPDClient(object):
     def __init__(self, use_unicode=False):
         self.iterate = False
@@ -229,7 +245,7 @@ class MPDClient(object):
         if self._command_list is not None:
             if not isinstance(retval, Callable):
                 raise CommandListError("'%s' not allowed in command list" %
-                                        command)
+                                       command)
             self._write_command(command, args)
             self._command_list.append(retval)
         else:
@@ -431,7 +447,8 @@ class MPDClient(object):
 
     def noidle(self):
         if not self._pending or self._pending[0] != 'idle':
-          raise CommandError('cannot send noidle if send_idle was not called')
+            msg = 'cannot send noidle if send_idle was not called'
+            raise CommandError(msg)
         del self._pending[0]
         self._write_command("noidle")
         return self._fetch_list()
@@ -492,20 +509,22 @@ class MPDClient(object):
 
     def _settimeout(self, timeout):
         self._timeout = timeout
-        if self._sock != None:
+        if self._sock is not None:
             self._sock.settimeout(timeout)
+
     def _gettimeout(self):
         return self._timeout
+
     timeout = property(_gettimeout, _settimeout)
     _timeout = None
     idletimeout = None
 
     def connect(self, host, port, timeout=None):
         logger.info("Calling MPD connect(%r, %r, timeout=%r)", host,
-                     port, timeout)
+                    port, timeout)
         if self._sock is not None:
             raise ConnectionError("Already connected")
-        if timeout != None:
+        if timeout is not None:
             warnings.warn("The timeout parameter in connect() is deprecated! "
                           "Use MPDClient.timeout = yourtimeout instead.",
                           DeprecationWarning)
@@ -588,6 +607,7 @@ class MPDClient(object):
         delattr(cls, str("send_" + name))
         delattr(cls, str("fetch_" + name))
 
+
 def bound_decorator(self, function):
     """ bind decorator to self """
     if not isinstance(function, Callable):
@@ -597,6 +617,7 @@ def bound_decorator(self, function):
         return function(self, *args, **kwargs)
     return decorator
 
+
 def newFunction(wrapper, name, returnValue):
     def decorator(self, *args):
         return wrapper(self, name, args, bound_decorator(self, returnValue))
@@ -605,6 +626,7 @@ def newFunction(wrapper, name, returnValue):
 for key, value in _commands.items():
     returnValue = None if value is None else MPDClient.__dict__[value]
     MPDClient.add_command(key, returnValue)
+
 
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
