@@ -538,10 +538,16 @@ class MPDClient(object):
             self._rfile = self._sock.makefile("r")
             self._wfile = self._sock.makefile("w")
         else:
-            # Force UTF-8 encoding, since this is dependant from the LC_CTYPE
-            # locale.
-            self._rfile = self._sock.makefile("r", encoding="utf-8")
-            self._wfile = self._sock.makefile("w", encoding="utf-8")
+            # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
+            #   locale.
+            # - by setting newline explicit, we force to send '\n' also on
+            #   windows
+            self._rfile = self._sock.makefile("r",
+                                              encoding="utf-8",
+                                              newline="\n")
+            self._wfile = self._sock.makefile("w",
+                                              encoding="utf-8",
+                                              newline="\n")
 
         try:
             self._hello()

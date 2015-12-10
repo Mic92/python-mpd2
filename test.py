@@ -342,8 +342,8 @@ class TestMPDClient(unittest.TestCase):
         # Force the reconnection to refill the mock
         self.client.disconnect()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-        self.assertEqual([mock.call('r', encoding="utf-8"),
-                          mock.call('w', encoding="utf-8")],
+        self.assertEqual([mock.call('r', encoding="utf-8", newline="\n"),
+                          mock.call('w', encoding="utf-8", newline="\n")],
                          # We are onlyy interested into the 2 first entries,
                          # otherwise we get all the readline() & co...
                          self.client._sock.makefile.call_args_list[0:2])
