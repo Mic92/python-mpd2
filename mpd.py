@@ -254,9 +254,46 @@ class MPDClient(object):
                 return retval()
             return retval
 
-    def _write_line(self, line):
+    def _write_line_actions(self, line):
         self._wfile.write("%s\n" % line)
         self._wfile.flush()
+
+    def _write_line_python2(self, line):
+        try:
+            self._write_line_actions(line)
+        # catch broken pipe in Python2 (appears as socket.error)
+        # note that a socket.error in Python >= 3.3 is an alias of OSError
+        # so it's necessary to seperate Python 2 and Python 3 (otherwise
+        # Python 3 would also try to handle this exception (BrokenPipeError is
+        # a subclass of OSError)
+        # https://docs.python.org/3/library/socket.html#socket.error
+        except socket.error as e:
+            logger.info("Pipe to MPD-server broken")
+            self._reset()
+            # Utilizing exec is not particularly elegant, however, it seems to
+            # be the only way as Python3 handles exceptions quite different to
+            # Python2. Without exec, the whole script is not executable in
+            # Python3. Also "six" does it the same way:
+            # https://bitbucket.org/gutworth/six/src/ (search "reraise")
+            exec('raise ConnectionError, "Pipe to MPD-server broken",'
+                'sys.exc_info()[2]')
+    
+    def _write_line_python3(self, line):
+        try:
+            self._write_line_actions(line)
+        # catch broken pipe in Python3 (appears as BrokenPipeError)
+        # https://docs.python.org/3/library/exceptions.html#BrokenPipeError
+        except BrokenPipeError as e:
+            logger.info("Pipe to MPD-server broken")
+            self._reset()
+            raise (ConnectionError("Pipe to MPD-server broken")
+                    .with_traceback(sys.exc_info()[2]))
+    
+    def _write_line(self, line):
+        if IS_PYTHON2:
+            self._write_line_python2(line)
+        else:
+            self._write_line_python3(line)
 
     def _write_command(self, command, args=[]):
         parts = [command]
