@@ -25,7 +25,3 @@ Please contact me for questions or requests on this fork. I really hope my
 changes can be pulled to upstream sooner or later.
 
 Find more information on the original library at `*python-mpd2* <https://github.com/Mic92/python-mpd2>`_
-
-
-*python-mpd2* is a Python library which provides a client interface for
-the `Music Player Daemon <http://musicpd.org>`__.
