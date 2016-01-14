@@ -268,14 +268,14 @@ class MPDClient(object):
         # a subclass of OSError)
         # https://docs.python.org/3/library/socket.html#socket.error
         except socket.error as e:
-            logger.info("Pipe to MPD-server broken")
+            logger.info("Connection to server was reset")
             self._reset()
             # Utilizing exec is not particularly elegant, however, it seems to
             # be the only way as Python3 handles exceptions quite different to
             # Python2. Without exec, the whole script is not executable in
             # Python3. Also "six" does it the same way:
             # https://bitbucket.org/gutworth/six/src/ (search "reraise")
-            exec('raise ConnectionError, "Pipe to MPD-server broken",'
+            exec('raise ConnectionError, "Connection to server was reset",'
                 'sys.exc_info()[2]')
     
     def _write_line_python3(self, line):
@@ -284,9 +284,9 @@ class MPDClient(object):
         # catch broken pipe in Python3 (appears as BrokenPipeError)
         # https://docs.python.org/3/library/exceptions.html#BrokenPipeError
         except BrokenPipeError as e:
-            logger.info("Pipe to MPD-server broken")
+            logger.info("Connection to server was reset")
             self._reset()
-            raise (ConnectionError("Pipe to MPD-server broken")
+            raise (ConnectionError("Connection to server was reset")
                     .with_traceback(sys.exc_info()[2]))
     
     def _write_line(self, line):
