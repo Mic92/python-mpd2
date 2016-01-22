@@ -279,9 +279,9 @@ class MPDClient(object):
             logger.info(error_message)
             self._reset()
             if IS_PYTHON2:
-                _raise_connection_error_python2()
+                _raise_connection_error_python2(error_message)
             else:
-                _raise_connection_error_python3()
+                _raise_connection_error_python3(error_message)
     
     def _write_line_from_python3_3(self, line, error_message):
         try:
@@ -293,16 +293,16 @@ class MPDClient(object):
             self._reset()
             _raise_connection_error_python3(error_message)
     
-    def _raise_connection_error_python2():
+    def _raise_connection_error_python2(self, error_message):
         # Utilizing exec is not particularly elegant, however, it seems to
         # be the only way as Python3 handles exceptions quite different to
         # Python2. Without exec, the whole script is not executable in
         # Python3. Also "six" does it the same way:
         # https://bitbucket.org/gutworth/six/src/ (search "reraise")
-        exec('raise ConnectionError, "Connection to server was reset",'
+        exec('raise ConnectionError, "' + error_message + '",'
             'sys.exc_info()[2]')
 
-    def _raise_connection_error_python3():
+    def _raise_connection_error_python3(self, error_message):
         raise (ConnectionError(error_message)
                     .with_traceback(sys.exc_info()[2]))
     
