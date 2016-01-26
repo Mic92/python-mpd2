@@ -279,9 +279,9 @@ class MPDClient(object):
             logger.info(error_message)
             self._reset()
             if IS_PYTHON2:
-                _raise_connection_error_python2(error_message)
+                self._raise_connection_error_python2(error_message)
             else:
-                _raise_connection_error_python3(error_message)
+                self._raise_connection_error_python3(error_message)
     
     def _write_line_from_python3_3(self, line, error_message):
         try:
@@ -291,7 +291,7 @@ class MPDClient(object):
         except BrokenPipeError as e:
             logger.info(error_message)
             self._reset()
-            _raise_connection_error_python3(error_message)
+            self._raise_connection_error_python3(error_message)
     
     def _raise_connection_error_python2(self, error_message):
         # Utilizing exec is not particularly elegant, however, it seems to
