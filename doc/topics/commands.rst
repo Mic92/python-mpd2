@@ -255,19 +255,21 @@ The current playlist
 
 .. function:: MPDClient.playlistsearch(tag, needle)
 
-              Searches case-sensitively for partial matches in the
+              Searches case-insensitively for partial matches in the
               current playlist.
 
 
-.. function:: MPDClient.plchanges(version)
+.. function:: MPDClient.plchanges(version, start:end)
 
-              Displays changed songs currently in the playlist since VERSION .
+              Displays changed songs currently in the playlist since VERSION .  Start and end positions may
+              be given to limit the output to changes in the given
+              range.
 
               To detect songs that were deleted at the end of the
               playlist, use playlistlength returned by status command.
 
 
-.. function:: MPDClient.plchangesposid(version)
+.. function:: MPDClient.plchangesposid(version, start:end)
 
               Displays changed songs currently in the playlist since VERSION .  This function only
               returns the position and the id of the changed song, not
@@ -392,9 +394,11 @@ Stored playlists
               playlist .
 
 
-.. function:: MPDClient.playlistmove(name, songid, songpos)
+.. function:: MPDClient.playlistmove(name, from, to)
 
-              Moves SONGID  in the playlist  to the position SONGPOS .
+              Moves the song at position FROM  in
+              the playlist  to the
+              position TO .
 
 
 .. function:: MPDClient.rename(name, new_name)
@@ -417,7 +421,7 @@ The music database
 ------------------
 
 
-.. function:: MPDClient.count(tag, needle[, "group", grouptype])
+.. function:: MPDClient.count(tag, needle[, ..., "group", grouptype])
 
               Counts the number of songs and their total playtime in
               the db matching TAG  exactly.
@@ -511,15 +515,14 @@ The music database
 
               Clients that are connected via UNIX domain socket may
               use this command to read the tags of an arbitrary local
-              file (URI beginning with "file:///").
+              file (URI is an absolute path).
 
 
 .. function:: MPDClient.readcomments(uri)
 
               Read "comments" (i.e. key-value pairs) from the file
               specified by "URI".  This "URI" can be a path relative
-              to the music directory or a URL in the form
-              "file:///foo/bar.ogg".
+              to the music directory or an absolute path.
 
               This command may be used to list metadata of remote
               files (e.g. URI beginning with "http://" or "smb://").
@@ -677,6 +680,14 @@ Stickers
               specified name, below the specified directory (URI).
               For each matching song, it prints the URI and that one
               sticker's value.
+
+
+.. function:: MPDClient.sticker_find(type, uri, name, "=", value)
+
+              Searches for stickers with the given value.
+
+              Other supported operators are::
+              " ", " "
 
 
 Connection settings
