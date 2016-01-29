@@ -122,11 +122,6 @@ Playback options
               returned.
 
 
-.. function:: MPDClient.volume(change)
-
-              Changes volume by amount CHANGE .
-
-
 Controlling playback
 --------------------
 

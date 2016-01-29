@@ -16,6 +16,8 @@ if len(sys.argv) > 1:
 DIR = os.path.dirname(os.path.realpath(__file__))
 header_file = os.path.join(DIR, "commands_header.txt")
 
+DEPRECATED_COMMANDS = ["volume"]
+
 with open(header_file, 'r') as f:
     print(f.read())
 
@@ -36,6 +38,8 @@ for section in chapter.xpath("section"):
 
     for entry in section.xpath("variablelist/varlistentry"):
         cmd = entry.xpath("term/cmdsynopsis/command")[0].text
+        if cmd in DEPRECATED_COMMANDS:
+            continue
         subcommand = ""
         args = ""
         begin_optional = False
