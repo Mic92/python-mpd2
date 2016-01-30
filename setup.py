@@ -61,7 +61,7 @@ setup(
     author_email="jthalheim@gmail.com",
     url="https://github.com/Mic92/python-mpd2",
     download_url="https://github.com/Mic92/python-mpd2/archive/v%s.zip" % VERSION,
-    py_modules=["mpd"],
+    py_modules=["mpd", "mpd_test"],
     classifiers=CLASSIFIERS,
     #license=LICENSE,
     keywords=["mpd"],
