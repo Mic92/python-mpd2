@@ -255,26 +255,15 @@ class MPDClient(object):
                 return retval()
             return retval
 
-    def _write_line(self, line):
-        error_message = "Connection to server was reset"
-        if IS_BELOW_PYTHON3_3:
-            self._write_line_below_python3_3(line, error_message)
-        else:
-            self._write_line_from_python3_3(line, error_message)
-
     def _write_line_actions(self, line):
         self._wfile.write("%s\n" % line)
         self._wfile.flush()
 
-    def _write_line_below_python3_3(self, line, error_message):
+    def _write_line(self, line):
+        error_message = "Connection to server was reset"
+        
         try:
             self._write_line_actions(line)
-        # catch broken pipe in Python3.2 and below (appears as socket.error)
-        # note that a socket.error in Python >= 3.3 is an alias of OSError
-        # so it's necessary to seperate Python <3.3 and Python >=3.3 (otherwise
-        # Python 3.3 would also try to handle this exception (BrokenPipeError
-        # is a subclass of OSError)
-        # https://docs.python.org/3/library/socket.html#socket.error
         except socket.error as e:
             logger.info(error_message)
             self._reset()
@@ -282,16 +271,44 @@ class MPDClient(object):
                 self._raise_connection_error_python2(error_message)
             else:
                 self._raise_connection_error_python3(error_message)
-    
-    def _write_line_from_python3_3(self, line, error_message):
-        try:
-            self._write_line_actions(line)
-        # catch broken pipe in Python3.3 and above (appears as BrokenPipeError)
-        # https://docs.python.org/3/library/exceptions.html#BrokenPipeError
-        except BrokenPipeError as e:
-            logger.info(error_message)
-            self._reset()
-            self._raise_connection_error_python3(error_message)
+        
+        # The below/above Python 3.3 switch is not necessary at the moment, as
+        # socket.error is an alias of OSError in Python >= 3.3. However,
+        # socket.error is deprecated in Python >= 3.3, so it could possibly be
+        # removed in the future. For this (unlike) event, the code above can
+        # be removed and the switch can be uncommented again.
+#        if IS_BELOW_PYTHON3_3:
+#            self._write_line_below_python3_3(line, error_message)
+#        else:
+#            self._write_line_from_python3_3(line, error_message)
+#
+#    def _write_line_below_python3_3(self, line, error_message):
+#        try:
+#            self._write_line_actions(line)
+#        # catch broken pipe in Python3.2 and below (appears as socket.error)
+#        # note that a socket.error in Python >= 3.3 is an alias of OSError
+#        # so it's necessary to seperate Python <3.3 and Python >=3.3 (otherwise
+#        # Python 3.3 would also try to handle this exception (BrokenPipeError
+#        # is a subclass of OSError)
+#        # https://docs.python.org/3/library/socket.html#socket.error
+#        except socket.error as e:
+#            logger.info(error_message)
+#            self._reset()
+#            if IS_PYTHON2:
+#                self._raise_connection_error_python2(error_message)
+#            else:
+#                self._raise_connection_error_python3(error_message)
+#    
+#    def _write_line_from_python3_3(self, line, error_message):
+#        try:
+#            self._write_line_actions(line)
+#        # catch broken pipe in Python3.3 and above (appears as BrokenPipeError)
+#        # https://docs.python.org/3/library/exceptions.html#BrokenPipeError
+#        # BrokenPipeError inherits from OSError, which is caught here
+#        except OSError as e:
+#            logger.info(error_message)
+#            self._reset()
+#            self._raise_connection_error_python3(error_message)
     
     def _raise_connection_error_python2(self, error_message):
         # Utilizing exec is not particularly elegant, however, it seems to
