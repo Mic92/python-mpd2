@@ -1,38 +1,65 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v0.6.0 (unreleased)
+------------------------------
+
+* Use @property and @property.setter for MPDClient.timeout
+* Introduce MPDClientBase class which provides common MPD communication related
+  helpers. Used as base for synchronous and asynchronous clients
+* Introduce lookup_func which also searches on base classes for hooking
+  commands
+
+
 Changes in v0.5.5
 -----------------
+
 * fix sended newlines on windows systems
 * include tests in source distribution
 
+
 Changes in v0.5.4
 -----------------
-* support for listfiles, rangeid, addtagid, cleartagid, mount, umount, listmounts, listneighbors
+
+* support for listfiles, rangeid, addtagid, cleartagid, mount, umount,
+  listmounts, listneighbors
+
 
 Changes in v0.5.3
 -----------------
+
 * noidle command does returns pending changes now
+
 
 Changes in v0.5.2
 -----------------
+
 * add support for readcomments and toggleoutput
+
 
 Changes in v0.5.1
 -----------------
+
 * add support for ranges
+
 
 Changes in 0.5.0
 ----------------
+
 * improved support for sticker
+
 
 Changes in 0.4.6
 ----------------
+
 * enforce utf8 for encoding/decoding in python3
+
 
 Changes in 0.4.5
 ----------------
+
 * support for logging
+
 
 Changes in 0.4.4
 ----------------
@@ -41,6 +68,7 @@ Changes in 0.4.4
 * deprecate timeout parameter added in v0.4.2
 * add timeout and idletimeout property
 
+
 Changes in 0.4.3
 ----------------
 
@@ -48,11 +76,13 @@ Changes in 0.4.3
 * fix commands without a callback function
 * transform MPDClient to new style class
 
+
 Changes in 0.4.2
 ----------------
 
 * backward compatible unicode handling
 * added optional socket timeout parameter
+
 
 Changes in 0.4.1
 ----------------
@@ -60,6 +90,7 @@ Changes in 0.4.1
 * prio and prioid was spelled wrong
 * added config command
 * remove deprecated volume command
+
 
 Changes in 0.4.0
 ----------------
@@ -90,10 +121,12 @@ Changes in 0.3.0
 * added idle and noidle commands
 * added listplaylists command
 
+
 Changes in 0.2.1
 ----------------
 
 * connect() no longer broken on Windows
+
 
 Changes in 0.2.0
 ----------------

@@ -8,6 +8,7 @@ python-mpd2
 *python-mpd2* is a Python library which provides a client interface for
 the `Music Player Daemon <http://musicpd.org>`__.
 
+
 Difference with python-mpd
 --------------------------
 
@@ -35,6 +36,7 @@ The following features were added:
 -  improved support for sticker
 -  improved support for ranges
 
+
 Getting the latest source code
 ------------------------------
 
@@ -43,11 +45,13 @@ copy of the development version from Git by running the command::
 
     $ git clone git://github.com/Mic92/python-mpd2.git
 
+
 Getting the latest release
 --------------------------
 
 The latest stable release of *python-mpd2* can be found on
 `PyPI <http://pypi.python.org/pypi?:action=display&name=python-mpd2>`__
+
 
 PyPI:
 ~~~~~
@@ -56,6 +60,7 @@ PyPI:
 
     $ pip install python-mpd2
 
+
 Installation in Linux/BSD distributions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -63,6 +68,7 @@ Until Linux distributions adapt this package, here are some ready to use
 packages to test your applications:
 
 See `INSTALL.rst <INSTALL.rst>`__
+
 
 Installing from source
 ----------------------
@@ -73,6 +79,7 @@ To install *python-mpd2* from source, simply run the command::
 
 You can use the *--help* switch to *setup.py* for a complete list of commands
 and their options. See the `Installing Python Modules <http://docs.python.org/inst/inst.html>`__ document for more details.
+
 
 Documentation
 -------------
@@ -85,6 +92,7 @@ Documentation
 
 `Examples <examples>`__
 
+
 Testing
 -------
 
@@ -95,6 +103,7 @@ Just run::
 This will install `Tox <http://tox.testrun.org/>`__. Tox will take care of
 testing against all the supported Python versions (at least available) on our
 computer, with the required dependencies
+
 
 Building Documentation
 ----------------------
@@ -111,6 +120,7 @@ The command reference is generated from the official mpd protocol documentation.
 In order to update it, install python-lxml and run the following command::
 
     $ python ./doc/generate_command_reference.py > ./doc/topics/commands.rst
+
 
 Contacting the author
 ---------------------
