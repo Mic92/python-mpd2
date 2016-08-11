@@ -218,10 +218,11 @@ class MPDClientBase(object):
 
     def _reset(self):
         self.mpd_version = None
-        self._pending = []
         self._command_list = None
 
     def _parse_line(self, line):
+        # XXX: Only used in ``MPDClient`` move after
+        #      async implementation finished
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
@@ -302,6 +303,7 @@ class MPDClient(MPDClientBase):
 
     def _reset(self):
         super(MPDClient, self)._reset()
+        self._pending = []
         self._iterating = False
         self._sock = None
         self._rfile = _NotConnected()
