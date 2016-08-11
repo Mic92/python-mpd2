@@ -1,4 +1,5 @@
 # python-mpd2: Python MPD client library
+#
 # Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
 # Copyright (C) 2012  J. Thalheim <jthalheim@gmail.com>
 #
