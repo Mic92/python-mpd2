@@ -5,12 +5,10 @@ Changes in v0.6.0 (unreleased)
 ------------------------------
 
 * Use @property and @property.setter for MPDClient.timeout
-* Use format instead of % for formatting strings
 * Introduce MPDClientBase class which provides common MPD communication related
   helpers. Used as base for synchronous and asynchronous clients
 * Introduce lookup_func which also searches on base classes for hooking
   commands
-* Rename newFunction to new_function
 
 
 Changes in v0.5.5

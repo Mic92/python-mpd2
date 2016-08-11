@@ -89,6 +89,7 @@ class _NotConnected(object):
     def _dummy(*args):
         raise ConnectionError("Not connected")
 
+
 _commands = {
     # Status Commands
     "clearerror":         "_fetch_nothing",
@@ -647,8 +648,8 @@ class MPDClient(MPDClientBase):
         # normal, with "send_"-prefix and with "fetch_"-prefix
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, method)
-        setattr(cls, "send_"+escaped_name, send_method)
-        setattr(cls, "fetch_"+escaped_name, fetch_method)
+        setattr(cls, "send_" + escaped_name, send_method)
+        setattr(cls, "fetch_" + escaped_name, fetch_method)
 
     @classmethod
     def remove_command(cls, name):
@@ -696,6 +697,5 @@ for key, value in _commands.items():
 
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
-
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:
