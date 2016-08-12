@@ -372,13 +372,13 @@ class TestMPDClient(unittest.TestCase):
             self.client.move((1, "garbage"), 2)
             self.assertMPDReceived('move "1:" "2"\n')
 
-    def test_read_stickers(self):
+    def test_parse_raw_stickers(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
-        res = self.client._read_stickers()
+        res = self.client._parse_raw_stickers(self.client._read_lines())
         self.assertEqual([('foo', 'bar')], list(res))
 
         self.MPDWillReturn("sticker: foo=bar\n", "sticker: l=b\n", "OK\n")
-        res = self.client._read_stickers()
+        res = self.client._parse_raw_stickers(self.client._read_lines())
         self.assertEqual([('foo', 'bar'), ('l', 'b')], list(res))
 
     def test_fetch_database(self):
@@ -390,9 +390,9 @@ class TestMPDClient(unittest.TestCase):
                            'OK\n')
         self.client.listfiles("/")
 
-    def test_read_sticker_with_special_value(self):
+    def test_parse_raw_sticker_with_special_value(self):
         self.MPDWillReturn("sticker: foo==uv=vu\n", "OK\n")
-        res = self.client._read_stickers()
+        res = self.client._parse_raw_stickers(self.client._read_lines())
         self.assertEqual([('foo', '=uv=vu')], list(res))
 
     def test_parse_sticket_get_one(self):

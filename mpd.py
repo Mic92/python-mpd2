@@ -251,6 +251,14 @@ class MPDClientBase(object):
         if obj:
             yield obj
 
+    def _parse_raw_stickers(self, lines):
+        for key, sticker in self._parse_pairs(lines):
+            value = sticker.split('=', 1)
+            if len(value) < 2:
+                raise ProtocolError(
+                    "Could not parse sticker: {}".format(repr(sticker)))
+            yield tuple(value)
+
     ##########################
     # command result callbacks
 
@@ -457,7 +465,7 @@ class MPDClientBase(object):
 
         - sticker get
         """
-        key, value = list(self._parse_stickers(lines))[0]
+        key, value = list(self._parse_raw_stickers(lines))[0]
         return value
 
     def _parse_stickers(self, lines):
@@ -465,12 +473,7 @@ class MPDClientBase(object):
 
         - sticker list
         """
-        for key, sticker in self._parse_pairs(lines):
-            value = sticker.split('=', 1)
-            if len(value) < 2:
-                raise ProtocolError(
-                    "Could not parse sticker: {}".format(repr(sticker)))
-            yield tuple(value)
+        return dict(self._parse_raw_stickers(lines))
 
 
 class MPDClient(MPDClientBase):
@@ -615,8 +618,17 @@ class MPDClient(MPDClientBase):
             raise ProtocolError(
                 "Got unexpected return value: '{}'".format(line))
 
+    def _fetch_idle(self):
+        self._sock.settimeout(self.idletimeout)
+        ret = self._fetch_list()
+        self._sock.settimeout(self._timeout)
+        return ret
+
     def _fetch_item(self):
         return self._parse_item(self._read_lines())
+
+    def _fetch_object(self):
+        return self._parse_object(self._read_lines())
 
     def _fetch_sticker(self):
         return self._parse_sticker(self._read_lines())
@@ -630,41 +642,32 @@ class MPDClient(MPDClientBase):
     def _fetch_playlist(self):
         return self._wrap_iterator(self._parse_playlist(self._read_lines()))
 
-    def _fetch_object(self):
-        return self._parse_object(self._read_lines())
-
     def _fetch_changes(self):
-        return self._parse_changes(self._read_lines())
-
-    def _fetch_idle(self):
-        self._sock.settimeout(self.idletimeout)
-        ret = self._fetch_list()
-        self._sock.settimeout(self._timeout)
-        return ret
+        return self._wrap_iterator(self._parse_changes(self._read_lines()))
 
     def _fetch_songs(self):
-        return self._parse_songs(self._read_lines())
+        return self._wrap_iterator(self._parse_songs(self._read_lines()))
 
     def _fetch_mounts(self):
-        return self._parse_mounts(self._read_lines())
+        return self._wrap_iterator(self._parse_mounts(self._read_lines()))
 
     def _fetch_neighbors(self):
-        return self._parse_neighbors(self._read_lines())
+        return self._wrap_iterator(self._parse_neighbors(self._read_lines()))
 
     def _fetch_playlists(self):
-        return self._parse_playlists(self._read_lines())
+        return self._wrap_iterator(self._parse_playlists(self._read_lines()))
 
     def _fetch_database(self):
-        return self._parse_database(self._read_lines())
+        return self._wrap_iterator(self._parse_database(self._read_lines()))
 
     def _fetch_messages(self):
-        return self._parse_messages(self._read_lines())
+        return self._wrap_iterator(self._parse_messages(self._read_lines()))
 
     def _fetch_outputs(self):
-        return self._parse_outputs(self._read_lines())
+        return self._wrap_iterator(self._parse_outputs(self._read_lines()))
 
     def _fetch_plugins(self):
-        return self._parse_plugins(self._read_lines())
+        return self._wrap_iterator(self._parse_plugins(self._read_lines()))
 
     # end response callbacks
     ########################
