@@ -130,7 +130,7 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
             raise AttributeError(msg)
 
     def _reset(self):
-        super(MPDClient, self)._reset()
+        super(MPDProtocol, self)._reset()
         self.mpd_version = None
         self._command_list = False
         self._command_list_results = []
@@ -173,22 +173,19 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
 
     @mpd_commands('plchangesposid')
     def _receive_changes(self, lines):
-        return self._parse_objects(lines, ["cpos"])
+        return self._parse_changes(lines)
 
     @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo')
     def _receive_database(self, lines):
-        return self._parse_objects(lines, ["file", "directory", "playlist"])
+        return self._parse_database(self, lines)
 
     @mpd_commands('idle')
     def _receive_idle(self, lines):
-        return self._parse_list(lines)
+        return self._parse_idle(lines)
 
     @mpd_commands('addid', 'config', 'replay_gain_status', 'rescan', 'update')
     def _receive_item(self, lines):
-        pairs = list(self._parse_pairs(lines))
-        if len(pairs) != 1:
-            return
-        return pairs[0][1]
+        return self._parse_item(lines)
 
     @mpd_commands(
         'channels', 'commands', 'list', 'listplaylist', 'notcommands',
@@ -198,15 +195,15 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
 
     @mpd_commands('readmessages')
     def _receive_messages(self, lines):
-        return self._parse_objects(lines, ["channel"])
+        return self._parse_messages(lines)
 
     @mpd_commands('listmounts')
     def _receive_mounts(self, lines):
-        return self._parse_objects(lines, ["mount"])
+        return self._parse_mounts(lines)
 
     @mpd_commands('listneighbors')
     def _receive_neighbors(self, lines):
-        return self._parse_objects(lines, ["neighbor"])
+        return self._parse_neighbors(lines)
 
     @mpd_commands(
         'add', 'addtagid', 'clear', 'clearerror', 'cleartagid', 'consume',
@@ -220,18 +217,15 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
         'sticker delete', 'sticker set', 'stop', 'subscribe', 'swap', 'swapid',
         'toggleoutput', 'umount', 'unsubscribe')
     def _receive_nothing(self, lines):
-        return
+        return self._parse_nothing(lines)
 
     @mpd_commands('count', 'currentsong', 'readcomments', 'stats', 'status')
     def _receive_object(self, lines):
-        objs = list(self._parse_objects(lines))
-        if not objs:
-            return {}
-        return objs[0]
+        return self._parse_object(lines)
 
     @mpd_commands('outputs')
     def _receive_outputs(self, lines):
-        return self._parse_objects(lines, ["outputid"])
+        return self._parse_outputs(lines)
 
     @mpd_commands('playlist')
     def _receive_playlist(self, lines):
@@ -239,22 +233,21 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
 
     @mpd_commands('listplaylists')
     def _receive_playlists(self, lines):
-        return self._parse_objects(lines, ["playlist"])
+        return self._parse_playlists(lines)
 
     @mpd_commands('decoders')
     def _receive_plugins(self, lines):
-        return self._parse_objects(lines, ["plugin"])
+        return self._parse_plugins(lines)
 
     @mpd_commands(
         'find', 'listplaylistinfo', 'playlistfind', 'playlistid',
         'playlistinfo', 'playlistsearch', 'plchanges', 'search', 'sticker find')
     def _receive_songs(self, lines):
-        return self._parse_objects(lines, ["file"])
+        return self._parse_songs(lines)
 
     @mpd_commands('sticker get')
     def _receive_sticker(self, lines):
-        key, value = list(self._parse_stickers(lines))[0]
-        return value
+        return self._parse_sticker(lines)
 
     @mpd_commands('sticker list')
     def _receive_stickers(self, lines):

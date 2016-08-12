@@ -221,27 +221,6 @@ class MPDClientBase(object):
         self.mpd_version = None
         self._command_list = None
 
-    def _parse_line(self, line):
-        # XXX: Only used in ``MPDClient`` move after
-        #      async implementation finished
-        if self.use_unicode:
-            line = decode_str(line)
-        if not line.endswith("\n"):
-            self.disconnect()
-            raise ConnectionError("Connection lost while reading line")
-        line = line.rstrip("\n")
-        if line.startswith(ERROR_PREFIX):
-            error = line[len(ERROR_PREFIX):].strip()
-            raise CommandError(error)
-        if self._command_list is not None:
-            if line == NEXT:
-                return
-            if line == SUCCESS:
-                raise ProtocolError("Got unexpected '{}'".format(SUCCESS))
-        elif line == SUCCESS:
-            return
-        return line
-
     def _parse_pair(self, line, separator):
         if line is None:
             return
@@ -253,20 +232,6 @@ class MPDClientBase(object):
     def _parse_pairs(self, lines, separator=": "):
         for line in lines:
             yield self._parse_pair(line, separator)
-
-    def _parse_list(self, lines):
-        seen = None
-        for key, value in self._parse_pairs(lines):
-            if key != seen:
-                if seen is not None:
-                    raise ProtocolError(
-                        "Expected key '{}', got '{}'".format(seen, key))
-                seen = key
-            yield value
-
-    def _parse_playlist(self, lines):
-        for key, value in self._parse_pairs(lines, ":"):
-            yield value
 
     def _parse_objects(self, lines, delimiters=[]):
         obj = {}
@@ -286,7 +251,220 @@ class MPDClientBase(object):
         if obj:
             yield obj
 
+    ##########################
+    # command result callbacks
+
+    def _parse_changes(self, lines):
+        """Related commands:
+
+        - plchangesposid
+        """
+        return self._parse_objects(lines, ["cpos"])
+
+    def _parse_database(self, lines):
+        """Related commands:
+
+        - listall
+        - listallinfo
+        - listfiles
+        - lsinfo
+        """
+        return self._parse_objects(lines, ["file", "directory", "playlist"])
+
+    def _parse_idle(self, lines):
+        """Related commands:
+        - idle
+        """
+        return self._parse_list(lines)
+
+    def _parse_item(self, lines):
+        """Related commands:
+
+        - addid
+        - config
+        - replay_gain_status
+        - rescan
+        - update
+        """
+        pairs = list(self._parse_pairs(lines))
+        if len(pairs) != 1:
+            return
+        return pairs[0][1]
+
+    def _parse_list(self, lines):
+        """Related commands:
+
+        - channels
+        - commands
+        - list
+        - listplaylist
+        - notcommands
+        - tagtypes
+        - urlhandlers
+        """
+        seen = None
+        for key, value in self._parse_pairs(lines):
+            if key != seen:
+                if seen is not None:
+                    raise ProtocolError(
+                        "Expected key '{}', got '{}'".format(seen, key))
+                seen = key
+            yield value
+
+    def _parse_messages(self, lines):
+        """Related commands:
+
+        - readmessages
+        """
+        return self._parse_objects(lines, ["channel"])
+
+    def _parse_mounts(self, lines):
+        """Related commands:
+
+        - listmounts
+        """
+        return self._parse_objects(lines, ["mount"])
+
+    def _parse_neighbors(self, lines):
+        """Related commands:
+
+        - listneighbors
+        """
+        return self._parse_objects(lines, ["neighbor"])
+
+    def _parse_nothing(self, lines):
+        """Related commands:
+
+        - add
+        - addtagid
+        - clear
+        - clearerror
+        - cleartagid
+        - consume
+        - crossfade
+        - delete
+        - deleteid
+        - disableoutput
+        - enableoutput
+        - findadd
+        - load
+        - mixrampdb
+        - mixrampdelay
+        - mount
+        - move
+        - moveid
+        - next
+        - password
+        - pause
+        - ping
+        - play
+        - playid
+        - playlistadd
+        - playlistclear
+        - playlistdelete
+        - playlistmove
+        - previous
+        - prio
+        - prioid
+        - random
+        - rangeid
+        - rename
+        - repeat
+        - replay_gain_mode
+        - rm
+        - save
+        - searchadd
+        - searchaddpl
+        - seek
+        - seekcur
+        - seekid
+        - sendmessage
+        - setvol
+        - shuffle
+        - single
+        - sticker delete
+        - sticker set
+        - stop
+        - subscribe
+        - swap
+        - swapid
+        - toggleoutput
+        - umount
+        - unsubscribe
+        """
+        return
+
+    def _parse_object(self, lines):
+        """Related commands:
+
+        - count
+        - currentsong
+        - readcomments
+        - stats
+        - status
+        """
+        objs = list(self._parse_objects(lines))
+        if not objs:
+            return {}
+        return objs[0]
+
+    def _parse_outputs(self, lines):
+        """Related commands:
+
+        - outputs
+        """
+        return self._parse_objects(lines, ["outputid"])
+
+    def _parse_playlist(self, lines):
+        """Related commands:
+
+        - playlist
+        """
+        for key, value in self._parse_pairs(lines, ":"):
+            yield value
+
+    def _parse_playlists(self, lines):
+        """Related commands:
+
+        - listplaylists
+        """
+        return self._parse_objects(lines, ["playlist"])
+
+    def _parse_plugins(self, lines):
+        """Related commands:
+
+        - decoders
+        """
+        return self._parse_objects(lines, ["plugin"])
+
+    def _parse_songs(self, lines):
+        """Related commands:
+
+        - find
+        - listplaylistinfo
+        - playlistfind
+        - playlistid
+        - playlistinfo
+        - playlistsearch
+        - plchanges
+        - search
+        - sticker find
+        """
+        return self._parse_objects(lines, ["file"])
+
+    def _parse_sticker(self, lines):
+        """Related commands:
+
+        - sticker get
+        """
+        key, value = list(self._parse_stickers(lines))[0]
+        return value
+
     def _parse_stickers(self, lines):
+        """Related commands:
+
+        - sticker list
+        """
         for key, sticker in self._parse_pairs(lines):
             value = sticker.split('=', 1)
             if len(value) < 2:
@@ -382,31 +560,30 @@ class MPDClient(MPDClientBase):
     # response helpers
 
     def _read_line(self):
-        return self._parse_line(self._rfile.readline())
+        line = self._rfile.readline()
+        if self.use_unicode:
+            line = decode_str(line)
+        if not line.endswith("\n"):
+            self.disconnect()
+            raise ConnectionError("Connection lost while reading line")
+        line = line.rstrip("\n")
+        if line.startswith(ERROR_PREFIX):
+            error = line[len(ERROR_PREFIX):].strip()
+            raise CommandError(error)
+        if self._command_list is not None:
+            if line == NEXT:
+                return
+            if line == SUCCESS:
+                raise ProtocolError("Got unexpected '{}'".format(SUCCESS))
+        elif line == SUCCESS:
+            return
+        return line
 
     def _read_lines(self):
         line = self._read_line()
         while line is not None:
             yield line
             line = self._read_line()
-
-    def _read_pair(self, separator):
-        return self._parse_pair(self._read_line(), separator)
-
-    def _read_pairs(self, separator=": "):
-        return self._parse_pairs(self._read_lines(), separator)
-
-    def _read_list(self):
-        return self._parse_list(self._read_lines())
-
-    def _read_playlist(self):
-        return self._parse_playlist(self._read_lines())
-
-    def _read_objects(self, delimiters=[]):
-        return self._parse_objects(self._read_lines(), delimiters)
-
-    def _read_stickers(self):
-        return self._parse_stickers(self._read_lines())
 
     def _read_command_list(self):
         try:
@@ -439,36 +616,25 @@ class MPDClient(MPDClientBase):
                 "Got unexpected return value: '{}'".format(line))
 
     def _fetch_item(self):
-        pairs = list(self._read_pairs())
-        if len(pairs) != 1:
-            return
-        return pairs[0][1]
+        return self._parse_item(self._read_lines())
 
     def _fetch_sticker(self):
-        # Either we get one or we get an error while reading the line
-        key, value = list(self._read_stickers())[0]
-        return value
+        return self._parse_sticker(self._read_lines())
 
     def _fetch_stickers(self):
-        return dict(self._read_stickers())
+        return self._parse_stickers(self._read_lines())
 
     def _fetch_list(self):
-        return self._wrap_iterator(self._read_list())
+        return self._wrap_iterator(self._parse_list(self._read_lines()))
 
     def _fetch_playlist(self):
-        return self._wrap_iterator(self._read_playlist())
+        return self._wrap_iterator(self._parse_playlist(self._read_lines()))
 
     def _fetch_object(self):
-        objs = list(self._read_objects())
-        if not objs:
-            return {}
-        return objs[0]
-
-    def _fetch_objects(self, delimiters):
-        return self._wrap_iterator(self._read_objects(delimiters))
+        return self._parse_object(self._read_lines())
 
     def _fetch_changes(self):
-        return self._fetch_objects(["cpos"])
+        return self._parse_changes(self._read_lines())
 
     def _fetch_idle(self):
         self._sock.settimeout(self.idletimeout)
@@ -477,34 +643,34 @@ class MPDClient(MPDClientBase):
         return ret
 
     def _fetch_songs(self):
-        return self._fetch_objects(["file"])
+        return self._parse_songs(self._read_lines())
 
     def _fetch_mounts(self):
-        return self._fetch_objects(["mount"])
+        return self._parse_mounts(self._read_lines())
 
     def _fetch_neighbors(self):
-        return self._fetch_objects(["neighbor"])
+        return self._parse_neighbors(self._read_lines())
 
     def _fetch_playlists(self):
-        return self._fetch_objects(["playlist"])
+        return self._parse_playlists(self._read_lines())
 
     def _fetch_database(self):
-        return self._fetch_objects(["file", "directory", "playlist"])
+        return self._parse_database(self._read_lines())
 
     def _fetch_messages(self):
-        return self._fetch_objects(["channel"])
+        return self._parse_messages(self._read_lines())
 
     def _fetch_outputs(self):
-        return self._fetch_objects(["outputid"])
+        return self._parse_outputs(self._read_lines())
 
     def _fetch_plugins(self):
-        return self._fetch_objects(["plugin"])
-
-    def _fetch_command_list(self):
-        return self._wrap_iterator(self._read_command_list())
+        return self._parse_plugins(self._read_lines())
 
     # end response callbacks
     ########################
+
+    def _fetch_command_list(self):
+        return self._wrap_iterator(self._read_command_list())
 
     def _hello(self):
         line = self._rfile.readline()
