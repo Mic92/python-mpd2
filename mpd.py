@@ -16,17 +16,27 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
-import sys
-import socket
-import warnings
 from collections import Callable
+import logging
+import socket
+import sys
+import warnings
+
+
+###############################################################################
+# constants
+###############################################################################
 
 VERSION = (0, 6, 0)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
 NEXT = "list_OK"
+
+
+###############################################################################
+# utils
+###############################################################################
 
 IS_PYTHON2 = sys.version_info < (3, 0)
 if IS_PYTHON2:
@@ -39,10 +49,19 @@ if IS_PYTHON2:
         else:
             return (unicode(s)).encode("utf-8")
 else:
-
     def decode_str(s):
         return s
+
     encode_str = str
+
+
+def escape(text):
+    return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+###############################################################################
+# logging
+###############################################################################
 
 try:
     from logging import NullHandler
@@ -51,9 +70,14 @@ except ImportError:  # NullHandler was introduced in python2.7
         def emit(self, record):
             pass
 
+
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
 
+
+###############################################################################
+# exceptions
+###############################################################################
 
 class MPDError(Exception):
     pass
@@ -83,139 +107,95 @@ class IteratingError(MPDError):
     pass
 
 
-class _NotConnected(object):
-    def __getattr__(self, attr):
-        return self._dummy
+###############################################################################
+# command registration
+###############################################################################
 
-    def _dummy(*args):
-        raise ConnectionError("Not connected")
+class mpd_commands(object):
+    """Decorator for registering MPD commands with it's corresponding result
+    callback.
+    """
+
+    def __init__(self, *commands):
+        self.commands = commands
+
+    def __call__(self, ob):
+        ob.mpd_commands = self.commands
+        return ob
 
 
-_commands = {
-    # Status Commands
-    "clearerror":         "_fetch_nothing",
-    "currentsong":        "_fetch_object",
-    "idle":               "_fetch_idle",
-    "status":             "_fetch_object",
-    "stats":              "_fetch_object",
-    # Playback Option Commands
-    "consume":            "_fetch_nothing",
-    "crossfade":          "_fetch_nothing",
-    "mixrampdb":          "_fetch_nothing",
-    "mixrampdelay":       "_fetch_nothing",
-    "random":             "_fetch_nothing",
-    "repeat":             "_fetch_nothing",
-    "setvol":             "_fetch_nothing",
-    "single":             "_fetch_nothing",
-    "replay_gain_mode":   "_fetch_nothing",
-    "replay_gain_status": "_fetch_item",
-    # Playback Control Commands
-    "next":               "_fetch_nothing",
-    "pause":              "_fetch_nothing",
-    "play":               "_fetch_nothing",
-    "playid":             "_fetch_nothing",
-    "previous":           "_fetch_nothing",
-    "seek":               "_fetch_nothing",
-    "seekid":             "_fetch_nothing",
-    "seekcur":            "_fetch_nothing",
-    "stop":               "_fetch_nothing",
-    # Playlist Commands
-    "add":                "_fetch_nothing",
-    "addid":              "_fetch_item",
-    "addtagid":           "_fetch_nothing",
-    "cleartagid":         "_fetch_nothing",
-    "clear":              "_fetch_nothing",
-    "delete":             "_fetch_nothing",
-    "deleteid":           "_fetch_nothing",
-    "move":               "_fetch_nothing",
-    "moveid":             "_fetch_nothing",
-    "playlist":           "_fetch_playlist",
-    "playlistfind":       "_fetch_songs",
-    "playlistid":         "_fetch_songs",
-    "playlistinfo":       "_fetch_songs",
-    "playlistsearch":     "_fetch_songs",
-    "plchanges":          "_fetch_songs",
-    "plchangesposid":     "_fetch_changes",
-    "prio":               "_fetch_nothing",
-    "prioid":             "_fetch_nothing",
-    "rangeid":            "_fetch_nothing",
-    "shuffle":            "_fetch_nothing",
-    "swap":               "_fetch_nothing",
-    "swapid":             "_fetch_nothing",
-    # Stored Playlist Commands
-    "listplaylist":       "_fetch_list",
-    "listplaylistinfo":   "_fetch_songs",
-    "listplaylists":      "_fetch_playlists",
-    "load":               "_fetch_nothing",
-    "playlistadd":        "_fetch_nothing",
-    "playlistclear":      "_fetch_nothing",
-    "playlistdelete":     "_fetch_nothing",
-    "playlistmove":       "_fetch_nothing",
-    "rename":             "_fetch_nothing",
-    "rm":                 "_fetch_nothing",
-    "save":               "_fetch_nothing",
-    # Database Commands
-    "count":              "_fetch_object",
-    "find":               "_fetch_songs",
-    "findadd":            "_fetch_nothing",
-    "list":               "_fetch_list",
-    "listall":            "_fetch_database",
-    "listallinfo":        "_fetch_database",
-    "listfiles":          "_fetch_database",
-    "lsinfo":             "_fetch_database",
-    "readcomments":       "_fetch_object",
-    "search":             "_fetch_songs",
-    "searchadd":          "_fetch_nothing",
-    "searchaddpl":        "_fetch_nothing",
-    "update":             "_fetch_item",
-    "rescan":             "_fetch_item",
-    # Mounts and neighbors
-    "mount":              "_fetch_nothing",
-    "umount":             "_fetch_nothing",
-    "listmounts":         "_fetch_mounts",
-    "listneighbors":      "_fetch_neighbors",
-    # Sticker Commands
-    "sticker get":        "_fetch_sticker",
-    "sticker set":        "_fetch_nothing",
-    "sticker delete":     "_fetch_nothing",
-    "sticker list":       "_fetch_stickers",
-    "sticker find":       "_fetch_songs",
-    # Connection Commands
-    "close":              None,
-    "kill":               None,
-    "password":           "_fetch_nothing",
-    "ping":               "_fetch_nothing",
-    # Audio Output Commands
-    "disableoutput":      "_fetch_nothing",
-    "enableoutput":       "_fetch_nothing",
-    "toggleoutput":       "_fetch_nothing",
-    "outputs":            "_fetch_outputs",
-    # Reflection Commands
-    "config":             "_fetch_item",
-    "commands":           "_fetch_list",
-    "notcommands":        "_fetch_list",
-    "tagtypes":           "_fetch_list",
-    "urlhandlers":        "_fetch_list",
-    "decoders":           "_fetch_plugins",
-    # Client To Client
-    "subscribe":          "_fetch_nothing",
-    "unsubscribe":        "_fetch_nothing",
-    "channels":           "_fetch_list",
-    "readmessages":       "_fetch_messages",
-    "sendmessage":        "_fetch_nothing",
-}
+def mpd_command_provider(cls):
+    """Decorator hooking up registered MPD commands to concrete client
+    implementation.
 
+    A class using this decorator must inherit from ``MPDClientBase`` and
+    implement it's ``add_command`` function.
+    """
+    def collect(cls, callbacks=dict()):
+        """Collect MPD command callbacks from given class.
+
+        Searches class __dict__ on given class and all it's bases for functions
+        which have been decorated with @mpd_commands and returns a dict
+        containing callback name as keys and
+        (callback, callback implementing class) tuples as values.
+        """
+        for name, ob in cls.__dict__.items():
+            if hasattr(ob, "mpd_commands") and name not in callbacks:
+                callbacks[name] = (ob, cls)
+        for base in cls.__bases__:
+            callbacks = collect(base, callbacks)
+        return callbacks
+
+    for name, value in collect(cls).items():
+        callback, from_ = value
+        for command in callback.mpd_commands:
+            cls.add_command(command, callback)
+    return cls
+
+
+class Noop(object):
+    """An instance of this class represents a MPD command callback which
+    does nothing.
+    """
+    mpd_commands = None
+
+
+###############################################################################
+# abstract base client
+###############################################################################
 
 class MPDClientBase(object):
+    """Abstract MPD client.
+
+    This class defines a general client contract, provides MPD protocol parsers
+    and defines all available MPD commands and it's corresponding result
+    parsing callbacks. There might be the need of overriding some callbacks on
+    subclasses.
+    """
 
     def __init__(self, use_unicode=False):
         self.iterate = False
         self.use_unicode = use_unicode
         self._reset()
 
-    def disconnect(self):
-        raise NotImplementedError(
-            "MPDClientBase does not implement disconnect")
+    @classmethod
+    def add_command(cls, name, callback):
+        raise NotImplememtedError(
+            'Abstract ``MPDClientBase`` does not implement ``add_command``')
+
+    def noidle(self):
+        raise NotImplememtedError(
+            'Abstract ``MPDClientBase`` does not implement ``noidle``')
+
+    def command_list_ok_begin(self):
+        raise NotImplememtedError(
+            'Abstract ``MPDClientBase`` does not implement '
+            '``command_list_ok_begin``')
+
+    def command_list_end(self):
+        raise NotImplememtedError(
+            'Abstract ``MPDClientBase`` does not implement '
+            '``command_list_end``')
 
     def _reset(self):
         self.mpd_version = None
@@ -259,57 +239,31 @@ class MPDClientBase(object):
                     "Could not parse sticker: {}".format(repr(sticker)))
             yield tuple(value)
 
-    ##########################
-    # command result callbacks
+    NOOP = mpd_commands('close', 'kill')(Noop())
 
+    @mpd_commands('plchangesposid')
     def _parse_changes(self, lines):
-        """Related commands:
-
-        - plchangesposid
-        """
         return self._parse_objects(lines, ["cpos"])
 
+    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo')
     def _parse_database(self, lines):
-        """Related commands:
-
-        - listall
-        - listallinfo
-        - listfiles
-        - lsinfo
-        """
         return self._parse_objects(lines, ["file", "directory", "playlist"])
 
+    @mpd_commands('idle')
     def _parse_idle(self, lines):
-        """Related commands:
-        - idle
-        """
         return self._parse_list(lines)
 
+    @mpd_commands('addid', 'config', 'replay_gain_status', 'rescan', 'update')
     def _parse_item(self, lines):
-        """Related commands:
-
-        - addid
-        - config
-        - replay_gain_status
-        - rescan
-        - update
-        """
         pairs = list(self._parse_pairs(lines))
         if len(pairs) != 1:
             return
         return pairs[0][1]
 
+    @mpd_commands(
+        'channels', 'commands', 'list', 'listplaylist', 'notcommands',
+        'tagtypes', 'urlhandlers')
     def _parse_list(self, lines):
-        """Related commands:
-
-        - channels
-        - commands
-        - list
-        - listplaylist
-        - notcommands
-        - tagtypes
-        - urlhandlers
-        """
         seen = None
         for key, value in self._parse_pairs(lines):
             if key != seen:
@@ -319,166 +273,128 @@ class MPDClientBase(object):
                 seen = key
             yield value
 
+    @mpd_commands('readmessages')
     def _parse_messages(self, lines):
-        """Related commands:
-
-        - readmessages
-        """
         return self._parse_objects(lines, ["channel"])
 
+    @mpd_commands('listmounts')
     def _parse_mounts(self, lines):
-        """Related commands:
-
-        - listmounts
-        """
         return self._parse_objects(lines, ["mount"])
 
+    @mpd_commands('listneighbors')
     def _parse_neighbors(self, lines):
-        """Related commands:
-
-        - listneighbors
-        """
         return self._parse_objects(lines, ["neighbor"])
 
+    @mpd_commands(
+        'add', 'addtagid', 'clear', 'clearerror', 'cleartagid', 'consume',
+        'crossfade', 'delete', 'deleteid', 'disableoutput', 'enableoutput',
+        'findadd', 'load', 'mixrampdb', 'mixrampdelay', 'mount', 'move', 
+        'moveid', 'next', 'password', 'pause', 'ping', 'play', 'playid', 
+        'playlistadd', 'playlistclear', 'playlistdelete', 'playlistmove',
+        'previous', 'prio', 'prioid', 'random', 'rangeid', 'rename', 'repeat',
+        'replay_gain_mode', 'rm', 'save', 'searchadd', 'searchaddpl', 'seek',
+        'seekcur', 'seekid', 'sendmessage', 'setvol', 'shuffle', 'single', 
+        'sticker delete', 'sticker set', 'stop', 'subscribe', 'swap', 'swapid',
+        'toggleoutput', 'umount', 'unsubscribe')
     def _parse_nothing(self, lines):
-        """Related commands:
-
-        - add
-        - addtagid
-        - clear
-        - clearerror
-        - cleartagid
-        - consume
-        - crossfade
-        - delete
-        - deleteid
-        - disableoutput
-        - enableoutput
-        - findadd
-        - load
-        - mixrampdb
-        - mixrampdelay
-        - mount
-        - move
-        - moveid
-        - next
-        - password
-        - pause
-        - ping
-        - play
-        - playid
-        - playlistadd
-        - playlistclear
-        - playlistdelete
-        - playlistmove
-        - previous
-        - prio
-        - prioid
-        - random
-        - rangeid
-        - rename
-        - repeat
-        - replay_gain_mode
-        - rm
-        - save
-        - searchadd
-        - searchaddpl
-        - seek
-        - seekcur
-        - seekid
-        - sendmessage
-        - setvol
-        - shuffle
-        - single
-        - sticker delete
-        - sticker set
-        - stop
-        - subscribe
-        - swap
-        - swapid
-        - toggleoutput
-        - umount
-        - unsubscribe
-        """
         return
 
+    @mpd_commands('count', 'currentsong', 'readcomments', 'stats', 'status')
     def _parse_object(self, lines):
-        """Related commands:
-
-        - count
-        - currentsong
-        - readcomments
-        - stats
-        - status
-        """
         objs = list(self._parse_objects(lines))
         if not objs:
             return {}
         return objs[0]
 
+    @mpd_commands('outputs')
     def _parse_outputs(self, lines):
-        """Related commands:
-
-        - outputs
-        """
         return self._parse_objects(lines, ["outputid"])
 
+    @mpd_commands('playlist')
     def _parse_playlist(self, lines):
-        """Related commands:
-
-        - playlist
-        """
         for key, value in self._parse_pairs(lines, ":"):
             yield value
 
+    @mpd_commands('listplaylists')
     def _parse_playlists(self, lines):
-        """Related commands:
-
-        - listplaylists
-        """
         return self._parse_objects(lines, ["playlist"])
 
+    @mpd_commands('decoders')
     def _parse_plugins(self, lines):
-        """Related commands:
-
-        - decoders
-        """
         return self._parse_objects(lines, ["plugin"])
 
+    @mpd_commands(
+        'find', 'listplaylistinfo', 'playlistfind', 'playlistid',
+        'playlistinfo', 'playlistsearch', 'plchanges', 'search', 'sticker find')
     def _parse_songs(self, lines):
-        """Related commands:
-
-        - find
-        - listplaylistinfo
-        - playlistfind
-        - playlistid
-        - playlistinfo
-        - playlistsearch
-        - plchanges
-        - search
-        - sticker find
-        """
         return self._parse_objects(lines, ["file"])
 
+    @mpd_commands('sticker get')
     def _parse_sticker(self, lines):
-        """Related commands:
-
-        - sticker get
-        """
         key, value = list(self._parse_raw_stickers(lines))[0]
         return value
 
+    @mpd_commands('sticker list')
     def _parse_stickers(self, lines):
-        """Related commands:
-
-        - sticker list
-        """
         return dict(self._parse_raw_stickers(lines))
 
 
+###############################################################################
+# sync client
+###############################################################################
+
+def _create_callback(self, function, wrap_result):
+    """Create MPD command related response callback.
+    """
+    if not isinstance(function, Callable):
+        return None
+    def command_callback():
+        # command result callback expects response from MPD as iterable lines,
+        # thus read available lines from socket
+        res = function(self, self._read_lines())
+        # wrap result in iterator helper if desired
+        if wrap_result:
+            res = self._wrap_iterator(res)
+        return res
+    return command_callback
+
+
+def _create_command(wrapper, name, return_value, wrap_result):
+    """Create MPD command related function.
+    """
+    def mpd_command(self, *args):
+        callback = _create_callback(self, return_value, wrap_result)
+        return wrapper(self, name, args, callback)
+    return mpd_command
+
+
+class _NotConnected(object):
+    def __getattr__(self, attr):
+        return self._dummy
+
+    def _dummy(*args):
+        raise ConnectionError("Not connected")
+
+
+@mpd_command_provider
 class MPDClient(MPDClientBase):
     idletimeout = None
     _timeout = None
+    _wrap_iterator_parsers = [
+        MPDClientBase._parse_list,
+        MPDClientBase._parse_playlist,
+        MPDClientBase._parse_changes,
+        MPDClientBase._parse_songs,
+        MPDClientBase._parse_mounts,
+        MPDClientBase._parse_neighbors,
+        MPDClientBase._parse_playlists,
+        MPDClientBase._parse_database,
+        MPDClientBase._parse_messages,
+        MPDClientBase._parse_outputs,
+        MPDClientBase._parse_plugins
+    ]
+    if IS_PYTHON2:
+        _wrap_iterator_parsers = [f.__func__ for f in _wrap_iterator_parsers]
 
     def __init__(self, use_unicode=False):
         super(MPDClient, self).__init__(use_unicode=use_unicode)
@@ -559,9 +475,6 @@ class MPDClient(MPDClientBase):
                 logger.debug("Calling MPD %s%r", command, args)
         self._write_line(" ".join(parts))
 
-    ##################
-    # response helpers
-
     def _read_line(self):
         line = self._rfile.readline()
         if self.use_unicode:
@@ -608,69 +521,6 @@ class MPDClient(MPDClientBase):
             return list(iterator)
         self._iterating = True
         return self._iterator_wrapper(iterator)
-
-    ####################
-    # response callbacks
-
-    def _fetch_nothing(self):
-        line = self._read_line()
-        if line is not None:
-            raise ProtocolError(
-                "Got unexpected return value: '{}'".format(line))
-
-    def _fetch_idle(self):
-        self._sock.settimeout(self.idletimeout)
-        ret = self._fetch_list()
-        self._sock.settimeout(self._timeout)
-        return ret
-
-    def _fetch_item(self):
-        return self._parse_item(self._read_lines())
-
-    def _fetch_object(self):
-        return self._parse_object(self._read_lines())
-
-    def _fetch_sticker(self):
-        return self._parse_sticker(self._read_lines())
-
-    def _fetch_stickers(self):
-        return self._parse_stickers(self._read_lines())
-
-    def _fetch_list(self):
-        return self._wrap_iterator(self._parse_list(self._read_lines()))
-
-    def _fetch_playlist(self):
-        return self._wrap_iterator(self._parse_playlist(self._read_lines()))
-
-    def _fetch_changes(self):
-        return self._wrap_iterator(self._parse_changes(self._read_lines()))
-
-    def _fetch_songs(self):
-        return self._wrap_iterator(self._parse_songs(self._read_lines()))
-
-    def _fetch_mounts(self):
-        return self._wrap_iterator(self._parse_mounts(self._read_lines()))
-
-    def _fetch_neighbors(self):
-        return self._wrap_iterator(self._parse_neighbors(self._read_lines()))
-
-    def _fetch_playlists(self):
-        return self._wrap_iterator(self._parse_playlists(self._read_lines()))
-
-    def _fetch_database(self):
-        return self._wrap_iterator(self._parse_database(self._read_lines()))
-
-    def _fetch_messages(self):
-        return self._wrap_iterator(self._parse_messages(self._read_lines()))
-
-    def _fetch_outputs(self):
-        return self._wrap_iterator(self._parse_outputs(self._read_lines()))
-
-    def _fetch_plugins(self):
-        return self._wrap_iterator(self._parse_plugins(self._read_lines()))
-
-    # end response callbacks
-    ########################
 
     def _fetch_command_list(self):
         return self._wrap_iterator(self._read_command_list())
@@ -719,6 +569,19 @@ class MPDClient(MPDClientBase):
             raise err
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
+
+    @mpd_commands(*MPDClientBase._parse_nothing.mpd_commands)
+    def _parse_nothing(self, lines):
+        for line in lines:
+            raise ProtocolError(
+                "Got unexpected return value: '{}'".format(', '.join(lines)))
+
+    @mpd_commands('idle')
+    def _parse_idle(self, lines):
+        self._sock.settimeout(self.idletimeout)
+        ret = self._wrap_iterator(self._parse_list(lines))
+        self._sock.settimeout(self._timeout)
+        return ret
 
     @property
     def timeout(self):
@@ -790,7 +653,7 @@ class MPDClient(MPDClientBase):
             raise CommandError(msg)
         del self._pending[0]
         self._write_command("noidle")
-        return self._fetch_list()
+        return self._wrap_iterator(self._parse_list(self._read_lines()))
 
     def command_list_ok_begin(self):
         if self._command_list is not None:
@@ -813,9 +676,10 @@ class MPDClient(MPDClientBase):
 
     @classmethod
     def add_command(cls, name, callback):
-        method = new_function(cls._execute, name, callback)
-        send_method = new_function(cls._send, name, callback)
-        fetch_method = new_function(cls._fetch, name, callback)
+        wrap_result = callback in cls._wrap_iterator_parsers
+        method = _create_command(cls._execute, name, callback, wrap_result)
+        send_method = _create_command(cls._send, name, callback, wrap_result)
+        fetch_method = _create_command(cls._fetch, name, callback, wrap_result)
         # create new mpd commands as function in three flavors:
         # normal, with "send_"-prefix and with "fetch_"-prefix
         escaped_name = name.replace(" ", "_")
@@ -832,42 +696,5 @@ class MPDClient(MPDClientBase):
         delattr(cls, str(name))
         delattr(cls, str("send_" + name))
         delattr(cls, str("fetch_" + name))
-
-
-def bound_decorator(self, function):
-    """Bind decorator to self.
-    """
-    if not isinstance(function, Callable):
-        return None
-    def decorator(*args, **kwargs):
-        return function(self, *args, **kwargs)
-    return decorator
-
-
-def new_function(wrapper, name, return_value):
-    def decorator(self, *args):
-        return wrapper(self, name, args, bound_decorator(self, return_value))
-    return decorator
-
-
-def lookup_func(cls, name):
-    func = None
-    if name in cls.__dict__:
-        func = cls.__dict__[name]
-    else:
-        for base in cls.__bases__:
-            func = lookup_func(base, name)
-            if func is not None:
-                break
-    return func
-
-
-for key, value in _commands.items():
-    return_value = lookup_func(MPDClient, value)
-    MPDClient.add_command(key, return_value)
-
-
-def escape(text):
-    return text.replace("\\", "\\\\").replace('"', '\\"')
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

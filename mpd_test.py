@@ -217,7 +217,7 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturn("ACK awesome command\n")
 
         self.client.add_command("awesome command",
-                                mpd.MPDClient._fetch_nothing)
+                                mpd.MPDClient._parse_nothing)
         self.assertTrue(hasattr(self.client, "awesome_command"))
         self.assertTrue(hasattr(self.client, "send_awesome_command"))
         self.assertTrue(hasattr(self.client, "fetch_awesome_command"))
