@@ -25,6 +25,7 @@
 /.coverage
 /.tox
 /nosetests.xml
+/coverage_html/
 
 # Sphinx docs
 /doc/_build
