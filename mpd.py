@@ -180,20 +180,20 @@ class MPDClientBase(object):
 
     @classmethod
     def add_command(cls, name, callback):
-        raise NotImplememtedError(
+        raise NotImplementedError(
             'Abstract ``MPDClientBase`` does not implement ``add_command``')
 
     def noidle(self):
-        raise NotImplememtedError(
+        raise NotImplementedError(
             'Abstract ``MPDClientBase`` does not implement ``noidle``')
 
     def command_list_ok_begin(self):
-        raise NotImplememtedError(
+        raise NotImplementedError(
             'Abstract ``MPDClientBase`` does not implement '
             '``command_list_ok_begin``')
 
     def command_list_end(self):
-        raise NotImplememtedError(
+        raise NotImplementedError(
             'Abstract ``MPDClientBase`` does not implement '
             '``command_list_end``')
 
@@ -473,10 +473,12 @@ class MPDClient(MPDClientBase):
                 logger.debug("Calling MPD password(******)")
             else:
                 logger.debug("Calling MPD %s%r", command, args)
-        self._write_line(" ".join(parts))
+        cmd = " ".join(parts)
+        self._write_line(cmd)
 
     def _read_line(self):
         line = self._rfile.readline()
+        #print line.encode('unicode_escape')
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
@@ -507,7 +509,7 @@ class MPDClient(MPDClientBase):
                 yield retval()
         finally:
             self._command_list = None
-        self._fetch_nothing()
+        self._parse_nothing(self._read_lines())
 
     def _iterator_wrapper(self, iterator):
         try:
@@ -521,9 +523,6 @@ class MPDClient(MPDClientBase):
             return list(iterator)
         self._iterating = True
         return self._iterator_wrapper(iterator)
-
-    def _fetch_command_list(self):
-        return self._wrap_iterator(self._read_command_list())
 
     def _hello(self):
         line = self._rfile.readline()
@@ -672,7 +671,7 @@ class MPDClient(MPDClientBase):
         if self._iterating:
             raise IteratingError("Already iterating over a command list")
         self._write_command("command_list_end")
-        return self._fetch_command_list()
+        return self._wrap_iterator(self._read_command_list())
 
     @classmethod
     def add_command(cls, name, callback):

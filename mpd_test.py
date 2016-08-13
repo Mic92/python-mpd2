@@ -69,6 +69,19 @@ class TestMPDClient(unittest.TestCase):
     def assertMPDReceived(self, *lines):
         self.client._wfile.write.assert_called_with(*lines)
 
+    def test_abstract_functions(self):
+        self.assertRaises(
+            NotImplementedError,
+            lambda: mpd.MPDClientBase.add_command('command_name', lambda x: x))
+        client = mpd.MPDClientBase()
+        self.assertRaises(NotImplementedError, lambda: client.noidle())
+        self.assertRaises(
+            NotImplementedError,
+            lambda: client.command_list_ok_begin())
+        self.assertRaises(
+            NotImplementedError,
+            lambda: client.command_list_end())
+
     def test_metaclass_commands(self):
         # just some random functions
         self.assertTrue(hasattr(self.client, "commands"))
@@ -89,7 +102,7 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsInstance(song["track"], list)
         self.assertMPDReceived('currentsong\n')
 
-    def test_fetch_nothing(self):
+    def test_parse_nothing(self):
         self.MPDWillReturn('OK\n', 'OK\n')
 
         self.assertIsNone(self.client.ping())
@@ -98,17 +111,17 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsNone(self.client.clearerror())
         self.assertMPDReceived('clearerror\n')
 
-    def test_fetch_list(self):
+    def test_parse_list(self):
         self.MPDWillReturn('OK\n')
 
         self.assertIsInstance(self.client.list("album"), list)
         self.assertMPDReceived('list "album"\n')
 
-    def test_fetch_item(self):
+    def test_parse_item(self):
         self.MPDWillReturn('updating_db: 42\n', 'OK\n')
         self.assertIsNotNone(self.client.update())
 
-    def test_fetch_object(self):
+    def test_parse_object(self):
         # XXX: _read_objects() doesn't wait for the final OK
         self.MPDWillReturn('volume: 63\n', 'OK\n')
         status = self.client.status()
@@ -121,7 +134,7 @@ class TestMPDClient(unittest.TestCase):
         self.assertMPDReceived('stats\n')
         self.assertIsInstance(stats, dict)
 
-    def test_fetch_songs(self):
+    def test_parse_songs(self):
         self.MPDWillReturn("file: my-song.ogg\n",
                            "Pos: 0\n",
                            "Id: 66\n",
@@ -302,6 +315,7 @@ class TestMPDClient(unittest.TestCase):
         self.assertMPDReceived('close\n')
 
         # XXX: what are we testing here?
+        #      looks like reconnection test?
         self.client._reset()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
 
@@ -372,6 +386,87 @@ class TestMPDClient(unittest.TestCase):
             self.client.move((1, "garbage"), 2)
             self.assertMPDReceived('move "1:" "2"\n')
 
+    def test_parse_changes(self):
+        self.MPDWillReturn(
+            'cpos: 0\n',
+            'Id: 66\n',
+            'cpos: 1\n',
+            'Id: 67\n',
+            'cpos: 2\n',
+            'Id: 68\n',
+            'cpos: 3\n',
+            'Id: 69\n',
+            'cpos: 4\n',
+            'Id: 70\n',
+            'OK\n')
+        res = self.client.plchangesposid(0)
+        self.assertEqual([
+            {'cpos': '0', 'id': '66'},
+            {'cpos': '1', 'id': '67'},
+            {'cpos': '2', 'id': '68'},
+            {'cpos': '3', 'id': '69'},
+            {'cpos': '4', 'id': '70'}], res)
+
+    def test_parse_database(self):
+        self.MPDWillReturn(
+            'directory: foo\n',
+            'Last-Modified: 2014-01-23T16:42:46Z\n',
+            'file: bar.mp3\n',
+            'size: 59618802\n',
+            'Last-Modified: 2014-11-02T19:57:00Z\n',
+            'OK\n')
+        self.client.listfiles("/")
+
+    def test_parse_mounts(self):
+        self.MPDWillReturn(
+            'mount: \n',
+            'storage: /home/foo/music\n',
+            'mount: foo\n',
+            'storage: nfs://192.168.1.4/export/mp3\n',
+            'OK\n')
+        res = self.client.listmounts()
+        self.assertEqual([
+            {'mount': '', 'storage': '/home/foo/music'},
+            {'mount': 'foo', 'storage': 'nfs://192.168.1.4/export/mp3'}], res)
+
+    def test_parse_neighbors(self):
+        self.MPDWillReturn(
+            'neighbor: smb://FOO\n',
+            'name: FOO (Samba 4.1.11-Debian)\n',
+            'OK\n')
+        res = self.client.listneighbors()
+        self.assertEqual(
+            [{'name': 'FOO (Samba 4.1.11-Debian)', 'neighbor': 'smb://FOO'}],
+            res)
+
+    def test_parse_outputs(self):
+        self.MPDWillReturn(
+            'outputid: 0\n',
+            'outputname: My ALSA Device\n',
+            'outputenabled: 0\n',
+            'OK\n')
+        res = self.client.outputs()
+        self.assertEqual([{
+            'outputenabled': '0',
+            'outputid': '0',
+            'outputname': 'My ALSA Device'}], res)
+
+    def test_parse_playlist(self):
+        self.MPDWillReturn(
+            '0:file: Weezer - Say It Ain\'t So.mp3\n',
+            '1:file: Dire Straits - Walk of Life.mp3\n',
+            '2:file: 01 - Love Delicatessen.mp3\n',
+            '3:file: Guns N\' Roses - Paradise City.mp3\n',
+            '4:file: Nirvana - Lithium.mp3\n',
+            'OK\n')
+        res = self.client.playlist()
+        self.assertEqual([
+            "file: Weezer - Say It Ain't So.mp3",
+            'file: Dire Straits - Walk of Life.mp3',
+            'file: 01 - Love Delicatessen.mp3',
+            "file: Guns N' Roses - Paradise City.mp3",
+            'file: Nirvana - Lithium.mp3'], res)
+
     def test_parse_raw_stickers(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client._parse_raw_stickers(self.client._read_lines())
@@ -380,15 +475,6 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturn("sticker: foo=bar\n", "sticker: l=b\n", "OK\n")
         res = self.client._parse_raw_stickers(self.client._read_lines())
         self.assertEqual([('foo', 'bar'), ('l', 'b')], list(res))
-
-    def test_fetch_database(self):
-        self.MPDWillReturn('directory: foo\n',
-                           'Last-Modified: 2014-01-23T16:42:46Z\n',
-                           'file: bar.mp3\n',
-                           'size: 59618802\n',
-                           'Last-Modified: 2014-11-02T19:57:00Z\n',
-                           'OK\n')
-        self.client.listfiles("/")
 
     def test_parse_raw_sticker_with_special_value(self):
         self.MPDWillReturn("sticker: foo==uv=vu\n", "OK\n")
@@ -414,6 +500,64 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client.sticker_list('song', 'baz')
         self.assertEqual({'foo': 'bar'}, res)
+
+    def test_command_list(self):
+        self.MPDWillReturn(
+            'list_OK\n',
+            'list_OK\n',
+            'list_OK\n',
+            'list_OK\n',
+            'list_OK\n',
+            'volume: 100\n',
+            'repeat: 1\n',
+            'random: 1\n',
+            'single: 0\n',
+            'consume: 0\n',
+            'playlist: 68\n',
+            'playlistlength: 5\n',
+            'mixrampdb: 0.000000\n',
+            'state: play\n',
+            'xfade: 5\n',
+            'song: 0\n',
+            'songid: 56\n',
+            'time: 0:259\n',
+            'elapsed: 0.000\n',
+            'bitrate: 0\n',
+            'nextsong: 2\n',
+            'nextsongid: 58\n',
+            'list_OK\n',
+            'OK\n')
+        self.client.command_list_ok_begin()
+        self.client.clear()
+        self.client.load('Playlist')
+        self.client.random(1)
+        self.client.repeat(1)
+        self.client.play(0)
+        self.client.status()
+        res = self.client.command_list_end()
+        self.assertEqual(None, res[0])
+        self.assertEqual(None, res[1])
+        self.assertEqual(None, res[2])
+        self.assertEqual(None, res[3])
+        self.assertEqual(None, res[4])
+        self.assertEqual([
+            ('bitrate', '0'),
+            ('consume', '0'),
+            ('elapsed', '0.000'),
+            ('mixrampdb', '0.000000'),
+            ('nextsong', '2'),
+            ('nextsongid', '58'),
+            ('playlist', '68'),
+            ('playlistlength', '5'),
+            ('random', '1'),
+            ('repeat', '1'),
+            ('single', '0'),
+            ('song', '0'),
+            ('songid', '56'),
+            ('state', 'play'),
+            ('time', '0:259'),
+            ('volume', '100'),
+            ('xfade', '5')], sorted(res[5].items()))
 
 if __name__ == '__main__':
     unittest.main()
