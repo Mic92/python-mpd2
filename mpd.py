@@ -478,7 +478,6 @@ class MPDClient(MPDClientBase):
 
     def _read_line(self):
         line = self._rfile.readline()
-        #print line.encode('unicode_escape')
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):

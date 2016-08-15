@@ -467,6 +467,47 @@ class TestMPDClient(unittest.TestCase):
             "file: Guns N' Roses - Paradise City.mp3",
             'file: Nirvana - Lithium.mp3'], res)
 
+    def test_parse_playlists(self):
+        self.MPDWillReturn(
+            'playlist: Playlist\n',
+            'Last-Modified: 2016-08-13T10:55:56Z\n',
+            'OK\n')
+        res = self.client.listplaylists()
+        self.assertEqual([
+            {'last-modified': '2016-08-13T10:55:56Z', 'playlist': 'Playlist'}
+        ], res)
+
+    def test_parse_plugins(self):
+        self.MPDWillReturn(
+            'plugin: vorbis\n',
+            'suffix: ogg\n',
+            'suffix: oga\n',
+            'mime_type: application/ogg\n',
+            'mime_type: application/x-ogg\n',
+            'mime_type: audio/ogg\n',
+            'mime_type: audio/vorbis\n',
+            'mime_type: audio/vorbis+ogg\n',
+            'mime_type: audio/x-ogg\n',
+            'mime_type: audio/x-vorbis\n',
+            'mime_type: audio/x-vorbis+ogg\n',
+            'OK\n')
+        self.client.iterate = False
+        res = self.client.decoders()
+        self.assertEqual([{
+            'mime_type': [
+                'application/ogg',
+                'application/x-ogg',
+                'audio/ogg',
+                'audio/vorbis',
+                'audio/vorbis+ogg',
+                'audio/x-ogg',
+                'audio/x-vorbis',
+                'audio/x-vorbis+ogg'],
+            'plugin': 'vorbis',
+            'suffix': [
+                'ogg',
+                'oga']}], res)
+
     def test_parse_raw_stickers(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
         res = self.client._parse_raw_stickers(self.client._read_lines())
