@@ -2,6 +2,7 @@
 #
 # Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
 # Copyright (C) 2012  J. Thalheim <jthalheim@gmail.com>
+# Copyright (C) 2016  Robert Niederreiter <rnix@squarewave.at>
 #
 # python-mpd2 is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -297,7 +298,9 @@ class MPDClientBase(object):
         'sticker delete', 'sticker set', 'stop', 'subscribe', 'swap', 'swapid',
         'toggleoutput', 'umount', 'unsubscribe')
     def _parse_nothing(self, lines):
-        return
+        for line in lines:
+            raise ProtocolError(
+                "Got unexpected return value: '{}'".format(', '.join(lines)))
 
     @mpd_commands('count', 'currentsong', 'readcomments', 'stats', 'status')
     def _parse_object(self, lines):
@@ -452,6 +455,7 @@ class MPDClient(MPDClientBase):
             return retval
 
     def _write_line(self, line):
+        #print line.encode('unicode_escape')
         self._wfile.write("{}\n".format(line))
         self._wfile.flush()
 
@@ -478,6 +482,7 @@ class MPDClient(MPDClientBase):
 
     def _read_line(self):
         line = self._rfile.readline()
+        #print line.encode('unicode_escape')
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
@@ -567,12 +572,6 @@ class MPDClient(MPDClientBase):
             raise err
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
-
-    @mpd_commands(*MPDClientBase._parse_nothing.mpd_commands)
-    def _parse_nothing(self, lines):
-        for line in lines:
-            raise ProtocolError(
-                "Got unexpected return value: '{}'".format(', '.join(lines)))
 
     @mpd_commands('idle')
     def _parse_idle(self, lines):

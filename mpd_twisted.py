@@ -3,7 +3,6 @@
 # Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
 # Copyright (C) 2010  Jasper St. Pierre <jstpierre@mecheye.net>
 # Copyright (C) 2010,2011  Oliver Mader <b52@reaktor42.de>
-# Copyright (C) 2012  J. Thalheim <jthalheim@gmail.com>
 # Copyright (C) 2016  Robert Niederreiter <rnix@squarewave.at>
 #
 # python-mpd2 is free software: you can redistribute it and/or modify
@@ -25,30 +24,46 @@ from types import GeneratorType
 import mpd
 
 
+def _create_command(wrapper, name, callback):
+    def mpd_command(self, *args):
+        def bound_callback(lines):
+            return callback(self, lines)
+        return wrapper(self, name, args, bound_callback)
+    return mpd_command
+
+
 @mpd.mpd_command_provider
 class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
     debug = False
     delimiter = "\n"
-    _commands = dict()
 
-    def __init__(self, use_unicode=False):
+    def __init__(self, idle=True, use_unicode=False):
         super(MPDProtocol, self).__init__(use_unicode=use_unicode)
-        self.iterate = True
+        # flag whether idle by default
+#         self._idle = idle
+#         self._noidle = False
         self._reset()
 
     @classmethod
     def add_command(cls, name, callback):
+        func = _create_command(cls._execute, name, callback)
         escaped_name = name.replace(" ", "_")
-        cls._commands[escaped_name] = callback
+        setattr(cls, escaped_name, func)
 
     def lineReceived(self, line):
         line = line.decode('utf-8')
         if self.debug:
-            logger.info('MPDProtocol.lineReceived: {}'.format(line))
+            mpd.logger.info('MPDProtocol.lineReceived: {}'.format(line))
         command_list = self._state and isinstance(self._state[0], list)
         state_list = self._state[0] if command_list else self._state
         if line.startswith(mpd.HELLO_PREFIX):
             self.mpd_version = line[len(mpd.HELLO_PREFIX):].strip()
+
+#             if self._idle:
+#                 if self.debug:
+#                     mpd.logger.info('MPDProtocol.lineReceived: enter idle')
+#                 self.idle().addCallback(self._dispatch_idle_result)
+
         elif line.startswith(mpd.ERROR_PREFIX):
             error = line[len(mpd.ERROR_PREFIX):].strip()
             if command_list:
@@ -62,22 +77,17 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
             else:
                 state_list.pop(0).errback(mpd.CommandError(error))
         elif line == mpd.SUCCESS or (command_list and line == mpd.NEXT):
-            parser = state_list.pop(0).callback(self._buffer[:])
-            self._buffer = []
+            parser = state_list.pop(0).callback(self._rcvd_lines[:])
+            self._rcvd_lines = []
             if command_list and line == mpd.SUCCESS:
                 del self._state[0]
         else:
-            self._buffer.append(line)
+            self._rcvd_lines.append(line)
 
-    def noidle(self):
-        # XXX
-        #if not self._pending or self._pending[0] != 'idle':
-        #    msg = 'cannot send noidle if send_idle was not called'
-        #    raise mpd.CommandError(msg)
-        #del self._pending[0]
-        #self._write_command("noidle")
-        #return self._fetch_list()
-        pass
+    @mpd.mpd_commands(
+        *mpd.MPDClientBase._parse_nothing.mpd_commands + ('noidle',))
+    def _parse_nothing(self, lines):
+        return
 
     def command_list_ok_begin(self):
         if self._command_list:
@@ -97,33 +107,42 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
         self._command_list = False
         return deferred
 
-    def __getattr__(self, attr):
-        try:
-            return lambda *args: self._execute(attr, args, self._commands[attr])
-        except KeyError:
-            msg = "'{}' object has no attribute '{}'".format(
-                self.__class__.__name__, attr)
-            raise AttributeError(msg)
-
     def _reset(self):
         super(MPDProtocol, self)._reset()
         self.mpd_version = None
         self._command_list = False
         self._command_list_results = []
-        self._buffer = []
+        self._rcvd_lines = []
         self._state = []
 
     def _execute(self, command, args, parser):
         if self._command_list and not callable(parser):
             msg = "{} not allowed in command list".format(command)
             raise mpd.CommandListError(msg)
+
+#         if self._idle and not self._noidle:
+#             self._noidle = True
+#             if self.debug:
+#                 mpd.logger.info('MPDProtocol._execute: enter noidle')
+#             self.noidle().addCallback(self._dispatch_idle_result)
+
         self._write_command(command, args)
         deferred = defer.Deferred()
-        (self._state[-1] if self._command_list else self._state).append(deferred)
+        (self._state[-1] \
+            if self._command_list else self._state).append(deferred)
         if parser is not self.NOOP:
             deferred.addCallback(parser)
             if self._command_list:
                 deferred.addCallback(self._parse_command_list_item)
+
+#         if self._idle and not self._command_list:
+#             def enter_idle(*args):
+#                 if self.debug:
+#                     mpd.logger.info('MPDProtocol._execute: enter idle')
+#                 self.idle().addCallback(self._dispatch_idle_result)
+#                 self._noidle = False
+#             deferred.addCallback(enter_idle)
+
         return deferred
 
     def _write_command(self, command, args=[]):
@@ -132,7 +151,7 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
             if isinstance(arg, unicode) else str(arg)) for arg in args]
         cmd = " ".join(parts)
         if self.debug:
-            logger.info('MPDProtocol._write_command: {}'.format(cmd))
+            mpd.logger.info('MPDProtocol._write_command: {}'.format(cmd))
         self.sendLine(cmd)
 
     def _parse_command_list_item(self, result):
@@ -144,5 +163,11 @@ class MPDProtocol(basic.LineReceiver, mpd.MPDClientBase):
 
     def _parse_command_list_end(self, lines):
         return self._command_list_results.pop(0)
+
+#     def _dispatch_idle_result(self, lines):
+#         lines = list(lines) if lines else lines
+#         mpd.logger.info('DISPATCH IDLE RESULT: {}'.format(lines))
+#         if not self._noidle:
+#             self.idle().addCallback(self._dispatch_idle_result)
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

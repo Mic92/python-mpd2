@@ -491,7 +491,6 @@ class TestMPDClient(unittest.TestCase):
             'mime_type: audio/x-vorbis\n',
             'mime_type: audio/x-vorbis+ogg\n',
             'OK\n')
-        self.client.iterate = False
         res = self.client.decoders()
         self.assertEqual([{
             'mime_type': [
@@ -506,7 +505,7 @@ class TestMPDClient(unittest.TestCase):
             'plugin': 'vorbis',
             'suffix': [
                 'ogg',
-                'oga']}], res)
+                'oga']}], list(res))
 
     def test_parse_raw_stickers(self):
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
