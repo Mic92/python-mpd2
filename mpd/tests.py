@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import itertools
+import mpd
 import sys
 import types
 import warnings
-
-import mpd
 
 try:
     # is required for python2.6
@@ -39,7 +38,7 @@ class TestMPDClient(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
-        self.socket_patch = mock.patch("mpd.socket")
+        self.socket_patch = mock.patch("mpd.base.socket")
         self.socket_mock = self.socket_patch.start()
         self.socket_mock.getaddrinfo.return_value = [range(5)]
 
@@ -70,10 +69,11 @@ class TestMPDClient(unittest.TestCase):
         self.client._wfile.write.assert_called_with(*lines)
 
     def test_abstract_functions(self):
+        MPDClientBase = mpd.base.MPDClientBase
         self.assertRaises(
             NotImplementedError,
-            lambda: mpd.MPDClientBase.add_command('command_name', lambda x: x))
-        client = mpd.MPDClientBase()
+            lambda: MPDClientBase.add_command('command_name', lambda x: x))
+        client = MPDClientBase()
         self.assertRaises(NotImplementedError, lambda: client.noidle())
         self.assertRaises(
             NotImplementedError,
