@@ -162,7 +162,9 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         if self._idle_result:
             self._idle_result(result)
         else:
-            logger.warning('MPDProtocol: no idle result callback defined')
+            res = list(result)
+            msg = 'MPDProtocol: no idle callback defined: {}'.format(res)
+            logger.warning(msg)
 
     def _dispatch_noidle_result(self, result):
         self._do_dispatch(result)
