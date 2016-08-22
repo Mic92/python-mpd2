@@ -17,6 +17,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
+#
+# THIS MODULE IS EXPERIMENTAL. AS SOON AS IT IS CONSIDERED STABLE THIS NOTE
+# WILL BE REMOVED. PLEASE REPORT INCONSISTENCIES, BUGS AND IMPROVEMENTS AT
+# https://github.com/Mic92/python-mpd2/issues
 
 from __future__ import absolute_import
 from mpd.base import CommandError
@@ -44,18 +48,30 @@ def _create_command(wrapper, name, callback):
 
 @mpd_command_provider
 class MPDProtocol(basic.LineReceiver, MPDClientBase):
-    debug = False
+    debug = True
     delimiter = "\n"
 
-    def __init__(self, idle=True, use_unicode=False):
+    def __init__(self, default_idle=True, use_unicode=False):
         super(MPDProtocol, self).__init__(use_unicode=use_unicode)
-        # flag whether idle by default
-#         self._idle = idle
-#         self._noidle = False
+        # flag whether client should idle by default
+        self._default_idle = default_idle
         self._reset()
+
+    def _reset(self):
+        super(MPDProtocol, self)._reset()
+        self.mpd_version = None
+        self._command_list = False
+        self._command_list_results = []
+        self._rcvd_lines = []
+        self._state = []
+        self._idle = False
 
     @classmethod
     def add_command(cls, name, callback):
+        # ignore commands which are implemented on class directly 
+        if getattr(cls, name, None) is not None:
+            return
+        # create command and hook it on class
         func = _create_command(cls._execute, name, callback)
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, func)
@@ -68,12 +84,11 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         state_list = self._state[0] if command_list else self._state
         if line.startswith(HELLO_PREFIX):
             self.mpd_version = line[len(HELLO_PREFIX):].strip()
-
-#             if self._idle:
-#                 if self.debug:
-#                     logger.info('MPDProtocol.lineReceived: enter idle')
-#                 self.idle().addCallback(self._dispatch_idle_result)
-
+            # default state idle, enter idle
+            if self._default_idle:
+                if self.debug:
+                    logger.info('Default state idle set, enter idle')
+                self.idle().addCallback(self._dispatch_idle_result)
         elif line.startswith(ERROR_PREFIX):
             error = line[len(ERROR_PREFIX):].strip()
             if command_list:
@@ -86,73 +101,55 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
                 del self._command_list_results[0]
             else:
                 state_list.pop(0).errback(CommandError(error))
+            # XXX: reset received lines here? 
+            self._continue_idle()
         elif line == SUCCESS or (command_list and line == NEXT):
-            parser = state_list.pop(0).callback(self._rcvd_lines[:])
+            state_list.pop(0).callback(self._rcvd_lines[:])
             self._rcvd_lines = []
             if command_list and line == SUCCESS:
                 del self._state[0]
+            self._continue_idle()
         else:
             self._rcvd_lines.append(line)
 
-    @mpd_commands(
-        *MPDClientBase._parse_nothing.mpd_commands + ('noidle',))
-    def _parse_nothing(self, lines):
-        return
-
-    def command_list_ok_begin(self):
-        if self._command_list:
-            raise CommandListError("Already in command list")
-        self._write_command("command_list_ok_begin")
-        self._command_list = True
-        self._command_list_results.append([])
-        self._state.append([])
-
-    def command_list_end(self):
-        if not self._command_list:
-            raise CommandListError("Not in command list")
-        self._write_command("command_list_end")
-        deferred = defer.Deferred()
-        deferred.addCallback(self._parse_command_list_end)
-        self._state[-1].append(deferred)
-        self._command_list = False
-        return deferred
-
-    def _reset(self):
-        super(MPDProtocol, self)._reset()
-        self.mpd_version = None
-        self._command_list = False
-        self._command_list_results = []
-        self._rcvd_lines = []
-        self._state = []
+    def _continue_idle(self):
+        if self.debug:
+            logger.info(
+                '_continue_idle: self._idle {}; len self._state {}'.format(
+                    self._idle,
+                    len(self._state)))
+        if self._default_idle and not self._idle and not self._state:
+            if self.debug:
+                logger.info(
+                    'Default state idle, no more pending commands, enter idle')
+            self.idle().addCallback(self._dispatch_idle_result)
 
     def _execute(self, command, args, parser):
+        # close or kill command in command list not allowed
         if self._command_list and not callable(parser):
             msg = "{} not allowed in command list".format(command)
             raise CommandListError(msg)
-
-#         if self._idle and not self._noidle:
-#             self._noidle = True
-#             if self.debug:
-#                 logger.info('MPDProtocol._execute: enter noidle')
-#             self.noidle().addCallback(self._dispatch_idle_result)
-
+        if self.debug:
+            logger.info('Trigger ``{}``'.format(command))
+        # default state idle and currently in idle state, trigger noidle
+        if self._default_idle and self._idle and command != "idle":
+            if self.debug:
+                logger.info('Currently in idle state, trigger ``noidle``')
+            self.noidle().addCallback(self._dispatch_noidle_result)
+        # write command to MPD
         self._write_command(command, args)
+        # create command related deferred
         deferred = defer.Deferred()
-        (self._state[-1] \
-            if self._command_list else self._state).append(deferred)
+        # extend pending result queue
+        state = self._state[-1] if self._command_list else self._state
+        state.append(deferred)
+        # NOOP is for close and kill commands
         if parser is not self.NOOP:
+            # attach command related result parser
             deferred.addCallback(parser)
+            # command list, attach handler for collecting command list results
             if self._command_list:
                 deferred.addCallback(self._parse_command_list_item)
-
-#         if self._idle and not self._command_list:
-#             def enter_idle(*args):
-#                 if self.debug:
-#                     logger.info('MPDProtocol._execute: enter idle')
-#                 self.idle().addCallback(self._dispatch_idle_result)
-#                 self._noidle = False
-#             deferred.addCallback(enter_idle)
-
         return deferred
 
     def _write_command(self, command, args=[]):
@@ -174,10 +171,56 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
     def _parse_command_list_end(self, lines):
         return self._command_list_results.pop(0)
 
-#     def _dispatch_idle_result(self, lines):
-#         lines = list(lines) if lines else lines
-#         logger.info('DISPATCH IDLE RESULT: {}'.format(lines))
-#         if not self._noidle:
-#             self.idle().addCallback(self._dispatch_idle_result)
+    @mpd_commands(
+        *MPDClientBase._parse_nothing.mpd_commands)
+    def _parse_nothing(self, lines):
+        return None
+
+    def idle(self):
+        if self._idle:
+            raise CommandError("Already in idle state")
+        self._idle = True
+        return self._execute('idle', [], self._parse_list)
+
+    def noidle(self):
+        if not self._idle:
+            raise CommandError("Not in idle state")
+        # delete first pending deferred, idle returns nothing if noidle gets
+        # called
+        self._state.pop(0)
+        self._idle = False
+        return self._execute('noidle', [], self._parse_list)
+
+    def command_list_ok_begin(self):
+        if self._command_list:
+            raise CommandListError("Already in command list")
+        if self._default_idle and self._idle:
+            self.noidle().addCallback(self._dispatch_noidle_result)
+        self._write_command("command_list_ok_begin")
+        self._command_list = True
+        self._command_list_results.append([])
+        self._state.append([])
+
+    def command_list_end(self):
+        if not self._command_list:
+            raise CommandListError("Not in command list")
+        self._write_command("command_list_end")
+        deferred = defer.Deferred()
+        deferred.addCallback(self._parse_command_list_end)
+        self._state[-1].append(deferred)
+        self._command_list = False
+        return deferred
+
+    def _dispatch_noidle_result(self, lines):
+        if self.debug:
+            logger.info(
+                'Dispatch noidle result called, received {}'.format(list(lines)))
+
+    def _dispatch_idle_result(self, lines):
+        self._idle = False
+        if self.debug:
+            logger.info(
+                'Dispatch idle result called, received {}'.format(list(lines)))
+        self._continue_idle()
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

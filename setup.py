@@ -43,9 +43,6 @@ GNU Lesser General Public License for more details.  You should have received a 
 along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.\
 """
 
-DOWNLOAD_URL = \
-    "https://github.com/Mic92/python-mpd2/archive/v{}.zip".format(VERSION)
-
 
 class Tox(TestCommand):
 
@@ -77,7 +74,6 @@ setup(
     author_email="jthalheim@gmail.com",
     license="GNU Lesser General Public License v3 (LGPLv3)",
     url="https://github.com/Mic92/python-mpd2",
-    download_url=DOWNLOAD_URL,
     packages=find_packages(),
     zip_safe=True,
     keywords=["mpd"],
