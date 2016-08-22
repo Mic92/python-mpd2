@@ -9,4 +9,4 @@ python:
   - "3.5"
   - "pypy"
 
-script: python -m mpd/tests
+script: python -m unittest mpd.tests
