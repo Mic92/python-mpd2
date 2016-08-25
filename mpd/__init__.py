@@ -27,3 +27,7 @@ from mpd.base import PendingCommandError
 from mpd.base import ProtocolError
 from mpd.base import VERSION
 
+try:
+    from mpd.twisted import MPDProtocol
+except ImportError:
+    pass
