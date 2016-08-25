@@ -1,13 +1,19 @@
 #! /usr/bin/env python
 
-from distutils.core import setup
 from setuptools import Extension
+from setuptools import find_packages
+from setuptools import setup
 from setuptools.command.test import test as TestCommand
-import sys,os
 import mpd
+import os
+import sys
+
 
 if sys.version_info[0] == 2:
     from io import open
+
+
+VERSION = ".".join(map(str, mpd.VERSION))
 
 CLASSIFIERS = [
     "Development Status :: 5 - Production/Stable",
@@ -23,6 +29,7 @@ CLASSIFIERS = [
 LICENSE = """\
 Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
 Copyright (C) 2012  J. Thalheim <joerg@higgsboson.tk>
+Copyright (C) 2016  Robert Niederreiter <rnix@squarewave.at>
 
 python-mpd2 is free software: you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published by
@@ -36,37 +43,43 @@ GNU Lesser General Public License for more details.  You should have received a 
 along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.\
 """
 
+
 class Tox(TestCommand):
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = []
         self.test_suite = True
+
     def run_tests(self):
         #import here, cause outside the eggs aren't loaded
         import tox
         errno = tox.cmdline(self.test_args)
         sys.exit(errno)
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__),  fname),  encoding="utf8").read()
 
-VERSION = ".".join(map(str, mpd.VERSION))
+def read(fname):
+    with open(os.path.join(os.path.dirname(__file__),  fname),
+              encoding="utf8") as fd:
+        return fd.read()
+
 
 setup(
     name="python-mpd2",
     version=VERSION,
     description="A Python MPD client library",
     long_description=read('README.rst'),
+    classifiers=CLASSIFIERS,
     author="J. Thalheim",
     author_email="jthalheim@gmail.com",
+    license="GNU Lesser General Public License v3 (LGPLv3)",
     url="https://github.com/Mic92/python-mpd2",
-    download_url="https://github.com/Mic92/python-mpd2/archive/v%s.zip" % VERSION,
-    py_modules=["mpd", "mpd_test"],
-    classifiers=CLASSIFIERS,
-    #license=LICENSE,
+    packages=find_packages(),
+    zip_safe=True,
     keywords=["mpd"],
+    test_suite="mpd.tests",
     tests_require=['tox'],
-    cmdclass = {'test': Tox},
+    cmdclass={'test': Tox}
 )
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

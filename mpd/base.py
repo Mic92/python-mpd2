@@ -1,6 +1,8 @@
 # python-mpd2: Python MPD client library
+#
 # Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
 # Copyright (C) 2012  J. Thalheim <jthalheim@gmail.com>
+# Copyright (C) 2016  Robert Niederreiter <rnix@squarewave.at>
 #
 # python-mpd2 is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by

@@ -3,19 +3,20 @@
 # Packages
 *.egg
 *.egg-info
-/dist
-/build
-/eggs
-/parts
-/bin
-/var
-/sdist
-/develop-eggs
+/.eggs/
+/dist/
+/build/
+/eggs/
+/parts/
+/bin/
+/var/
+/sdist/
+/develop-eggs/
+/lib/
+/lib64/
+/include/
+/local/
 /.installed.cfg
-/lib
-/lib64
-/include
-/local
 
 # Installer logs
 /pip-selfcheck.json
@@ -25,6 +26,7 @@
 /.coverage
 /.tox
 /nosetests.xml
+/coverage_html/
 
 # Sphinx docs
 /doc/_build

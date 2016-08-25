@@ -39,7 +39,7 @@ class TestMPDClient(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
-        self.socket_patch = mock.patch("mpd.socket")
+        self.socket_patch = mock.patch("mpd.base.socket")
         self.socket_mock = self.socket_patch.start()
         self.socket_mock.getaddrinfo.return_value = [range(5)]
 
