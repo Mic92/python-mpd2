@@ -30,6 +30,7 @@ from mpd.base import HELLO_PREFIX
 from mpd.base import MPDClientBase
 from mpd.base import NEXT
 from mpd.base import SUCCESS
+from mpd.base import escape
 from mpd.base import logger
 from mpd.base import mpd_command_provider
 from mpd.base import mpd_commands
