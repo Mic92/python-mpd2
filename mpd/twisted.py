@@ -55,7 +55,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         super(MPDProtocol, self).__init__(use_unicode=use_unicode)
         # flag whether client should idle by default
         self._default_idle = default_idle
-        self._idle_result = idle_result
+        self.idle_result = idle_result
         self._reset()
 
     def _reset(self):
@@ -160,8 +160,8 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
             self.idle().addCallback(self._dispatch_idle_result)
 
     def _do_dispatch(self, result):
-        if self._idle_result:
-            self._idle_result(result)
+        if self.idle_result:
+            self.idle_result(result)
         else:
             res = list(result)
             msg = 'MPDProtocol: no idle callback defined: {}'.format(res)
