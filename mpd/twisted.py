@@ -69,7 +69,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
 
     @classmethod
     def add_command(cls, name, callback):
-        # ignore commands which are implemented on class directly 
+        # ignore commands which are implemented on class directly
         if getattr(cls, name, None) is not None:
             return
         # create command and hook it on class
@@ -98,7 +98,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
                 del self._command_list_results[0]
             else:
                 state_list.pop(0).errback(CommandError(error))
-            # XXX: reset received lines here? 
+            # XXX: reset received lines here?
             self._continue_idle()
         elif line == SUCCESS or (command_list and line == NEXT):
             state_list.pop(0).callback(self._rcvd_lines[:])
@@ -135,7 +135,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
 
     def _write_command(self, command, args=[]):
         parts = [command]
-        parts += ['"{}"'.format(escape(arg.encode('utf-8')) \
+        parts += ['"{}"'.format(escape(arg.encode('utf-8'))
             if isinstance(arg, unicode) else str(arg)) for arg in args]
         cmd = " ".join(parts)
         self.sendLine(cmd)
