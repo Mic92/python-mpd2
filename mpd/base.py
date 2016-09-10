@@ -411,6 +411,8 @@ class MPDClient(MPDClientBase):
         self._wfile = _NotConnected()
 
     def _send(self, command, args, retval):
+        warnings.warn("The 'send_%s' is deprecated in favor of asynchronous api" % command, DeprecationWarning)
+
         if self._command_list is not None:
             raise CommandListError(
                 "Cannot use send_{} in a command list".format(command))
@@ -419,6 +421,8 @@ class MPDClient(MPDClientBase):
             self._pending.append(command)
 
     def _fetch(self, command, args, retval):
+        warnings.warn("The 'fetch_%s' is deprecated in favor of asynchronous api" % command, DeprecationWarning)
+
         if self._command_list is not None:
             raise CommandListError(
                 "Cannot use fetch_{} in a command list".format(command))
