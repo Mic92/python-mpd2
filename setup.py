@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-from setuptools import Extension
 from setuptools import find_packages
 from setuptools import setup
 from setuptools.command.test import test as TestCommand
@@ -79,7 +78,8 @@ setup(
     keywords=["mpd"],
     test_suite="mpd.tests",
     tests_require=['tox'],
-    cmdclass={'test': Tox}
+    cmdclass={'test': Tox},
+    extras_require={'twisted':  ["twisted"]}
 )
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:
