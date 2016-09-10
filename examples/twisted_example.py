@@ -39,11 +39,11 @@ class MPDClientFactory(protocol.ClientFactory):
         return protocol
 
     def clientConnectionFailed(self, connector, reason):
-        print("Connection failed - goodbye!")
+        print("Connection failed - goodbye!: %s" % reason)
         reactor.stop()
-    
+
     def clientConnectionLost(self, connector, reason):
-        print("Connection lost - goodbye!")
+        print("Connection lost - goodbye!: %s" % reason)
         reactor.stop()
 
 
