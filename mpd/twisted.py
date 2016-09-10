@@ -51,8 +51,8 @@ def _create_command(wrapper, name, callback):
 class MPDProtocol(basic.LineReceiver, MPDClientBase):
     delimiter = "\n"
 
-    def __init__(self, default_idle=True, idle_result=None, use_unicode=False):
-        super(MPDProtocol, self).__init__(use_unicode=use_unicode)
+    def __init__(self, default_idle=True, idle_result=None):
+        super(MPDProtocol, self).__init__(use_unicode=True)
         # flag whether client should idle by default
         self._default_idle = default_idle
         self.idle_result = idle_result
