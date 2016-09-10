@@ -5,10 +5,11 @@ Changes in v0.6.0 (unreleased)
 ------------------------------
 
 * Use @property and @property.setter for MPDClient.timeout
+* Add support for twisted
+* deprecate send_* and fetch_* variants of MPD commands:
+  consider using twisted instead, in future asyncio support will be added
 * Introduce MPDClientBase class which provides common MPD communication related
   helpers. Used as base for synchronous and asynchronous clients
-* Introduce lookup_func which also searches on base classes for hooking
-  commands
 
 
 Changes in v0.5.5
