@@ -23,6 +23,7 @@
 # https://github.com/Mic92/python-mpd2/issues
 
 from __future__ import absolute_import
+from __future__ import unicode_literals
 from mpd.base import CommandError
 from mpd.base import CommandListError
 from mpd.base import ERROR_PREFIX
@@ -36,7 +37,7 @@ from mpd.base import mpd_command_provider
 from mpd.base import mpd_commands
 from twisted.internet import defer
 from twisted.protocols import basic
-from types import GeneratorType
+import types
 
 
 def _create_command(wrapper, name, callback):
@@ -49,7 +50,7 @@ def _create_command(wrapper, name, callback):
 
 @mpd_command_provider
 class MPDProtocol(basic.LineReceiver, MPDClientBase):
-    delimiter = "\n"
+    delimiter = b'\n'
 
     def __init__(self, default_idle=True, idle_result=None):
         super(MPDProtocol, self).__init__(use_unicode=True)
@@ -74,7 +75,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
             return
         # create command and hook it on class
         func = _create_command(cls._execute, name, callback)
-        escaped_name = name.replace(" ", "_")
+        escaped_name = name.replace(' ', '_')
         setattr(cls, escaped_name, func)
 
     def lineReceived(self, line):
@@ -92,7 +93,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
                 state_list[0].errback(CommandError(error))
                 for state in state_list[1:-1]:
                     state.errback(
-                        CommandListError("An earlier command failed."))
+                        CommandListError('An earlier command failed.'))
                 state_list[-1].errback(CommandListError(error))
                 del self._state[0]
                 del self._command_list_results[0]
@@ -112,10 +113,10 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
     def _execute(self, command, args, parser):
         # close or kill command in command list not allowed
         if self._command_list and not callable(parser):
-            msg = "{} not allowed in command list".format(command)
+            msg = '{} not allowed in command list'.format(command)
             raise CommandListError(msg)
         # default state idle and currently in idle state, trigger noidle
-        if self._default_idle and self._idle and command != "idle":
+        if self._default_idle and self._idle and command != 'idle':
             self.noidle().addCallback(self._dispatch_noidle_result)
         # write command to MPD
         self._write_command(command, args)
@@ -134,15 +135,11 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         return deferred
 
     def _write_command(self, command, args=[]):
-        parts = [command]
-        parts += ['"{}"'.format(escape(arg.encode('utf-8'))
-            if isinstance(arg, unicode) else str(arg)) for arg in args]
-        cmd = " ".join(parts)
-        self.sendLine(cmd)
+        parts = [command] + ['"{}"'.format(escape(arg)) for arg in args]
+        self.sendLine(' '.join(parts).encode('utf-8'))
 
     def _parse_command_list_item(self, result):
-        # TODO: find a better way to do this
-        if type(result) == GeneratorType:
+        if isinstance(result, types.GeneratorType):
             result = list(result)
         self._command_list_results[0].append(result)
         return result
@@ -177,13 +174,13 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
 
     def idle(self):
         if self._idle:
-            raise CommandError("Already in idle state")
+            raise CommandError('Already in idle state')
         self._idle = True
         return self._execute('idle', [], self._parse_list)
 
     def noidle(self):
         if not self._idle:
-            raise CommandError("Not in idle state")
+            raise CommandError('Not in idle state')
         # delete first pending deferred, idle returns nothing when
         # noidle gets called
         self._state.pop(0)
@@ -192,18 +189,18 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
 
     def command_list_ok_begin(self):
         if self._command_list:
-            raise CommandListError("Already in command list")
+            raise CommandListError('Already in command list')
         if self._default_idle and self._idle:
             self.noidle().addCallback(self._dispatch_noidle_result)
-        self._write_command("command_list_ok_begin")
+        self._write_command('command_list_ok_begin')
         self._command_list = True
         self._command_list_results.append([])
         self._state.append([])
 
     def command_list_end(self):
         if not self._command_list:
-            raise CommandListError("Not in command list")
-        self._write_command("command_list_end")
+            raise CommandListError('Not in command list')
+        self._write_command('command_list_end')
         deferred = defer.Deferred()
         deferred.addCallback(self._parse_command_list_end)
         self._state[-1].append(deferred)
