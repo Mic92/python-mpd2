@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import itertools
 import mpd
 import sys
@@ -19,6 +20,14 @@ except ImportError:
     else:
         print("Please install unittest2 from PyPI to run tests!")
         sys.exit(1)
+
+try:
+    from twisted.python.failure import Failure
+    TWISTED_MISSING = False
+except ImportError:
+    warnings.warn("No twisted installed: skip twisted related tests! " +
+                  "(twisted is not available for python >= 3.0 && python < 3.3)")
+    TWISTED_MISSING = True
 
 try:
     import mock
@@ -598,6 +607,289 @@ class TestMPDClient(unittest.TestCase):
             ('time', '0:259'),
             ('volume', '100'),
             ('xfade', '5')], sorted(res[5].items()))
+
+
+class MockTransport(object):
+
+    def __init__(self):
+        self.written = list()
+
+    def clear(self):
+        self.written = list()
+
+    def write(self, data):
+        self.written.append(data)
+
+
+@unittest.skipIf(TWISTED_MISSING, "requires twisted to be installed")
+class TestMPDProtocol(unittest.TestCase):
+
+    def init_protocol(self, default_idle=True, idle_result=None):
+        self.protocol = mpd.MPDProtocol(
+            default_idle=default_idle,
+            idle_result=idle_result
+        )
+        self.protocol.transport = MockTransport()
+
+    def test_success(self):
+        self.init_protocol(default_idle=False)
+
+        def success(result):
+            expected = {
+                'file': 'Dire Straits - Walk of Life.mp3',
+                'artist': 'Dire Straits',
+                'title': 'Walk of Life',
+                'genre': 'Rock/Pop',
+                'track': '3',
+                'album': 'Brothers in Arms',
+                'id': '13',
+                'last-modified': '2016-08-11T10:57:03Z',
+                'pos': '4',
+                'time': '253'
+            }
+            self.assertEqual(expected, result)
+
+        self.protocol.currentsong().addCallback(success)
+        self.assertEqual([b'currentsong\n'], self.protocol.transport.written)
+
+        for line in [b'file: Dire Straits - Walk of Life.mp3',
+                     b'Last-Modified: 2016-08-11T10:57:03Z',
+                     b'Time: 253',
+                     b'Artist: Dire Straits',
+                     b'Title: Walk of Life',
+                     b'Album: Brothers in Arms',
+                     b'Track: 3',
+                     b'Genre: Rock/Pop',
+                     b'Pos: 4',
+                     b'Id: 13',
+                     b'OK']:
+            self.protocol.lineReceived(line)
+
+    def test_failure(self):
+        self.init_protocol(default_idle=False)
+
+        def error(result):
+            self.assertIsInstance(result, Failure)
+            self.assertEqual(
+                result.getErrorMessage(),
+                '[50@0] {load} No such playlist'
+            )
+
+        self.protocol.load('Foo').addErrback(error)
+        self.assertEqual([b'load "Foo"\n'], self.protocol.transport.written)
+        self.protocol.lineReceived(b'ACK [50@0] {load} No such playlist')
+
+    def test_default_idle(self):
+
+        def idle_result(result):
+            self.assertEqual(list(result), ['player'])
+
+        self.init_protocol(idle_result=idle_result)
+        self.protocol.lineReceived(b'OK MPD 0.18.0')
+        self.assertEqual([b'idle\n'], self.protocol.transport.written)
+        self.protocol.transport.clear()
+        self.protocol.lineReceived(b'changed: player')
+        self.protocol.lineReceived(b'OK')
+        self.assertEqual(
+            [b'idle\n'],
+            self.protocol.transport.written
+        )
+
+    def test_noidle_when_default_idle(self):
+        self.init_protocol()
+        self.protocol.lineReceived(b'OK MPD 0.18.0')
+        self.protocol.pause()
+        self.protocol.lineReceived(b'OK')
+        self.protocol.lineReceived(b'OK')
+        self.assertEqual(
+            [b'idle\n', b'noidle\n', b'pause\n', b'idle\n'],
+            self.protocol.transport.written
+        )
+
+    def test_already_idle(self):
+        self.init_protocol(default_idle=False)
+        self.protocol.idle()
+        self.assertRaises(mpd.CommandError, lambda: self.protocol.idle())
+
+    def test_already_noidle(self):
+        self.init_protocol(default_idle=False)
+        self.assertRaises(mpd.CommandError, lambda: self.protocol.noidle())
+
+    def test_command_list(self):
+        self.init_protocol(default_idle=False)
+
+        def success(result):
+            self.assertEqual([None, None], result)
+
+        self.protocol.command_list_ok_begin()
+        self.protocol.play()
+        self.protocol.stop()
+        self.protocol.command_list_end().addCallback(success)
+        self.assertEqual(
+            [
+                b'command_list_ok_begin\n',
+                b'play\n',
+                b'stop\n',
+                b'command_list_end\n',
+            ],
+            self.protocol.transport.written
+        )
+        self.protocol.transport.clear()
+        self.protocol.lineReceived(b'list_OK')
+        self.protocol.lineReceived(b'list_OK')
+        self.protocol.lineReceived(b'OK')
+
+    def test_command_list_failure(self):
+        self.init_protocol(default_idle=False)
+
+        def load_command_error(result):
+            self.assertIsInstance(result, Failure)
+            self.assertEqual(
+                result.getErrorMessage(),
+                '[50@0] {load} No such playlist'
+            )
+
+        def command_list_general_error(result):
+            self.assertIsInstance(result, Failure)
+            self.assertEqual(
+                result.getErrorMessage(),
+                'An earlier command failed.'
+            )
+
+        self.protocol.command_list_ok_begin()
+        self.protocol.load('Foo').addErrback(load_command_error)
+        self.protocol.play().addErrback(command_list_general_error)
+        self.protocol.command_list_end().addErrback(load_command_error)
+        self.assertEqual(
+            [
+                b'command_list_ok_begin\n',
+                b'load "Foo"\n',
+                b'play\n',
+                b'command_list_end\n',
+            ],
+            self.protocol.transport.written
+        )
+        self.protocol.lineReceived(b'ACK [50@0] {load} No such playlist')
+
+    def test_command_list_when_default_idle(self):
+        self.init_protocol()
+        self.protocol.lineReceived(b'OK MPD 0.18.0')
+
+        def success(result):
+            self.assertEqual([None, None], result)
+
+        self.protocol.command_list_ok_begin()
+        self.protocol.play()
+        self.protocol.stop()
+        self.protocol.command_list_end().addCallback(success)
+        self.assertEqual(
+            [
+                b'idle\n',
+                b'noidle\n',
+                b'command_list_ok_begin\n',
+                b'play\n',
+                b'stop\n',
+                b'command_list_end\n',
+            ],
+            self.protocol.transport.written
+        )
+        self.protocol.transport.clear()
+        self.protocol.lineReceived(b'OK')
+        self.protocol.lineReceived(b'list_OK')
+        self.protocol.lineReceived(b'list_OK')
+        self.protocol.lineReceived(b'OK')
+        self.assertEqual([b'idle\n'], self.protocol.transport.written)
+
+    def test_command_list_failure_when_default_idle(self):
+        self.init_protocol()
+        self.protocol.lineReceived(b'OK MPD 0.18.0')
+
+        def load_command_error(result):
+            self.assertIsInstance(result, Failure)
+            self.assertEqual(
+                result.getErrorMessage(),
+                '[50@0] {load} No such playlist'
+            )
+
+        def command_list_general_error(result):
+            self.assertIsInstance(result, Failure)
+            self.assertEqual(
+                result.getErrorMessage(),
+                'An earlier command failed.'
+            )
+
+        self.protocol.command_list_ok_begin()
+        self.protocol.load('Foo').addErrback(load_command_error)
+        self.protocol.play().addErrback(command_list_general_error)
+        self.protocol.command_list_end().addErrback(load_command_error)
+        self.assertEqual(
+            [
+                b'idle\n',
+                b'noidle\n',
+                b'command_list_ok_begin\n',
+                b'load "Foo"\n',
+                b'play\n',
+                b'command_list_end\n',
+            ],
+            self.protocol.transport.written
+        )
+        self.protocol.transport.clear()
+        self.protocol.lineReceived(b'OK')
+        self.protocol.lineReceived(b'ACK [50@0] {load} No such playlist')
+        self.assertEqual([b'idle\n'], self.protocol.transport.written)
+
+    def test_command_list_item_is_generator(self):
+        self.init_protocol(default_idle=False)
+
+        def success(result):
+            self.assertEqual(result, [[
+                "Weezer - Say It Ain't So.mp3",
+                'Dire Straits - Walk of Life.mp3',
+                '01 - Love Delicatessen.mp3',
+                "Guns N' Roses - Paradise City.mp3"
+            ]])
+
+        self.protocol.command_list_ok_begin()
+        self.protocol.listplaylist('Foo')
+        self.protocol.command_list_end().addCallback(success)
+        self.protocol.lineReceived(b'file: Weezer - Say It Ain\'t So.mp3')
+        self.protocol.lineReceived(b'file: Dire Straits - Walk of Life.mp3')
+        self.protocol.lineReceived(b'file: 01 - Love Delicatessen.mp3')
+        self.protocol.lineReceived(b'file: Guns N\' Roses - Paradise City.mp3')
+        self.protocol.lineReceived(b'list_OK')
+        self.protocol.lineReceived(b'OK')
+
+    def test_already_in_command_list(self):
+        self.init_protocol(default_idle=False)
+        self.protocol.command_list_ok_begin()
+        self.assertRaises(
+            mpd.CommandListError,
+            lambda: self.protocol.command_list_ok_begin()
+        )
+
+    def test_not_in_command_list(self):
+        self.init_protocol(default_idle=False)
+        self.assertRaises(
+            mpd.CommandListError,
+            lambda: self.protocol.command_list_end()
+        )
+
+    def test_invalid_command_in_command_list(self):
+        self.init_protocol(default_idle=False)
+        self.protocol.command_list_ok_begin()
+        self.assertRaises(
+            mpd.CommandListError,
+            lambda: self.protocol.kill()
+        )
+
+    def test_close(self):
+        self.init_protocol(default_idle=False)
+
+        def success(result):
+            self.assertEqual(result, None)
+
+        self.protocol.close().addCallback(success)
+
 
 if __name__ == '__main__':
     unittest.main()
