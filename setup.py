@@ -77,7 +77,11 @@ setup(
     zip_safe=True,
     keywords=["mpd"],
     test_suite="mpd.tests",
-    tests_require=['tox'],
+    tests_require=[
+        'tox',
+        'mock',
+        'Twisted'
+    ],
     cmdclass={'test': Tox},
     extras_require={'twisted':  ["twisted"]}
 )
