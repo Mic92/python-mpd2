@@ -82,8 +82,12 @@ setup(
         'mock',
         'Twisted'
     ],
-    cmdclass={'test': Tox},
-    extras_require={'twisted':  ["twisted"]}
+    cmdclass={
+        'test': Tox
+    },
+    extras_require={
+        'twisted': ['Twisted']
+    }
 )
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

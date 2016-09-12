@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 from twisted.python.failure import Failure
 import itertools
 import mpd
@@ -725,7 +726,7 @@ class TestMPDProtocol(unittest.TestCase):
             ],
             self.protocol.transport.written
         )
-        self.protocol.transport.written.clear()
+        self.protocol.transport.clear()
         self.protocol.lineReceived(b'list_OK')
         self.protocol.lineReceived(b'list_OK')
         self.protocol.lineReceived(b'OK')
@@ -792,7 +793,7 @@ class TestMPDProtocol(unittest.TestCase):
             ],
             self.protocol.transport.written
         )
-        self.protocol.transport.written.clear()
+        self.protocol.transport.clear()
         self.protocol.lineReceived(b'OK')
         self.protocol.lineReceived(b'list_OK')
         self.protocol.lineReceived(b'list_OK')
