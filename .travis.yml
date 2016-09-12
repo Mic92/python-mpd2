@@ -9,4 +9,7 @@ python:
   - "3.5"
   - "pypy"
 
+install:
+  - pip install .
+
 script: python -m unittest mpd.tests
