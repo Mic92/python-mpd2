@@ -44,6 +44,7 @@ def _create_command(wrapper, name, callback):
     def mpd_command(self, *args):
         def bound_callback(lines):
             return callback(self, lines)
+        bound_callback.callback = callback
         return wrapper(self, name, args, bound_callback)
     return mpd_command
 
@@ -99,7 +100,6 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
                 del self._command_list_results[0]
             else:
                 state_list.pop(0).errback(CommandError(error))
-            # XXX: reset received lines here?
             self._continue_idle()
         elif line == SUCCESS or (command_list and line == NEXT):
             state_list.pop(0).callback(self._rcvd_lines[:])
@@ -110,9 +110,14 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         else:
             self._rcvd_lines.append(line)
 
+    def _lookup_callback(self, parser):
+        if hasattr(parser, 'callback'):
+            return parser.callback
+        return parser
+
     def _execute(self, command, args, parser):
         # close or kill command in command list not allowed
-        if self._command_list and not callable(parser):
+        if self._command_list and self._lookup_callback(parser) is self.NOOP:
             msg = '{} not allowed in command list'.format(command)
             raise CommandListError(msg)
         # default state idle and currently in idle state, trigger noidle
@@ -126,7 +131,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         state = self._state[-1] if self._command_list else self._state
         state.append(deferred)
         # NOOP is for close and kill commands
-        if parser is not self.NOOP:
+        if self._lookup_callback(parser) is not self.NOOP:
             # attach command related result parser
             deferred.addCallback(parser)
             # command list, attach handler for collecting command list results
