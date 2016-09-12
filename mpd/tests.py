@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
-from twisted.python.failure import Failure
 import itertools
 import mpd
 import sys
@@ -21,6 +20,14 @@ except ImportError:
     else:
         print("Please install unittest2 from PyPI to run tests!")
         sys.exit(1)
+
+try:
+    from twisted.python.failure import Failure
+    TWISTED_MISSING = False
+except ImportError:
+    warnings.warn("No twisted installed: skip twisted related tests! " +
+                  "(twisted is not available for python >= 3.0 && python < 3.3)")
+    TWISTED_MISSING = True
 
 try:
     import mock
@@ -614,6 +621,7 @@ class MockTransport(object):
         self.written.append(data)
 
 
+@unittest.skipIf(TWISTED_MISSING, "requires twisted to be installed")
 class TestMPDProtocol(unittest.TestCase):
 
     def init_protocol(self, default_idle=True, idle_result=None):
