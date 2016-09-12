@@ -843,10 +843,10 @@ class TestMPDProtocol(unittest.TestCase):
 
         def success(result):
             self.assertEqual(result, [[
-                u"Weezer - Say It Ain't So.mp3",
-                u'Dire Straits - Walk of Life.mp3',
-                u'01 - Love Delicatessen.mp3',
-                u"Guns N' Roses - Paradise City.mp3"
+                "Weezer - Say It Ain't So.mp3",
+                'Dire Straits - Walk of Life.mp3',
+                '01 - Love Delicatessen.mp3',
+                "Guns N' Roses - Paradise City.mp3"
             ]])
 
         self.protocol.command_list_ok_begin()
