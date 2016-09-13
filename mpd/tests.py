@@ -631,6 +631,21 @@ class TestMPDProtocol(unittest.TestCase):
         )
         self.protocol.transport = MockTransport()
 
+    def test_create_command(self):
+        self.init_protocol(default_idle=False)
+        self.assertEqual(
+            self.protocol._create_command('play'),
+            b'play')
+        self.assertEqual(
+            self.protocol._create_command('rangeid', args=['1', ()]),
+            b'rangeid "1" ":"')
+        self.assertEqual(
+            self.protocol._create_command('rangeid', args=['1', (1,)]),
+            b'rangeid "1" "1:"')
+        self.assertEqual(
+            self.protocol._create_command('rangeid', args=['1', (1, 2)]),
+            b'rangeid "1" "1:2"')
+
     def test_success(self):
         self.init_protocol(default_idle=False)
 

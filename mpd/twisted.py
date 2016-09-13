@@ -139,9 +139,25 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
                 deferred.addCallback(self._parse_command_list_item)
         return deferred
 
+    def _create_command(self, command, args=[]):
+        # XXX: this function should be generalized in future. There exists
+        #      almost identical code in ``MPDClient._write_command``, with the
+        #      difference that it's using ``encode_str`` for text arguments.
+        parts = [command]
+        for arg in args:
+            if type(arg) is tuple:
+                if len(arg) == 0:
+                    parts.append('":"')
+                elif len(arg) == 1:
+                    parts.append('"{}:"'.format(int(arg[0])))
+                else:
+                    parts.append('"{}:{}"'.format(int(arg[0]), int(arg[1])))
+            else:
+                parts.append('"{}"'.format(escape(arg)))
+        return ' '.join(parts).encode('utf-8')
+
     def _write_command(self, command, args=[]):
-        parts = [command] + ['"{}"'.format(escape(arg)) for arg in args]
-        self.sendLine(' '.join(parts).encode('utf-8'))
+        self.sendLine(self._create_command(command, args))
 
     def _parse_command_list_item(self, result):
         if isinstance(result, types.GeneratorType):
