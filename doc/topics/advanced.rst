@@ -12,7 +12,7 @@ New commands or special handling of commands can be easily implemented.  Use
 
     client.add_command("get_cover", fetch_cover)
     # you can then use:
-    client.fetch_cover()
+    client.get_cover()
 
     # remove the command, because it doesn't exist already.
     client.remove_command("get_cover")
