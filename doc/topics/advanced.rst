@@ -32,7 +32,8 @@ But ``MPDClient`` can be easily extended to be thread-safe using `locks
 Unicode Handling
 ----------------
 
-To quote the mpd protocol documentation:
+To quote the `mpd protocol documentation
+<https://www.musicpd.org/doc/protocol/request_syntax.html>`_:
 
 > All data between the client and the server is encoded in UTF-8.
 
