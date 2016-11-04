@@ -10,12 +10,12 @@ New commands or special handling of commands can be easily implemented.  Use
         # this command may come in the future.
         pass
 
-    self.client.add_command("get_cover", fetch_cover)
+    client.add_command("get_cover", fetch_cover)
     # you can then use:
-    self.client.fetch_cover()
+    client.fetch_cover()
 
     # remove the command, because it doesn't exist already.
-    self.client.remove_command("get_cover")
+    client.remove_command("get_cover")
 
 
 Thread-Safety
