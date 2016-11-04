@@ -34,7 +34,7 @@ Unicode Handling
 
 To quote the mpd protocol documentation:
 
-> All data to be sent between the client and server must be encoded in UTF-8.
+> All data between the client and the server is encoded in UTF-8.
 
 With Python 3:
 ~~~~~~~~~~~~~~
