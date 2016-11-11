@@ -10,12 +10,12 @@ New commands or special handling of commands can be easily implemented.  Use
         # this command may come in the future.
         pass
 
-    self.client.add_command("get_cover", fetch_cover)
+    client.add_command("get_cover", fetch_cover)
     # you can then use:
-    self.client.fetch_cover()
+    client.get_cover()
 
     # remove the command, because it doesn't exist already.
-    self.client.remove_command("get_cover")
+    client.remove_command("get_cover")
 
 
 Thread-Safety
@@ -32,9 +32,10 @@ But ``MPDClient`` can be easily extended to be thread-safe using `locks
 Unicode Handling
 ----------------
 
-To quote the mpd protocol documentation:
+To quote the `mpd protocol documentation
+<https://www.musicpd.org/doc/protocol/request_syntax.html>`_:
 
-> All data to be sent between the client and server must be encoded in UTF-8.
+> All data between the client and the server is encoded in UTF-8.
 
 With Python 3:
 ~~~~~~~~~~~~~~
