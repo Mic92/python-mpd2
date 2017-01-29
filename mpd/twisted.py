@@ -37,7 +37,15 @@ from mpd.base import mpd_command_provider
 from mpd.base import mpd_commands
 from twisted.internet import defer
 from twisted.protocols import basic
+import threading
 import types
+
+
+def lock(func):
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return func(self, *args, **kwargs)
+    return wrapped
 
 
 def _create_command(wrapper, name, callback):
@@ -59,6 +67,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         self._default_idle = default_idle
         self.idle_result = idle_result
         self._reset()
+        self._lock = threading.RLock()
 
     def _reset(self):
         super(MPDProtocol, self)._reset()
@@ -79,6 +88,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
         escaped_name = name.replace(' ', '_')
         setattr(cls, escaped_name, func)
 
+    @lock
     def lineReceived(self, line):
         line = line.decode('utf-8')
         command_list = self._state and isinstance(self._state[0], list)
@@ -115,6 +125,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
             return parser.callback
         return parser
 
+    @lock
     def _execute(self, command, args, parser):
         # close or kill command in command list not allowed
         if self._command_list and self._lookup_callback(parser) is self.NOOP:
