@@ -13,6 +13,11 @@ python:
   - "nightly"
   - "pypy"
 
+matrix:
+  fast_finish: true
+  allow_failures:
+    - python: nightly
+
 install:
   - if [[ $TRAVIS_PYTHON_VERSION != '3.2' ]]; then pip install Twisted; fi
 
