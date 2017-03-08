@@ -1,5 +1,5 @@
 python-mpd2
-===========
+===========it
 
 .. image:: https://travis-ci.org/Mic92/python-mpd2.png?branch=master
     :target: http://travis-ci.org/Mic92/python-mpd2
@@ -43,7 +43,7 @@ Getting the latest source code
 If you would like to use the latest source code, you can grab a
 copy of the development version from Git by running the command::
 
-    $ git clone git://github.com/Mic92/python-mpd2.git
+    $ git clone https://github.com/Mic92/python-mpd2.git
 
 
 Getting the latest release
@@ -125,7 +125,7 @@ In order to update it, install python-lxml and run the following command::
 Contacting the author
 ---------------------
 
-Just contact me (Mic92) on Github or via email (joerg@higgsboson.tk).
+Just contact me (Mic92) on Github or via email (joerg@thalheim.io).
 
 Usually I hang around on Jabber in the channel ist@higgsboson.tk
 
