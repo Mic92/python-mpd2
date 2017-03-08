@@ -1,5 +1,5 @@
 python-mpd2
-===========it
+===========
 
 .. image:: https://travis-ci.org/Mic92/python-mpd2.png?branch=master
     :target: http://travis-ci.org/Mic92/python-mpd2
