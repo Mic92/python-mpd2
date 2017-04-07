@@ -1,3 +1,21 @@
+"""Asynchronous access to MPD using the asyncio methods of Python 3.
+
+Interaction happens over the mpd.asyncio.MPDClient class, whose connect and
+command methods are coroutines.
+
+Some commands (eg. listall) additionally support the asynchronous iteration
+(aiter, `async for`) interface; using it allows the library user to obtain
+items of result as soon as they arrive.
+
+The .idle() method works as expected, but there .noidle() method is not
+implemented pending a notifying (and automatically idling on demand) interface.
+The asynchronous .idle() method is thus only suitable for clients which only
+want to send commands after an idle returned (eg. current song notification
+pushers).
+
+Command lists are currently not supported.
+"""
+
 import asyncio
 from functools import partial
 
@@ -5,7 +23,7 @@ from mpd.base import HELLO_PREFIX, ERROR_PREFIX, SUCCESS
 from mpd.base import MPDClientBase
 from mpd.base import MPDClient as SyncMPDClient
 from mpd.base import ProtocolError, ConnectionError, CommandError
-from mpd.base import mpd_command_provider, mpd_commands
+from mpd.base import mpd_command_provider
 
 class BaseCommandResult(asyncio.Future):
     """A future that carries its command/args/callback with it for the
@@ -163,8 +181,7 @@ class MPDClient(MPDClientBase):
             return None
         return line
 
-    async def _parse_objects(self, lines, delimiters=[]):
-        """Like _parse_objects, but waits for lines"""
+    async def _parse_objects_direct(self, lines, delimiters=[]):
         obj = {}
         while True:
             line = await lines.get()
@@ -188,36 +205,11 @@ class MPDClient(MPDClientBase):
         if obj:
             yield obj
 
-    # as the above works for everyone who calls `return _parse_objects` but
-    # *not* for those that return list(_parse_objects(...))[0], that single
-    # function is rewritten here to use the original _parse_objects
-
-    @mpd_commands('count', 'currentsong', 'readcomments', 'stats', 'status')
-    def _parse_object(self, lines):
-        objs = list(SyncMPDClient._parse_objects(self, lines))
-        if not objs:
-            return {}
-        return objs[0]
-
     # command provider interface
-
-    __wrap_async_iterator_parsers = [
-            # the very ones that return _parse_object directly
-            SyncMPDClient._parse_changes,
-            SyncMPDClient._parse_database,
-            SyncMPDClient._parse_messages,
-            SyncMPDClient._parse_mounts,
-            SyncMPDClient._parse_neighbors,
-            SyncMPDClient._parse_outputs,
-            SyncMPDClient._parse_playlists,
-            SyncMPDClient._parse_plugins,
-            SyncMPDClient._parse_songs,
-            ]
 
     @classmethod
     def add_command(cls, name, callback):
-        wrap_result = callback in cls.__wrap_async_iterator_parsers
-        command_class = CommandResultIterable if wrap_result else CommandResult
+        command_class = CommandResultIterable if callback.mpd_commands_direct else CommandResult
         if hasattr(cls, name):
             # twisted silently ignores them; probably, i'll make an
             # experience that'll make me take the same router at some point.

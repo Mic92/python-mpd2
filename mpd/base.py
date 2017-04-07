@@ -117,11 +117,13 @@ class mpd_commands(object):
     callback.
     """
 
-    def __init__(self, *commands):
+    def __init__(self, *commands, is_direct=False):
         self.commands = commands
+        self.is_direct = is_direct
 
     def __call__(self, ob):
         ob.mpd_commands = self.commands
+        ob.mpd_commands_direct = self.is_direct
         return ob
 
 
@@ -232,6 +234,10 @@ class MPDClientBase(object):
         if obj:
             yield obj
 
+    # Use this instead of _parse_objects whenever the result is returned
+    # immediately in a command implementation
+    _parse_objects_direct = _parse_objects
+
     def _parse_raw_stickers(self, lines):
         for key, sticker in self._parse_pairs(lines):
             value = sticker.split('=', 1)
@@ -242,13 +248,14 @@ class MPDClientBase(object):
 
     NOOP = mpd_commands('close', 'kill')(Noop())
 
-    @mpd_commands('plchangesposid')
+    @mpd_commands('plchangesposid', is_direct=True)
     def _parse_changes(self, lines):
-        return self._parse_objects(lines, ["cpos"])
+        return self._parse_objects_direct(lines, ["cpos"])
 
-    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo')
+    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo',
+            is_direct=True)
     def _parse_database(self, lines):
-        return self._parse_objects(lines, ["file", "directory", "playlist"])
+        return self._parse_objects_direct(lines, ["file", "directory", "playlist"])
 
     @mpd_commands('idle')
     def _parse_idle(self, lines):
@@ -274,17 +281,17 @@ class MPDClientBase(object):
                 seen = key
             yield value
 
-    @mpd_commands('readmessages')
+    @mpd_commands('readmessages', is_direct=True)
     def _parse_messages(self, lines):
-        return self._parse_objects(lines, ["channel"])
+        return self._parse_objects_direct(lines, ["channel"])
 
-    @mpd_commands('listmounts')
+    @mpd_commands('listmounts', is_direct=True)
     def _parse_mounts(self, lines):
-        return self._parse_objects(lines, ["mount"])
+        return self._parse_objects_direct(lines, ["mount"])
 
-    @mpd_commands('listneighbors')
+    @mpd_commands('listneighbors', is_direct=True)
     def _parse_neighbors(self, lines):
-        return self._parse_objects(lines, ["neighbor"])
+        return self._parse_objects_direct(lines, ["neighbor"])
 
     @mpd_commands(
         'add', 'addtagid', 'clear', 'clearerror', 'cleartagid', 'consume',
@@ -309,28 +316,29 @@ class MPDClientBase(object):
             return {}
         return objs[0]
 
-    @mpd_commands('outputs')
+    @mpd_commands('outputs', is_direct=True)
     def _parse_outputs(self, lines):
-        return self._parse_objects(lines, ["outputid"])
+        return self._parse_objects_direct(lines, ["outputid"])
 
     @mpd_commands('playlist')
     def _parse_playlist(self, lines):
         for key, value in self._parse_pairs(lines, ":"):
             yield value
 
-    @mpd_commands('listplaylists')
+    @mpd_commands('listplaylists', is_direct=True)
     def _parse_playlists(self, lines):
-        return self._parse_objects(lines, ["playlist"])
+        return self._parse_objects_direct(lines, ["playlist"])
 
-    @mpd_commands('decoders')
+    @mpd_commands('decoders', is_direct=True)
     def _parse_plugins(self, lines):
-        return self._parse_objects(lines, ["plugin"])
+        return self._parse_objects_direct(lines, ["plugin"])
 
     @mpd_commands(
         'find', 'listplaylistinfo', 'playlistfind', 'playlistid',
-        'playlistinfo', 'playlistsearch', 'plchanges', 'search', 'sticker find')
+        'playlistinfo', 'playlistsearch', 'plchanges', 'search',
+        'sticker find', is_direct=True)
     def _parse_songs(self, lines):
-        return self._parse_objects(lines, ["file"])
+        return self._parse_objects_direct(lines, ["file"])
 
     @mpd_commands('sticker get')
     def _parse_sticker(self, lines):
