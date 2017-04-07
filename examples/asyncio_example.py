@@ -21,11 +21,33 @@ async def main():
     else:
         print("Status success:", status)
 
-    for x in await client.decoders():
-        print("sync decoder:", x)
+    print(list(await client.commands()))
 
-    async for x in client.decoders():
-        print("async decoder:", x)
+    import time
+    start = time.time()
+    for x in await client.listall():
+        print("sync:", x)
+        print("Time to first sync:", time.time() - start)
+        break
+
+    start = time.time()
+    async for x in client.listall():
+        print("async:", x)
+        print("Time to first async:", time.time() - start)
+        break
+
+    try:
+        await client.addid()
+    except Exception as e:
+        print("An erroneous command, as expected, raised:", e)
+
+    try:
+        async for x in client.plchangesposid():
+            print("Why does this work?")
+    except Exception as e:
+        print("An erroneous asynchronously looped command, as expected, raised:", e)
+
+    print("Idle result", list(await client.idle()))
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())
