@@ -103,7 +103,13 @@ class MPDClient(MPDClientBase):
 
         self.__commandqueue = asyncio.Queue(loop=loop)
 
-        await self.__hello()
+        try:
+            helloline = await asyncio.wait_for(self.__readline(), timeout=5)
+        except asyncio.TimeoutError:
+            self.disconnect()
+            raise ConnectionError("No response from server while reading MPD hello")
+        # FIXME should be reusable w/o reaching in
+        SyncMPDClient._hello(self, helloline)
 
         self.__run_task = asyncio.Task(self.__run())
 
@@ -142,23 +148,6 @@ class MPDClient(MPDClientBase):
         self.__wfile.write(text.encode('utf8'))
 
     # copied and subtly modifiedstuff from base
-
-    async def __hello(self):
-        # not catching the timeout error, it's actually pretty adaequate
-        try:
-            line = await asyncio.wait_for(self.__readline(), timeout=5)
-        except asyncio.TimeoutError:
-            self.disconnect()
-            raise ConnectionError("No response from server while reading MPD hello")
-
-        # FIXME this is copied from base.MPDClient._hello
-        if not line.endswith("\n"):
-            self.disconnect()
-            raise ConnectionError("Connection lost while reading MPD hello")
-        line = line.rstrip("\n")
-        if not line.startswith(HELLO_PREFIX):
-            raise ProtocolError("Got invalid MPD hello: '{}'".format(line))
-        self.mpd_version = line[len(HELLO_PREFIX):].strip()
 
     # this is just a wrapper for the below
     def _write_line(self, text):

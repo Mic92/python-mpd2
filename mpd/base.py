@@ -542,8 +542,7 @@ class MPDClient(MPDClientBase):
         self._iterating = True
         return self._iterator_wrapper(iterator)
 
-    def _hello(self):
-        line = self._rfile.readline()
+    def _hello(self, line):
         if not line.endswith("\n"):
             self.disconnect()
             raise ConnectionError("Connection lost while reading MPD hello")
@@ -636,7 +635,8 @@ class MPDClient(MPDClientBase):
                 encoding="utf-8",
                 newline="\n")
         try:
-            self._hello()
+            helloline = self._rfile.readline()
+            self._hello(helloline)
         except:
             self.disconnect()
             raise
