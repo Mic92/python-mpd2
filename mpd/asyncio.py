@@ -1,10 +1,32 @@
 import asyncio
+from functools import partial
 
 from mpd.base import HELLO_PREFIX, ERROR_PREFIX, SUCCESS
 from mpd.base import MPDClientBase
 from mpd.base import MPDClient as SyncMPDClient
-from mpd.base import ProtocolError, ConnectionError
+from mpd.base import ProtocolError, ConnectionError, CommandError
 from mpd.base import mpd_command_provider
+
+class CommandResult(asyncio.Future):
+    """A future that carries its command/args/callback with it for the
+    convenience of passing it around to the command queue."""
+
+    def __init__(self, command, args, callback):
+        super().__init__()
+        self._command = command
+        self._args = args
+        self.__callback = callback
+        self.__spooled_lines = []
+
+    def _feed_line(self, line):
+        """Put the given line into the callback machinery, and set the result on a None line."""
+        if line is None:
+            self.set_result(self.__callback(self.__spooled_lines))
+        else:
+            self.__spooled_lines.append(line)
+
+    async def __aiter__(self):
+        raise NotImplementedError("async for x in clientcommand() is work in progress")
 
 @mpd_command_provider
 class MPDClient(MPDClientBase):
@@ -32,13 +54,17 @@ class MPDClient(MPDClientBase):
 
     async def __run(self):
         while True:
-            command, args, callback, result = await self.__commandqueue.get()
-            self._write_command(command, args)
-            responselines = await self.__read_full_output()
+            result = await self.__commandqueue.get()
+            self._write_command(result._command, result._args)
             try:
-                result.set_result(callback(self, responselines))
+                responselines = await self.__read_full_output()
+                for l in responselines:
+                    result._feed_line(l)
             except Exception as e:
-                result.set_error(e)
+                # may be CommandError flying out of __read_fulloutput or any kind of exception from the callback
+                result.set_exception(e)
+            finally:
+                assert result.done(), "Result %s not done after __read_full_output was processed"%(result,)
 
     # helper methods
 
@@ -74,7 +100,7 @@ class MPDClient(MPDClientBase):
             raise ProtocolError("Got invalid MPD hello: '{}'".format(line))
         self.mpd_version = line[len(HELLO_PREFIX):].strip()
 
-    # FIXME this is just a wrapper for the below
+    # this is just a wrapper for the below
     def _write_line(self, text):
         self.__write(text + "\n")
     # FIXME this code should be sharable
@@ -100,10 +126,9 @@ class MPDClient(MPDClientBase):
         result = []
         while True:
             line = await self.__read_output_line()
+            result.append(line)
             if line is None:
                 return result
-            else:
-                result.append(line)
 
     # command provider interface
 
@@ -114,10 +139,8 @@ class MPDClient(MPDClientBase):
             # experience that'll make me take the same router at some point.
             raise AttributeError("Refusing to override the %s command"%name)
         def f(self, *args):
-            result = asyncio.Future()
-            self.__commandqueue.put_nowait(
-                    (name, args, callback, result)
-                    )
+            result = CommandResult(name, args, partial(callback, self))
+            self.__commandqueue.put_nowait(result)
             return result
         escaped_name = name.replace(" ", "_")
         f.__name__ = escaped_name
