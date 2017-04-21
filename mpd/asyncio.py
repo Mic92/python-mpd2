@@ -361,18 +361,47 @@ class MPDClient(MPDClientBase):
 
     # commands that just work differently
 
-    async def idle(self, subsystems=()):
+#    async def idle(self, subsystems=()):
+#        interests_before = self._get_idle_interests()
+#        changes = asyncio.Queue()
+#        try:
+#            entry = (subsystems, changes.put_nowait)
+#            self.__idle_consumers.append(entry)
+#            if self._get_idle_interests != interests_before:
+#                self._nudge_idle()
+#            while True:
+#                yield await changes.get()
+#        finally:
+#            self.__idle_consumers.remove(entry)
+
+    def idle(self, subsystems=()):
+        # this is a desugared workaround for python 3.5 like
+        # _parse_objects_direct. like there, please consider the above block
+        # authoritative and this a workaround, and only apply changes here once
+        # they're incorprated there.
+
+        def final():
+            self.__idle_consumers.remove(entry)
+
+        class IdleAIter:
+            def __aiter__(self):
+                return self
+
+            def __anext__(self):
+                return changes.get()
+
+            def __del__(self):
+                final()
+
         interests_before = self._get_idle_interests()
         changes = asyncio.Queue()
-        try:
-            entry = (subsystems, changes.put_nowait)
-            self.__idle_consumers.append(entry)
-            if self._get_idle_interests != interests_before:
-                self._nudge_idle()
-            while True:
-                yield await changes.get()
-        finally:
-            self.__idle_consumers.remove(entry)
+
+        entry = (subsystems, changes.put_nowait)
+        self.__idle_consumers.append(entry)
+        if self._get_idle_interests != interests_before:
+            self._nudge_idle()
+
+        return IdleAIter()
 
     def noidle(self):
         raise AttributeError("noidle is not supported / required in mpd.asyncio")
