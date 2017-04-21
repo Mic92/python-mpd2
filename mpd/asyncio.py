@@ -98,7 +98,7 @@ class MPDClient(MPDClientBase):
         self.__loop = loop
 
         if '/' in host:
-            r, w = await asyncio.open_unic_connection(path, loop=loop)
+            r, w = await asyncio.open_unix_connection(path, loop=loop)
         else:
             r, w = await asyncio.open_connection(host, port, loop=loop)
         self.__rfile, self.__wfile = r, w
@@ -116,14 +116,27 @@ class MPDClient(MPDClientBase):
         self.__run_task = asyncio.Task(self.__run())
 
     def disconnect(self):
-        self.__run_task.cancel()
+        if self.__run_task is not None: # is None eg. when connection fails in .connect()
+            self.__run_task.cancel()
         self.__rfile = self.__wfile = None
         self.__run_task = self.__commandqueue = None
 
     async def __run(self):
+        # if this actually raises (showing as "Task exception was never
+        # retrieved"), this is indicative of an implementation error in
+        # mpd.asyncio; no network behavior should be able to trigger uncaught
+        # exceptions here.
         while True:
             result = await self.__commandqueue.get()
-            self._write_command(result._command, result._args)
+            try:
+                self._write_command(result._command, result._args)
+            except Exception as e:
+                result._feed_error(e)
+                # prevent the destruction of the pending task in the shutdown
+                # function -- it's just shutting down by itself
+                self.__run_task = None
+                self.disconnect()
+                return
             while True:
                 try:
                     l = await self.__read_output_line()
@@ -252,6 +265,8 @@ class MPDClient(MPDClientBase):
             raise AttributeError("Refusing to override the %s command"%name)
         def f(self, *args):
             result = command_class(name, args, partial(callback, self))
+            if self.__run_task is None:
+                raise ConnectionError("Can not send command to disconnected client")
             self.__commandqueue.put_nowait(result)
             return result
         escaped_name = name.replace(" ", "_")
