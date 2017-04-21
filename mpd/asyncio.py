@@ -14,6 +14,9 @@ want to send commands after an idle returned (eg. current song notification
 pushers).
 
 Command lists are currently not supported.
+
+
+This module requires Python 3.5.2 or later to run.
 """
 
 import asyncio
