@@ -117,9 +117,12 @@ class mpd_commands(object):
     callback.
     """
 
-    def __init__(self, *commands, is_direct=False):
+    def __init__(self, *commands, **kwargs):
         self.commands = commands
-        self.is_direct = is_direct
+        self.is_direct = kwargs.pop('is_direct', False)
+        if kwargs:
+            raise AttributeError("mpd_commands() got unexpected keyword"
+                    " arguments %s" % ",".join(kwargs))
 
     def __call__(self, ob):
         ob.mpd_commands = self.commands
