@@ -76,6 +76,8 @@ class CommandResultIterable(BaseCommandResult):
         asyncio.Task(self.__feed_future())
         return super().__await__()
 
+    __iter__ = __await__ # for 'yield from' style invocation
+
     async def __feed_future(self):
         result = []
         async for r in self:
@@ -170,29 +172,74 @@ class MPDClient(MPDClientBase):
             return None
         return line
 
-    async def _parse_objects_direct(self, lines, delimiters=[]):
-        obj = {}
-        while True:
-            line = await lines.get()
-            if isinstance(line, BaseException):
-                raise line
-            if line is None:
-                break
-            key, value = self._parse_pair(line, separator=": ")
-            key = key.lower()
-            if obj:
-                if key in delimiters:
-                    yield obj
-                    obj = {}
-                elif key in obj:
-                    if not isinstance(obj[key], list):
-                        obj[key] = [obj[key], value]
-                    else:
-                        obj[key].append(value)
-                    continue
-            obj[key] = value
-        if obj:
-            yield obj
+
+#    async def _parse_objects_direct(self, lines, delimiters=[]):
+#        obj = {}
+#        while True:
+#            line = await lines.get()
+#            if isinstance(line, BaseException):
+#                raise line
+#            if line is None:
+#                break
+#            key, value = self._parse_pair(line, separator=": ")
+#            key = key.lower()
+#            if obj:
+#                if key in delimiters:
+#                    yield obj
+#                    obj = {}
+#                elif key in obj:
+#                    if not isinstance(obj[key], list):
+#                        obj[key] = [obj[key], value]
+#                    else:
+#                        obj[key].append(value)
+#                    continue
+#            obj[key] = value
+#        if obj:
+#            yield obj
+
+    def _parse_objects_direct(self, lines, delimiters=[]):
+        # this is a workaround implementing the above comment on python 3.5. it
+        # is recommended that the commented-out code be used for reasoning, and
+        # that changes are applied there and only copied over to this
+        # implementation.
+
+        outerself = self
+        class WrappedLoop:
+            def __init__(self):
+                self.obj = {}
+                self.exhausted = False
+
+            def __aiter__(self):
+                return self
+
+            async def __anext__(self):
+                while True:
+                    if self.exhausted:
+                        raise StopAsyncIteration()
+
+                    line = await lines.get()
+                    if isinstance(line, BaseException):
+                        raise line
+                    if line is None:
+                        self.exhausted = True
+                        if self.obj:
+                            return self.obj
+                        continue
+                    key, value = outerself._parse_pair(line, separator=": ")
+                    key = key.lower()
+                    if self.obj:
+                        if key in delimiters:
+                            oldobj = self.obj
+                            self.obj = {key: value}
+                            return oldobj
+                        elif key in self.obj:
+                            if not isinstance(self.obj[key], list):
+                                self.obj[key] = [self.obj[key], value]
+                            else:
+                                self.obj[key].append(value)
+                            continue
+                    self.obj[key] = value
+        return WrappedLoop()
 
     # command provider interface
 
