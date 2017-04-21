@@ -146,6 +146,12 @@ class MPDClient(MPDClientBase):
                 except CommandError as e:
                     result._feed_error(e)
                     break
+                except Exception as e:
+                    # see above
+                    result._feed_error(e)
+                    self.__run_task = None
+                    self.disconnect()
+                    return
                 result._feed_line(l)
                 if l is None:
                     break
@@ -178,7 +184,6 @@ class MPDClient(MPDClientBase):
         """Kind of like SyncMPDClient._read_line"""
         line = await self.__readline()
         if not line.endswith("\n"):
-            self.disconnect()
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
