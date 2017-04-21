@@ -47,7 +47,13 @@ async def main():
     except Exception as e:
         print("An erroneous asynchronously looped command, as expected, raised:", e)
 
-    print("Idle result", await client.idle().get())
+    i = 0
+    async for subsystem in client.idle():
+        print("Idle change in", subsystem)
+        i += 1
+        if i > 5:
+            print("Enough changes, quitting")
+            break
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())

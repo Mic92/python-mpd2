@@ -7,11 +7,10 @@ Some commands (eg. listall) additionally support the asynchronous iteration
 (aiter, `async for`) interface; using it allows the library user to obtain
 items of result as soon as they arrive.
 
-The .idle() method works as expected, but there .noidle() method is not
-implemented pending a notifying (and automatically idling on demand) interface.
-The asynchronous .idle() method is thus only suitable for clients which only
-want to send commands after an idle returned (eg. current song notification
-pushers).
+The .idle() method works differently here: It is an asynchronous iterator that
+produces a list of changed subsystems whenever a new one is available. The
+MPDClient object automatically switches in and out of idle mode depending on
+which subsystems there is currently interest in.
 
 Command lists are currently not supported.
 
@@ -117,7 +116,7 @@ class MPDClient(MPDClientBase):
 
         self.__commandqueue = asyncio.Queue(loop=loop)
         self.__idle_results = asyncio.Queue(loop=loop) #: a queue of CommandResult("idle") futures
-        self.__idle_events = asyncio.Queue(loop=loop) #: a temporary dispatch mechanism, fed with subsystem strings
+        self.__idle_consumers = [] #: list of (subsystem-list, callbacks) tuples
 
         try:
             helloline = await asyncio.wait_for(self.__readline(), timeout=5)
@@ -138,7 +137,26 @@ class MPDClient(MPDClientBase):
         self.__rfile = self.__wfile = None
         self.__run_task = self.__idle_task = None
         self.__commandqueue = self.__command_enqueued = None
-        self.__idle_results = self.__idle_events = None
+        self.__idle_results = self.__idle_consumers = None
+
+    def _get_idle_interests(self):
+        """Accumulate a set of interests from the current __idle_consumers.
+        Returns the union of their subscribed subjects, [] if at least one of
+        them is the empty catch-all set, or None if there are no interests at
+        all."""
+
+        if not self.__idle_consumers:
+            return None
+        if any(len(s) == 0 for (s, c) in self.__idle_consumers):
+            return []
+        return set.union(*(set(s) for (s, c) in self.__idle_consumers))
+
+    def _nudge_idle(self):
+        """If the main task is currently idling, make it leave idle and process
+        the next command (if one is present) or just restart idle"""
+
+        if self.__command_enqueued is not None and not self.__command_enqueued.done():
+            self.__command_enqueued.set_result(None)
 
     async def __run(self):
         result = None
@@ -156,7 +174,13 @@ class MPDClient(MPDClientBase):
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
-                    result = CommandResult("idle", [], self._parse_list)
+                    subsystems = self._get_idle_interests()
+                    if subsystems is None:
+                        # the presumably most quiet subsystem -- in this case,
+                        # idle is only used to keep the connection alive
+                        subsystems = ["database"]
+
+                    result = CommandResult("idle", subsystems, self._parse_list)
                     self.__idle_results.put_nowait(result)
 
                     self.__command_enqueued = asyncio.Future()
@@ -203,9 +227,12 @@ class MPDClient(MPDClientBase):
         # unhandled task exception and that's probably the best we can do
         while True:
             result = await self.__idle_results.get()
-            idle_changes = await result
-            for change in idle_changes:
-                self.__idle_events.put_nowait(change)
+            idle_changes = list(await result)
+            if not idle_changes:
+                continue
+            for subsystems, callback in self.__idle_consumers:
+                if not subsystems or any(s in subsystems for s in idle_changes):
+                    callback(idle_changes)
 
     # helper methods
 
@@ -326,8 +353,7 @@ class MPDClient(MPDClientBase):
             if self.__run_task is None:
                 raise ConnectionError("Can not send command to disconnected client")
             self.__commandqueue.put_nowait(result)
-            if self.__command_enqueued is not None and not self.__command_enqueued.done():
-                self.__command_enqueued.set_result(None)
+            self._nudge_idle()
             return result
         escaped_name = name.replace(" ", "_")
         f.__name__ = escaped_name
@@ -335,9 +361,18 @@ class MPDClient(MPDClientBase):
 
     # commands that just work differently
 
-    def idle(self, subsystems=[]):
-        # FIXME this is not the final interface
-        return self.__idle_events
+    async def idle(self, subsystems=()):
+        interests_before = self._get_idle_interests()
+        changes = asyncio.Queue()
+        try:
+            entry = (subsystems, changes.put_nowait)
+            self.__idle_consumers.append(entry)
+            if self._get_idle_interests != interests_before:
+                self._nudge_idle()
+            while True:
+                yield await changes.get()
+        finally:
+            self.__idle_consumers.remove(entry)
 
     def noidle(self):
         raise AttributeError("noidle is not supported / required in mpd.asyncio")
