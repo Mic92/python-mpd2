@@ -47,7 +47,7 @@ async def main():
     except Exception as e:
         print("An erroneous asynchronously looped command, as expected, raised:", e)
 
-    print("Idle result", list(await client.idle()))
+    print("Idle result", await client.idle().get())
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())
