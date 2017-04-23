@@ -596,7 +596,7 @@ class MPDClient(MPDClientBase):
         if self._sock is not None:
             self._sock.settimeout(timeout)
 
-    def connect(self, host, port, timeout=None):
+    def connect(self, host, port=None, timeout=None):
         logger.info(
             "Calling MPD connect(%r, %r, timeout=%r)", host, port, timeout)
         if self._sock is not None:
@@ -610,6 +610,8 @@ class MPDClient(MPDClientBase):
         if host.startswith("/"):
             self._sock = self._connect_unix(host)
         else:
+            if port is None:
+                raise ValueError("port argument must be specified when connecting via tcp")
             self._sock = self._connect_tcp(host, port)
         if IS_PYTHON2:
             self._rfile = self._sock.makefile("r")

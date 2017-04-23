@@ -10,6 +10,7 @@ Changes in v0.6.0 (unreleased)
   consider using twisted instead, in future asyncio support will be added
 * Introduce MPDClientBase class which provides common MPD communication related
   helpers. Used as base for synchronous and asynchronous clients
+* port argument is optional when connecting via unix sockets
 
 
 Changes in v0.5.5
