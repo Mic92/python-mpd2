@@ -170,14 +170,14 @@ class MPDClient(MPDClientBase):
                             loop=self.__loop,
                             )
                 except asyncio.TimeoutError:
-                    # the cancellation of the __commandqueue.get() that happens
+                    # The cancellation of the __commandqueue.get() that happens
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
                     subsystems = self._get_idle_interests()
                     if subsystems is None:
-                        # the presumably most quiet subsystem -- in this case,
-                        # idle is only used to keep the connection alive
+                        # The presumably most quiet subsystem -- in this case,
+                        # idle is only used to keep the connection alive.
                         subsystems = ["database"]
 
                     result = CommandResult("idle", subsystems, self._parse_list)
@@ -189,7 +189,7 @@ class MPDClient(MPDClientBase):
                 while True:
                     try:
                         if self.__command_enqueued is not None:
-                            # we're in idle mode
+                            # We're in idle mode.
                             line_future = asyncio.shield(self.__read_output_line())
                             await asyncio.wait([line_future, self.__command_enqueued],
                                     return_when=asyncio.FIRST_COMPLETED)
@@ -209,8 +209,8 @@ class MPDClient(MPDClientBase):
                 result = None
 
         except Exception as e:
-            # prevent the destruction of the pending task in the shutdown
-            # function -- it's just shutting down by itself
+            # Prevent the destruction of the pending task in the shutdown
+            # function -- it's just shutting down by itself.
             self.__run_task = None
             self.disconnect()
 
@@ -218,13 +218,13 @@ class MPDClient(MPDClientBase):
                 result._feed_error(e)
                 return
             else:
-                # typically this is a bug in mpd.asyncio
+                # Typically this is a bug in mpd.asyncio.
                 raise
 
     async def __distribute_idle_results(self):
-        # an exception flying out of here probably means a connection
-        # interruption during idle. this will just show like any other
-        # unhandled task exception and that's probably the best we can do
+        # An exception flying out of here probably means a connection
+        # interruption during idle. This will just show like any other
+        # unhandled task exception and that's probably the best we can do.
         while True:
             result = await self.__idle_results.get()
             idle_changes = list(await result)
@@ -251,10 +251,10 @@ class MPDClient(MPDClientBase):
 
     # copied and subtly modifiedstuff from base
 
-    # this is just a wrapper for the below
+    # This is just a wrapper for the below.
     def _write_line(self, text):
         self.__write(text + "\n")
-    # FIXME this code should be sharable
+    # FIXME This code should be shareable.
     _write_command = SyncMPDClient._write_command
 
 
@@ -297,7 +297,7 @@ class MPDClient(MPDClientBase):
 #            yield obj
 
     def _parse_objects_direct(self, lines, delimiters=[]):
-        # this is a workaround implementing the above comment on python 3.5. it
+        # This is a workaround implementing the above comment on Python 3.5. It
         # is recommended that the commented-out code be used for reasoning, and
         # that changes are applied there and only copied over to this
         # implementation.
@@ -346,7 +346,7 @@ class MPDClient(MPDClientBase):
     def add_command(cls, name, callback):
         command_class = CommandResultIterable if callback.mpd_commands_direct else CommandResult
         if hasattr(cls, name):
-            # idle and noidle are explicitly implemented, skipping them
+            # Idle and noidle are explicitly implemented, skipping them.
             return
         def f(self, *args):
             result = command_class(name, args, partial(callback, self))
@@ -375,10 +375,9 @@ class MPDClient(MPDClientBase):
 #            self.__idle_consumers.remove(entry)
 
     def idle(self, subsystems=()):
-        # this is a desugared workaround for python 3.5 like
-        # _parse_objects_direct. like there, please consider the above block
-        # authoritative and this a workaround, and only apply changes here once
-        # they're incorprated there.
+        # This is a desugared workaround for python 3.5.
+        # Please consider the above block authoritative and this a workaround,
+        # and only apply changes here once they're incorporated there.
 
         def final():
             self.__idle_consumers.remove(entry)
