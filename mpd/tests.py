@@ -345,16 +345,28 @@ class TestMPDClient(unittest.TestCase):
             self.assertEqual(len(w), 1)
             self.assertIn('Use MPDClient.timeout', str(w[0].message))
 
-    def test_connection_lost(self):
-        # Simulate a connection lost: the socket returns empty strings
-        self.MPDWillReturn('')
+    @unittest.skipIf(sys.version_info < (3, 3), "BrokenPipeError was introduced in python 3.3")
+    def test_broken_pipe_error(self):
+        self.MPDWillReturn('volume: 63\n', 'OK\n')
+        self.client._wfile.write.side_effect = BrokenPipeError
+        self.socket_mock.error = Exception
 
         with self.assertRaises(mpd.ConnectionError):
             self.client.status()
+
+    def test_connection_lost(self):
+        # Simulate a connection lost: the socket returns empty strings
+        self.MPDWillReturn('')
+        self.socket_mock.error = Exception
+
+        with self.assertRaises(mpd.ConnectionError):
+            self.client.status()
+            self.socket_mock.unpack.assert_called()
 
         # consistent behaviour, solves bug #11 (github)
         with self.assertRaises(mpd.ConnectionError):
             self.client.status()
+            self.socket_mock.unpack.assert_called()
 
         self.assertIs(self.client._sock, None)
 

@@ -11,6 +11,8 @@ Changes in v0.6.0 (unreleased)
 * Introduce MPDClientBase class which provides common MPD communication related
   helpers. Used as base for synchronous and asynchronous clients
 * port argument is optional when connecting via unix sockets
+* python-mpd will now raise mpd.ConnectionError instead of socket.error, when
+  connection is lost
 
 
 Changes in v0.5.5
