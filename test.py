@@ -325,13 +325,18 @@ class TestMPDClient(unittest.TestCase):
     def test_connection_lost(self):
         # Simulate a connection lost: the socket returns empty strings
         self.MPDWillReturn('')
+        self.socket_mock.error = Exception
 
         with self.assertRaises(mpd.ConnectionError):
             self.client.status()
+            self.socket_mock.unpack.assert_called()
+            self.socket_mock.unpack.side_effect = socket_mock.error
 
         # consistent behaviour, solves bug #11 (github)
         with self.assertRaises(mpd.ConnectionError):
             self.client.status()
+            self.socket_mock.unpack.assert_called()
+            self.socket_mock.unpack.side_effect = socket_mock.error
 
         self.assertIs(self.client._sock, None)
 
