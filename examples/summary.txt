@@ -22,3 +22,6 @@ ExampleStats  Get general information of your MPD server  2009-09-12
 ExampleStickers A command-line client for manipulating and querying stickers
 2010-12-18
 Examples  Some example scripts to show how to play with python-mpd  2010-12-18
+
+The asyncio_example.py shows how MPD can be used with the asyncio idioms; it
+requires at least Python 3.5 to run.
