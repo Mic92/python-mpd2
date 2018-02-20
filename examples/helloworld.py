@@ -2,7 +2,7 @@
 import mpd
 
 # use_unicode will enable the utf-8 mode for python2
-# see http://pythonhosted.org/python-mpd2/topics/advanced.html#unicode-handling
+# see https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#unicode-handling
 client = mpd.MPDClient(use_unicode=True)
 client.connect("localhost", 6600)
 
