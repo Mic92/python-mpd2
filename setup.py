@@ -27,7 +27,7 @@ CLASSIFIERS = [
 
 LICENSE = """\
 Copyright (C) 2008-2010  J. Alexander Treuman <jat@spatialrift.net>
-Copyright (C) 2012  J. Thalheim <joerg@higgsboson.tk>
+Copyright (C) 2012-2017  Joerg Thalheim <joerg@thalheim.io>
 Copyright (C) 2016  Robert Niederreiter <rnix@squarewave.at>
 
 python-mpd2 is free software: you can redistribute it and/or modify
@@ -69,8 +69,8 @@ setup(
     description="A Python MPD client library",
     long_description=read('README.rst'),
     classifiers=CLASSIFIERS,
-    author="J. Thalheim",
-    author_email="jthalheim@gmail.com",
+    author="Joerg Thalheim",
+    author_email="joerg@thalheim.io",
     license="GNU Lesser General Public License v3 (LGPLv3)",
     url="https://github.com/Mic92/python-mpd2",
     packages=find_packages(),
