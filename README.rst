@@ -128,8 +128,6 @@ Contacting the author
 
 Just contact me (Mic92) on Github or via email (joerg@thalheim.io).
 
-Usually I hang around on Jabber in the channel ist@higgsboson.tk
-
 .. |Build Status| image:: https://travis-ci.org/Mic92/python-mpd2.png
 
 .. _python-mpd: https://pypi.python.org/pypi/python-mpd/
