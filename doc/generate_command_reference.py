@@ -4,6 +4,7 @@ import re
 import sys
 import os.path
 from textwrap import TextWrapper
+import urllib.request
 try:
     from lxml import etree
 except ImportError:
@@ -54,7 +55,8 @@ def main(url):
     with open(header_file, 'r') as f:
         print(f.read())
 
-    tree = etree.parse(url)
+    r = urllib.request.urlopen(url)
+    tree = etree.parse(r)
     chapter = tree.xpath('/book/chapter[@id="command_reference"]')[0]
     for section in chapter.xpath("section"):
         title = section.xpath("title")[0].text
@@ -109,7 +111,7 @@ def main(url):
                 print("\n")
 
 if __name__ == "__main__":
-    url = "http://git.musicpd.org/cgit/cirrus/mpd.git/plain/doc/protocol.xml"
+    url = "https://raw.githubusercontent.com/MusicPlayerDaemon/MPD/master/doc/protocol.xml"
     if len(sys.argv) > 1:
         url += "?id=release-" + sys.argv[1]
     main(url)
