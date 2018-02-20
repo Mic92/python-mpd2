@@ -20,7 +20,8 @@ for more information)
 The following features were added:
 
 -  Python 3 support (but you need at least Python 2.6)
--  support for the upcoming client-to-client protocol
+-  asyncio/twisted support
+-  support for the client-to-client protocol
 -  support for new commands from MPD (seekcur, prio, prioid,
    config, searchadd, searchaddpl, listfiles, rangeid, addtagid, cleartagid,
    mount, umount, listmounts, listneighbors)
@@ -28,11 +29,11 @@ The following features were added:
 -  explicitly declared MPD commands (which is handy when using for
    example `IPython <http://ipython.org>`__)
 -  a test suite
--  API documentation to add new commands (see `Future Compatible <http://pythonhosted.org/python-mpd2/topics/advanced.html#future-compatible>`__)
+-  API documentation to add new commands (see `Future Compatible <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#future-compatible>`__)
 -  support for Unicode strings in all commands (optionally in python2,
-   default in python3 - see `Unicode Handling <http://pythonhosted.org/python-mpd2/topics/advanced.html#unicode-handling>`__)
+   default in python3 - see `Unicode Handling <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#unicode-handling>`__)
 -  configureable timeouts
--  support for `logging <http://pythonhosted.org/python-mpd2/topics/logging.html>`__
+-  support for `logging <https://python-mpd2.readthedocs.io/en/latest/topics/logging.html>`__
 -  improved support for sticker
 -  improved support for ranges
 
@@ -84,11 +85,11 @@ and their options. See the `Installing Python Modules <http://docs.python.org/in
 Documentation
 -------------
 
-`Documentation <http://pythonhosted.org/python-mpd2/index.html>`__
+`Documentation <https://python-mpd2.readthedocs.io/en/latest/>`__
 
-`Getting Started <http://pythonhosted.org/python-mpd2/topics/getting-started.html>`__
+`Getting Started <https://python-mpd2.readthedocs.io/en/latest/topics/getting-started.html>`__
 
-`Command Reference <http://pythonhosted.org/python-mpd2/topics/commands.html>`__
+`Command Reference <https://python-mpd2.readthedocs.io/en/latest/topics/commands.html>`__
 
 `Examples <examples>`__
 
