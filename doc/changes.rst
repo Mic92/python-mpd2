@@ -1,19 +1,16 @@
 python-mpd2 Changes List
 ========================
 
-Changes in v0.6.0 (unreleased)
-------------------------------
+Changes in v1.0.0
+-----------------
 
-* Use @property and @property.setter for MPDClient.timeout
 * Add support for twisted
 * Add support for asyncio
-* deprecate send_* and fetch_* variants of MPD commands:
-  consider using twisted instead, in future asyncio support will be added
-* Introduce MPDClientBase class which provides common MPD communication related
-  helpers. Used as base for synchronous and asynchronous clients
-* port argument is optional when connecting via unix sockets
-* python-mpd will now raise mpd.ConnectionError instead of socket.error, when
-  connection is lost
+* Use @property and @property.setter for MPDClient.timeout
+* Deprecate send_* and fetch_* variants of MPD commands: Consider using asyncio/twisted instead
+* Port argument is optional when connecting via unix sockets.
+* python-mpd will now raise mpd.ConnectionError instead of socket.error, when connection is lost
+* Add command outputvolume for forked-daapd
 
 
 Changes in v0.5.5
