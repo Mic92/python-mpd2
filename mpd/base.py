@@ -463,8 +463,24 @@ class MPDClient(MPDClientBase):
             return retval
 
     def _write_line(self, line):
-        self._wfile.write("{}\n".format(line))
-        self._wfile.flush()
+        try:
+            self._wfile.write("{}\n".format(line))
+            self._wfile.flush()
+        except socket.error as e:
+            error_message = "Connection to server was reset"
+            logger.info(error_message)
+            self._reset()
+            if IS_PYTHON2:
+                # Utilizing exec is not particularly elegant, however, it seems
+                # to be the only way as Python3 handles exceptions quite
+                # different to Python2. Without exec, the whole script is not
+                # executable in Python3. Also "six" does it the same way:
+                # https://bitbucket.org/gutworth/six/src/ (search "reraise")
+                exec('raise ConnectionError, "' + error_message + '",'
+                     'sys.exc_info()[2]')
+            else:
+                e = ConnectionError(error_message)
+                raise e.with_traceback(sys.exc_info()[2])
 
     def _write_command(self, command, args=[]):
         parts = [command]
