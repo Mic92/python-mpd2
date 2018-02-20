@@ -28,7 +28,7 @@ import warnings
 # constants
 ###############################################################################
 
-VERSION = (0, 6, 0)
+VERSION = (1, 0, 0)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
