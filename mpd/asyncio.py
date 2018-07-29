@@ -134,6 +134,7 @@ class MPDClient(MPDClientBase):
             self.__run_task.cancel()
         if self.__idle_task is not None:
             self.__idle_task.cancel()
+        self.__wfile.close()
         self.__rfile = self.__wfile = None
         self.__run_task = self.__idle_task = None
         self.__commandqueue = self.__command_enqueued = None
