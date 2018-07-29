@@ -109,7 +109,7 @@ class MPDClient(MPDClientBase):
         self.__loop = loop
 
         if '/' in host:
-            r, w = await asyncio.open_unix_connection(path, loop=loop)
+            r, w = await asyncio.open_unix_connection(host, loop=loop)
         else:
             r, w = await asyncio.open_connection(host, port, loop=loop)
         self.__rfile, self.__wfile = r, w
