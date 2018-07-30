@@ -14,7 +14,7 @@ backward compatibles with the original `python-mpd`_ package.  See
 
 The following features were added:
 
--  Python 3 support (but you need at least Python 2.6)
+-  Python 3 support (but you need at least Python 2.7 or 3.4)
 -  asyncio/twisted support
 -  support for the client-to-client protocol
 -  support for new commands from MPD v0.17 (seekcur, prio, prioid,
