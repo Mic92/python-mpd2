@@ -948,6 +948,10 @@ class AsyncMockServer:
         else:
             self.error("Mock got %r, expected %r" % (data, next_write))
 
+    def close(self):
+        # todo: make sure calls to self.write fail after callling close
+        pass
+    
     def error(self, message):
         raise AssertionError(message)
 
