@@ -592,6 +592,7 @@ class MPDClient(MPDClientBase):
             sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
+                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 sock.settimeout(self.timeout)
                 sock.connect(sa)
