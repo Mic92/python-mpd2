@@ -21,7 +21,7 @@ Querying
 .. function:: MPDClient.currentsong()
 
 
-    Displays the song info of the current song (same song that is
+    Returns the song info of the current song (same song that is
     identified in status).
 
 
@@ -86,7 +86,7 @@ Querying
 .. function:: MPDClient.status()
 
 
-    Reports the current status of the player and the volume level.
+    Returns the current status of the player and the volume level.
 
 
     * *volume*: 0-100
@@ -263,7 +263,7 @@ Playback options
 .. function:: MPDClient.replay_gain_status()
 
 
-    Prints replay gain options. Currently, only the variable
+    Returns replay gain options. Currently, only the variable
     *replay_gain_mode* is returned.
 
 
@@ -402,14 +402,14 @@ The current playlist
 .. function:: MPDClient.playlistid(songid)
 
 
-    Displays a list of songs in the playlist. *SONGID* is optional and
+    Returns a list of songs in the playlist. *SONGID* is optional and
     specifies a single song to display info for.
 
 
 .. function:: MPDClient.playlistinfo()
 
 
-    Displays a list of all songs in the playlist, or if the optional
+    Returns a list of all songs in the playlist, or if the optional
     argument is given, displays information only for the song
     *SONGPOS* or the range of songs *START:END*
 
@@ -417,14 +417,14 @@ The current playlist
 .. function:: MPDClient.playlistsearch(tag, needle)
 
 
-    Searches case-insensitively for partial matches in the current
-    playlist.
+    Returns case-insensitive search results for partial matches in the 
+    current playlist.
 
 
 .. function:: MPDClient.plchanges(version, start:end)
 
 
-    Displays changed songs currently in the playlist since *VERSION*.
+    Returns changed songs currently in the playlist since *VERSION*.
     Start and end positions may be given to limit the output to
     changes in the given range.
 
@@ -435,7 +435,7 @@ The current playlist
 .. function:: MPDClient.plchangesposid(version, start:end)
 
 
-    Displays changed songs currently in the playlist since *VERSION*.
+    Returns changed songs currently in the playlist since *VERSION*.
     This function only returns the position and the id of the changed
     song, not the complete metadata. This is more bandwidth efficient.
 
@@ -517,20 +517,20 @@ Stored playlists
 .. function:: MPDClient.listplaylist(name)
 
 
-    Lists the songs in the playlist. Playlist plugins are supported.
+    Returns a list of the songs in the playlist. Playlist plugins are supported.
 
 
 .. function:: MPDClient.listplaylistinfo(name)
 
 
-    Lists the songs with metadata in the playlist. Playlist plugins
+    Returns a list of the songs with metadata in the playlist. Playlist plugins
     are supported.
 
 
 .. function:: MPDClient.listplaylists()
 
 
-    Prints a list of the playlist directory.
+    Returns a list of the playlist in the playlist directory.
 
     After each playlist name the server sends its last modification
     time as attribute "Last-Modified" in ISO 8601 format. To avoid
@@ -597,8 +597,8 @@ The music database
 .. function:: MPDClient.count(tag, needle[, ..., "group", grouptype])
 
 
-    Counts the number of songs and their total playtime in the db
-    matching *TAG* exactly.
+    Returns the counts of the number of songs and their total playtime in 
+    the db matching *TAG* exactly.
 
     The *group* keyword may be used to group the results by a tag. The
     following prints per-artist counts::
@@ -608,7 +608,7 @@ The music database
 .. function:: MPDClient.find(type, what[, ..., startend])
 
 
-    Finds songs in the db that are exactly *WHAT*. *TYPE* can be any
+    Returns songs in the db that are exactly *WHAT*. *TYPE* can be any
     tag supported by MPD, or one of the special parameters::
 
     *WHAT* is what to find.
@@ -635,15 +635,15 @@ The music database
 .. function:: MPDClient.findadd(type, what[, ...])
 
 
-    Finds songs in the db that are exactly *WHAT* and adds them to
+    Returns songs in the db that are exactly *WHAT* and adds them to
     current playlist. Parameters have the same meaning as for find.
 
 
 .. function:: MPDClient.list(type[, filtertype, filterwhat, ..., "group", grouptype, ...])
 
 
-    Lists unique tags values of the specified type. *TYPE* can be any
-    tag supported by MPD or *file*.
+    Returns a list of unique tag values of the specified type. 
+    *TYPE* can be any tag supported by MPD or *file*.
 
     Additional arguments may specify a filter like the one in the find
     command.
@@ -657,7 +657,7 @@ The music database
 .. function:: MPDClient.listall(uri)
 
 
-    Lists all songs and directories in *URI*.
+    Returns a lists of all songs and directories in *URI*.
 
     Do not use this command. Do not manage a client-side copy of MPD's
     database. That is fragile and adds huge overhead. It will break
@@ -667,6 +667,8 @@ The music database
 
 .. function:: MPDClient.listallinfo(uri)
 
+    Returns a lists of all songs and directories with their metadata 
+    info in *URI*.
 
     Same as listall, except it also returns metadata info in the same
     format as lsinfo.
@@ -680,8 +682,8 @@ The music database
 .. function:: MPDClient.listfiles(uri)
 
 
-    Lists the contents of the directory *URI*, including files are not
-    recognized by MPD. *URI* can be a path relative to the music
+    Returns a list of the contents of the directory *URI*, including files 
+    are not recognized by MPD. *URI* can be a path relative to the music
     directory or an URI understood by one of the storage plugins. The
     response contains at least one line for each directory entry with
     the prefix "file: " or "directory: ", and may be followed by file
@@ -695,7 +697,7 @@ The music database
 .. function:: MPDClient.lsinfo(uri)
 
 
-    Lists the contents of the directory *URI*.
+    Returns a list of the contents of the directory *URI*.
 
     When listing the root directory, this currently returns the list
     of stored playlists. This behavior is deprecated; use
@@ -712,7 +714,7 @@ The music database
 .. function:: MPDClient.readcomments(uri)
 
 
-    Read "comments" (i.e. key-value pairs) from the file specified by
+    Returns "comments" (i.e. key-value pairs) from the file specified by
     "URI". This "URI" can be a path relative to the music directory or
     an absolute path.
 
@@ -730,14 +732,14 @@ The music database
 .. function:: MPDClient.search(type, what[, ..., startend])
 
 
-    Searches for any song that contains *WHAT*. Parameters have the
-    same meaning as for find, except that search is not case
-    sensitive.
+    Returns results of a search for any song that contains *WHAT*. 
+    Parameters have the same meaning as for find, except that search 
+    is not case sensitive.
 
 
 .. function:: MPDClient.searchadd(type, what[, ...])
 
-
+    
     Searches for any song that contains *WHAT* in tag *TYPE* and adds
     them to current playlist.
 
@@ -806,7 +808,7 @@ Mounts and neighbors
 .. function:: MPDClient.listmounts()
 
 
-    Queries a list of all mounts. By default, this contains just the
+    Returns a list of all mounts. By default, this contains just the
     configured *music_directory*. Example::
 
 
@@ -820,7 +822,7 @@ Mounts and neighbors
 .. function:: MPDClient.listneighbors()
 
 
-    Queries a list of "neighbors" (e.g. accessible file servers on the
+    Returns a list of "neighbors" (e.g. accessible file servers on the
     local net). Items on that list may be used with the mount command.
     Example::
 
@@ -852,7 +854,7 @@ Stickers
 .. function:: MPDClient.sticker_get(type, uri, name)
 
 
-    Reads a sticker value for the specified object.
+    Reads and returns a sticker value for the specified object.
 
 
 .. function:: MPDClient.sticker_set(type, uri, name, value)
@@ -886,7 +888,7 @@ Stickers
 .. function:: MPDClient.sticker_find(type, uri, name, "=", value)
 
 
-    Searches for stickers with the given value.
+    Returns the results of a search for stickers with the given value.
 
     Other supported operators are: "<", ">"
 
@@ -947,9 +949,7 @@ Audio output devices
 .. function:: MPDClient.outputs()
 
 
-    Shows information about all outputs.
-
-    Return information::
+    Returns information about all outputs::
 
 
         
@@ -975,9 +975,9 @@ Reflection
 .. function:: MPDClient.config()
 
 
-    Dumps configuration values that may be interesting for the client.
-    This command is only permitted to "local" clients (connected via
-    UNIX domain socket).
+    Returns a dump of all configuration values that may be interesting 
+    for the client. This command is only permitted to "local" clients 
+    (connected via UNIX domain socket).
 
     The following response attributes are available::
 
@@ -985,31 +985,31 @@ Reflection
 .. function:: MPDClient.commands()
 
 
-    Shows which commands the current user has access to.
+    Returns which commands the current user has access to.
 
 
 .. function:: MPDClient.notcommands()
 
 
-    Shows which commands the current user does not have access to.
+    Returns which commands the current user does not have access to.
 
 
 .. function:: MPDClient.tagtypes()
 
 
-    Shows a list of available song metadata.
+    Returns a list of available song metadata.
 
 
 .. function:: MPDClient.urlhandlers()
 
 
-    Gets a list of available URL handlers.
+    Returns a list of available URL handlers.
 
 
 .. function:: MPDClient.decoders()
 
 
-    Print a list of decoder plugins, followed by their supported
+    Returns a list of decoder plugins, followed by their supported
     suffixes and MIME types. Example response::
 
 
@@ -1050,7 +1050,7 @@ Client to client
 .. function:: MPDClient.channels()
 
 
-    Obtain a list of all channels. The response is a list of
+    Obtains and returns a list of all channels. The response is a list of
     "channel:" lines.
 
 
