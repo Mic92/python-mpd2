@@ -360,10 +360,10 @@ The current playlist
     Clears the current playlist.
 
 
-.. function:: MPDClient.delete()
+.. function:: MPDClient.delete(index_or_range)
 
 
-    Deletes a song from the playlist.
+    Deletes a song from the playlist based on the song's position in the playlist.
 
 
 .. function:: MPDClient.deleteid(songid)
