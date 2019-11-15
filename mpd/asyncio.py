@@ -273,7 +273,7 @@ class MPDClient(MPDClientBase):
         return line
 
 
-#    async def _parse_objects_direct(self, lines, delimiters=[]):
+#    async def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
 #        obj = {}
 #        while True:
 #            line = await lines.get()
@@ -283,6 +283,8 @@ class MPDClient(MPDClientBase):
 #                break
 #            key, value = self._parse_pair(line, separator=": ")
 #            key = key.lower()
+#            if lookup_delimiter and not delimiters:
+#                delimiters = [key]
 #            if obj:
 #                if key in delimiters:
 #                    yield obj
@@ -297,7 +299,7 @@ class MPDClient(MPDClientBase):
 #        if obj:
 #            yield obj
 
-    def _parse_objects_direct(self, lines, delimiters=[]):
+    def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
         # This is a workaround implementing the above comment on Python 3.5. It
         # is recommended that the commented-out code be used for reasoning, and
         # that changes are applied there and only copied over to this
@@ -327,6 +329,8 @@ class MPDClient(MPDClientBase):
                         continue
                     key, value = outerself._parse_pair(line, separator=": ")
                     key = key.lower()
+                    if lookup_delimiter and not delimiters:
+                        delimiters = [key]
                     if self.obj:
                         if key in delimiters:
                             oldobj = self.obj

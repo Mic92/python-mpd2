@@ -127,10 +127,60 @@ class TestMPDClient(unittest.TestCase):
         self.assertMPDReceived('clearerror\n')
 
     def test_parse_list(self):
-        self.MPDWillReturn('OK\n')
+        self.MPDWillReturn(
+            'tagtype: Artist\n',
+            'tagtype: ArtistSort\n',
+            'tagtype: Album\n',
+            'OK\n'
+        )
 
-        self.assertIsInstance(self.client.list("album"), list)
+        result = self.client.tagtypes()
+        self.assertMPDReceived('tagtypes\n')
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, [
+            'Artist',
+            'ArtistSort',
+            'Album',
+        ])
+
+    def test_parse_list_groups(self):
+        self.MPDWillReturn(
+            'Album: \n',
+            'Album: 20th_Century_Masters_The_Millenium_Collection\n',
+            'Album: Aerosmith\'s Greatest Hits\n',
+            'OK\n'
+        )
+
+        result = self.client.list('album')
         self.assertMPDReceived('list "album"\n')
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, [
+            {'album': ''},
+            {'album': '20th_Century_Masters_The_Millenium_Collection'},
+            {'album': 'Aerosmith\'s Greatest Hits'},
+        ])
+
+        self.MPDWillReturn(
+            'Album: \n',
+            'Album: 20th_Century_Masters_The_Millenium_Collection\n',
+            'Artist: Eric Clapton\n',
+            'Album: Aerosmith\'s Greatest Hits\n',
+            'Artist: Aerosmith\n',
+            'OK\n'
+        )
+
+        result = self.client.list('album', 'group', 'artist')
+        self.assertMPDReceived('list "album" "group" "artist"\n')
+        self.assertIsInstance(result, list)
+        self.assertEqual(result, [{
+            'album': ''
+        }, {
+            'album': '20th_Century_Masters_The_Millenium_Collection',
+            'artist': 'Eric Clapton'
+        }, {
+            'album': 'Aerosmith\'s Greatest Hits',
+            'artist': 'Aerosmith'
+        }])
 
     def test_parse_item(self):
         self.MPDWillReturn('updating_db: 42\n', 'OK\n')

@@ -1,6 +1,13 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v1.1.0
+-----------------
+
+* Fix list command to work with grouping. Always returns list of dictionaries now.
+  Make sure to adopt your code since this is an API change.
+
+
 Changes in v1.0.0
 -----------------
 

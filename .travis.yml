@@ -3,10 +3,10 @@ sudo: false
 
 python:
   - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
-  - "3.7-dev"
+  - "3.7"
+  - "3.8"
   - "nightly"
   - "pypy"
 
@@ -16,6 +16,6 @@ matrix:
     - python: nightly
 
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION != '3.2' ]]; then pip install Twisted; fi
+  - pip install Twisted
 
 script: python -m unittest mpd.tests

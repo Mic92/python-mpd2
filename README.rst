@@ -105,6 +105,12 @@ This will install `Tox <http://tox.testrun.org/>`__. Tox will take care of
 testing against all the supported Python versions (at least available) on our
 computer, with the required dependencies
 
+If you have nix, you can also use the provided `default.nix` to bring all supported
+python versions in scope using `nix-shell`. In that case run `tox` directly instead
+of using `setup.py`::
+
+     $ nix-shell --command 'tox'
+
 
 Building Documentation
 ----------------------

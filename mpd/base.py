@@ -28,7 +28,7 @@ import warnings
 # constants
 ###############################################################################
 
-VERSION = (1, 0, 0)
+VERSION = (1, 1, 0)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
@@ -121,8 +121,10 @@ class mpd_commands(object):
         self.commands = commands
         self.is_direct = kwargs.pop('is_direct', False)
         if kwargs:
-            raise AttributeError("mpd_commands() got unexpected keyword"
-                    " arguments %s" % ",".join(kwargs))
+            raise AttributeError(
+                "mpd_commands() got unexpected keyword"
+                " arguments %s" % ",".join(kwargs)
+            )
 
     def __call__(self, ob):
         ob.mpd_commands = self.commands
@@ -219,10 +221,12 @@ class MPDClientBase(object):
         for line in lines:
             yield self._parse_pair(line, separator)
 
-    def _parse_objects(self, lines, delimiters=[]):
+    def _parse_objects(self, lines, delimiters=[], lookup_delimiter=False):
         obj = {}
         for key, value in self._parse_pairs(lines):
             key = key.lower()
+            if lookup_delimiter and not delimiters:
+                delimiters = [key]
             if obj:
                 if key in delimiters:
                     yield obj
@@ -255,8 +259,7 @@ class MPDClientBase(object):
     def _parse_changes(self, lines):
         return self._parse_objects_direct(lines, ["cpos"])
 
-    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo',
-            is_direct=True)
+    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo', is_direct=True)
     def _parse_database(self, lines):
         return self._parse_objects_direct(lines, ["file", "directory", "playlist"])
 
@@ -272,7 +275,7 @@ class MPDClientBase(object):
         return pairs[0][1]
 
     @mpd_commands(
-        'channels', 'commands', 'list', 'listplaylist', 'notcommands',
+        'channels', 'commands', 'listplaylist', 'notcommands',
         'tagtypes', 'urlhandlers')
     def _parse_list(self, lines):
         seen = None
@@ -283,6 +286,11 @@ class MPDClientBase(object):
                         "Expected key '{}', got '{}'".format(seen, key))
                 seen = key
             yield value
+
+    @mpd_commands('list', is_direct=True)
+    def _parse_list_groups(self, lines):
+        lines = iter(lines)
+        return self._parse_objects_direct(lines, lookup_delimiter=True)
 
     @mpd_commands('readmessages', is_direct=True)
     def _parse_messages(self, lines):
@@ -362,6 +370,7 @@ def _create_callback(self, function, wrap_result):
     """
     if not isinstance(function, Callable):
         return None
+
     def command_callback():
         # command result callback expects response from MPD as iterable lines,
         # thus read available lines from socket
@@ -396,6 +405,7 @@ class MPDClient(MPDClientBase):
     _timeout = None
     _wrap_iterator_parsers = [
         MPDClientBase._parse_list,
+        MPDClientBase._parse_list_groups,
         MPDClientBase._parse_playlist,
         MPDClientBase._parse_changes,
         MPDClientBase._parse_songs,
@@ -659,7 +669,7 @@ class MPDClient(MPDClientBase):
         try:
             helloline = self._rfile.readline()
             self._hello(helloline)
-        except:
+        except Exception:
             self.disconnect()
             raise
 
