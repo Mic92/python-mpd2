@@ -191,6 +191,7 @@ class TestMPDClient(unittest.TestCase):
         self.assertMPDReceived('list "album"\n')
         self.assertIsInstance(result, list)
         self.assertEqual(result, [
+            {'album': ''},
             {'album': '20th_Century_Masters_The_Millenium_Collection'},
             {'album': 'Aerosmith\'s Greatest Hits'},
             {'album': 'Greatest Hits'},
@@ -220,6 +221,8 @@ class TestMPDClient(unittest.TestCase):
         self.assertMPDReceived('list "album" "group" "artist"\n')
         self.assertIsInstance(result, list)
         self.assertEqual(result, [{
+            'album': ''
+        }, {
             'album': '20th_Century_Masters_The_Millenium_Collection',
             'artist': 'Eric Clapton'
         }, {

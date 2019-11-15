@@ -221,10 +221,12 @@ class MPDClientBase(object):
         for line in lines:
             yield self._parse_pair(line, separator)
 
-    def _parse_objects(self, lines, delimiters=[]):
+    def _parse_objects(self, lines, delimiters=[], lookup_delimiter=False):
         obj = {}
         for key, value in self._parse_pairs(lines):
             key = key.lower()
+            if lookup_delimiter and not delimiters:
+                delimiters = [key]
             if obj:
                 if key in delimiters:
                     yield obj
@@ -288,9 +290,7 @@ class MPDClientBase(object):
     @mpd_commands('list', is_direct=True)
     def _parse_list_groups(self, lines):
         lines = iter(lines)
-        separator = ':'
-        delimiter = next(lines).split(separator)[0].lower()
-        return self._parse_objects_direct(lines, [delimiter])
+        return self._parse_objects_direct(lines, lookup_delimiter=True)
 
     @mpd_commands('readmessages', is_direct=True)
     def _parse_messages(self, lines):
