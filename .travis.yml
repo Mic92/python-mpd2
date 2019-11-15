@@ -16,6 +16,6 @@ matrix:
     - python: nightly
 
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION != '3.2' ]]; then pip install Twisted; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != '3.4' ]]; then pip install Twisted; fi
 
 script: python -m unittest mpd.tests
