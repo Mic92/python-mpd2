@@ -131,22 +131,6 @@ class TestMPDClient(unittest.TestCase):
             'tagtype: Artist\n',
             'tagtype: ArtistSort\n',
             'tagtype: Album\n',
-            'tagtype: AlbumSort\n',
-            'tagtype: AlbumArtist\n',
-            'tagtype: AlbumArtistSort\n',
-            'tagtype: Title\n',
-            'tagtype: Track\n',
-            'tagtype: Name\n',
-            'tagtype: Genre\n',
-            'tagtype: Date\n',
-            'tagtype: Composer\n',
-            'tagtype: Performer\n',
-            'tagtype: Disc\n',
-            'tagtype: MUSICBRAINZ_ARTISTID\n',
-            'tagtype: MUSICBRAINZ_ALBUMID\n',
-            'tagtype: MUSICBRAINZ_ALBUMARTISTID\n',
-            'tagtype: MUSICBRAINZ_TRACKID\n',
-            'tagtype: MUSICBRAINZ_RELEASETRACKID\n',
             'OK\n'
         )
 
@@ -157,22 +141,6 @@ class TestMPDClient(unittest.TestCase):
             'Artist',
             'ArtistSort',
             'Album',
-            'AlbumSort',
-            'AlbumArtist',
-            'AlbumArtistSort',
-            'Title',
-            'Track',
-            'Name',
-            'Genre',
-            'Date',
-            'Composer',
-            'Performer',
-            'Disc',
-            'MUSICBRAINZ_ARTISTID',
-            'MUSICBRAINZ_ALBUMID',
-            'MUSICBRAINZ_ALBUMARTISTID',
-            'MUSICBRAINZ_TRACKID',
-            'MUSICBRAINZ_RELEASETRACKID'
         ])
 
     def test_parse_list_groups(self):
@@ -180,10 +148,6 @@ class TestMPDClient(unittest.TestCase):
             'Album: \n',
             'Album: 20th_Century_Masters_The_Millenium_Collection\n',
             'Album: Aerosmith\'s Greatest Hits\n',
-            'Album: Greatest Hits\n',
-            'Album: Guten Tag\n',
-            'Album: One of the Boys\n',
-            'Album: Weezer (Blue Album)\n',
             'OK\n'
         )
 
@@ -194,10 +158,6 @@ class TestMPDClient(unittest.TestCase):
             {'album': ''},
             {'album': '20th_Century_Masters_The_Millenium_Collection'},
             {'album': 'Aerosmith\'s Greatest Hits'},
-            {'album': 'Greatest Hits'},
-            {'album': 'Guten Tag'},
-            {'album': 'One of the Boys'},
-            {'album': 'Weezer (Blue Album)'}
         ])
 
         self.MPDWillReturn(
@@ -206,14 +166,6 @@ class TestMPDClient(unittest.TestCase):
             'Artist: Eric Clapton\n',
             'Album: Aerosmith\'s Greatest Hits\n',
             'Artist: Aerosmith\n',
-            'Album: Greatest Hits\n',
-            'Artist: The Police\n',
-            'Album: Guten Tag\n',
-            'Artist: Wir sind Helden\n',
-            'Album: One of the Boys\n',
-            'Artist: Katy Perry\n',
-            'Album: Weezer (Blue Album)\n',
-            'Artist: Weezer\n',
             'OK\n'
         )
 
@@ -228,18 +180,6 @@ class TestMPDClient(unittest.TestCase):
         }, {
             'album': 'Aerosmith\'s Greatest Hits',
             'artist': 'Aerosmith'
-        }, {
-            'album': 'Greatest Hits',
-            'artist': 'The Police'
-        }, {
-            'album': 'Guten Tag',
-            'artist': 'Wir sind Helden'
-        }, {
-            'album': 'One of the Boys',
-            'artist': 'Katy Perry'
-        }, {
-            'album': 'Weezer (Blue Album)',
-            'artist': 'Weezer'
         }])
 
     def test_parse_item(self):
