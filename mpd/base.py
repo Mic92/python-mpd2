@@ -17,7 +17,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import Callable
 import logging
 import socket
 import sys
@@ -368,7 +367,7 @@ class MPDClientBase(object):
 def _create_callback(self, function, wrap_result):
     """Create MPD command related response callback.
     """
-    if not isinstance(function, Callable):
+    if not callable(function):
         return None
 
     def command_callback():
@@ -460,7 +459,7 @@ class MPDClient(MPDClientBase):
             raise PendingCommandError(
                 "'{}' is not the currently pending command".format(command))
         del self._pending[0]
-        if isinstance(retval, Callable):
+        if callable(retval):
             return retval()
         return retval
 
@@ -472,14 +471,14 @@ class MPDClient(MPDClientBase):
             raise PendingCommandError(
                 "Cannot execute '{}' with pending commands".format(command))
         if self._command_list is not None:
-            if not isinstance(retval, Callable):
+            if not callable(retval):
                 raise CommandListError(
                     "'{}' not allowed in command list".format(command))
             self._write_command(command, args)
             self._command_list.append(retval)
         else:
             self._write_command(command, args)
-            if isinstance(retval, Callable):
+            if callable(retval):
                 return retval()
             return retval
 
