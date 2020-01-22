@@ -6,6 +6,10 @@ Changes in v1.1.0
 
 * Fix list command to work with grouping. Always returns list of dictionaries now.
   Make sure to adopt your code since this is an API change.
+* fix compatibility with python3.9
+* fix connecting to unix socket in asyncio version
+* close asyncio transports on disconnect
+* create TCP socket with TCP_NODELAY for better responsiveness
 
 
 Changes in v1.0.0
