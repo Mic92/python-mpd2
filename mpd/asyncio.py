@@ -94,6 +94,7 @@ class CommandResultIterable(BaseCommandResult):
 
 @mpd_command_provider
 class MPDClient(MPDClientBase):
+    __idle_task = None
     __run_task = None # doubles as indicator for being connected
 
     #: When in idle, this is a Future on which incoming commands should set a
