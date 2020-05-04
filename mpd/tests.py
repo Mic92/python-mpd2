@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 import itertools
 import mpd
+import os
 import sys
 import types
 import warnings
@@ -1043,7 +1044,8 @@ class TestAsyncioMPD(unittest.TestCase):
     def test_oddhello(self):
         self.assertRaises(mpd.base.ProtocolError, self.init_client, odd_hello=[b'NOT OK\n'])
 
-    @unittest.skip("This test would add 5 seconds of idling to the run")
+    @unittest.skipIf(os.getenv('RUN_SLOW_TESTS') is None,
+                     "This test would add 5 seconds of idling to the run (export RUN_SLOW_TESTS=1 to run anyway)")
     def test_noresponse(self):
         self.assertRaises(mpd.base.ConnectionError, self.init_client, odd_hello=[])
 
