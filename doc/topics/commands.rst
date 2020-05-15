@@ -239,6 +239,11 @@ Playback options
 
     Sets volume to *VOL*, the range of volume is 0-100.
 
+.. function:: MPDClient.volume(vol_change)
+
+   Changes volume by amount *VOL_CHANGE*, the range is -100 to +100.
+   A negative value decreases volume, positive value increases volume.
+
 
 .. function:: MPDClient.single(state)
 

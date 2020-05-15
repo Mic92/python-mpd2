@@ -11,7 +11,7 @@ except ImportError:
     sys.stderr.write("Please install lxml to run this script.")
     sys.exit(1)
 
-DEPRECATED_COMMANDS = ["volume"]
+DEPRECATED_COMMANDS = []
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 

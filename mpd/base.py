@@ -313,7 +313,7 @@ class MPDClientBase(object):
         'replay_gain_mode', 'rm', 'save', 'searchadd', 'searchaddpl', 'seek',
         'seekcur', 'seekid', 'sendmessage', 'setvol', 'shuffle', 'single',
         'sticker delete', 'sticker set', 'stop', 'subscribe', 'swap', 'swapid',
-        'toggleoutput', 'umount', 'unsubscribe')
+        'toggleoutput', 'umount', 'unsubscribe', 'volume')
     def _parse_nothing(self, lines):
         for line in lines:
             raise ProtocolError(
