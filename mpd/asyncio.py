@@ -300,7 +300,7 @@ class MPDClient(MPDClientBase):
 #        if obj:
 #            yield obj
 
-    def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
+    def _parse_objects_direct(self, lines, delimiters=None, lookup_delimiter=False):
         # This is a workaround implementing the above comment on Python 3.5. It
         # is recommended that the commented-out code be used for reasoning, and
         # that changes are applied there and only copied over to this
@@ -308,9 +308,10 @@ class MPDClient(MPDClientBase):
 
         outerself = self
         class WrappedLoop:
-            def __init__(self):
+            def __init__(self, delimiters):
                 self.obj = {}
                 self.exhausted = False
+                self.delimiters = delimiters
 
             def __aiter__(self):
                 return self
@@ -330,21 +331,21 @@ class MPDClient(MPDClientBase):
                         continue
                     key, value = outerself._parse_pair(line, separator=": ")
                     key = key.lower()
-                    if lookup_delimiter and not delimiters:
-                        delimiters = [key]
+                    if lookup_delimiter and not self.delimiters:
+                        self.delimiters = [key]
                     if self.obj:
-                        if key in delimiters:
+                        if key in self.delimiters:
                             oldobj = self.obj
                             self.obj = {key: value}
                             return oldobj
-                        elif key in self.obj:
+                        if key in self.obj:
                             if not isinstance(self.obj[key], list):
                                 self.obj[key] = [self.obj[key], value]
                             else:
                                 self.obj[key].append(value)
                             continue
                     self.obj[key] = value
-        return WrappedLoop()
+        return WrappedLoop(delimiters)
 
     # command provider interface
 
