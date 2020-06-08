@@ -288,7 +288,6 @@ class MPDClientBase(object):
 
     @mpd_commands('list', is_direct=True)
     def _parse_list_groups(self, lines):
-        lines = iter(lines)
         return self._parse_objects_direct(lines, lookup_delimiter=True)
 
     @mpd_commands('readmessages', is_direct=True)
