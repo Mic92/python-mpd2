@@ -553,8 +553,8 @@ class MPDClient(MPDClientBase):
 
     def _read_binary(self):
         size = None
-        chunk_size = 0
-        while chunk_size == 0:
+        chunk_size = None
+        while chunk_size is None:
             line = self._rbfile.readline().decode("utf-8")
             if not line.endswith("\n"):
                 self.disconnect()
@@ -571,8 +571,8 @@ class MPDClient(MPDClientBase):
         if size is None:
             size = chunk_size
         data = self._rbfile.read(chunk_size)
-        self._rbfile.read(1)  # discard newline
-        self._rbfile.readline().decode("utf-8")
+        self._rbfile.read(1)  # discard newline after binary content
+        self._rbfile.readline().decode("utf-8") # trailing "OK\n"
         return size, data
 
     def _execute_binary(self, command, args):
