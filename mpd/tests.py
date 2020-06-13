@@ -260,12 +260,12 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturnBinary(b"size: 17\n", b"binary: 3\n",
             b"\x00\x00\x00", b"\n", b"OK\n")
         
-        realWriteFunc = self.client._wfile.write
+        real_write_func = self.client._wfile.write
 
         self.assertRaises(mpd.ConnectionError,
             lambda: self.client.albumart('a/full/path.mp3'))
         
-        realWriteFunc.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
+        real_write_func.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
             mock.call('albumart "a/full/path.mp3" "3"\n')])
         
         self.assertIs(self.client._sock, None)
@@ -274,40 +274,40 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturnBinary(b"size: 8\n", b"binary: 8\n",
             b"\x00\x01\x02\x03")
         
-        realWriteFunc = self.client._wfile.write
+        real_write_func = self.client._wfile.write
 
         self.assertRaises(mpd.ConnectionError,
             lambda: self.client.albumart('a/full/path.mp3'))
         
-        realWriteFunc.assert_called_with('albumart "a/full/path.mp3" "0"\n')
+        real_write_func.assert_called_with('albumart "a/full/path.mp3" "0"\n')
         
         self.assertIs(self.client._sock, None)
 
     def test_binary_albumart_singlechunk_networkinterrupted(self):
         # length 16
-        expectedBinary = b'\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF'
+        expected_binary = b'\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF'
         
         self.MPDWillReturnBinary(b"binary: 16\n",
-            expectedBinary[0:9],
-            expectedBinary[9:14],
-            expectedBinary[14:16], b"\n", b"OK\n")
+            expected_binary[0:9],
+            expected_binary[9:14],
+            expected_binary[14:16], b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(realBinary, expectedBinary)
+        self.assertEqual(real_binary, expected_binary)
         self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
         self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(7), mock.call(2), mock.call(1)])
 
     def test_binary_albumart_singlechunk_nosize(self):
         # length: 16
-        expectedBinary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
         
         self.MPDWillReturnBinary(b"binary: 16\n",
-            expectedBinary, b"\n", b"OK\n")
+            expected_binary, b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(realBinary, expectedBinary)
+        self.assertEqual(real_binary, expected_binary)
         # readline at beginning for command, readline at end for OK
         self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
         # chunk of specified size for data, size one for terminating newline
@@ -315,14 +315,14 @@ class TestMPDClient(unittest.TestCase):
 
     def test_binary_albumart_singlechunk_sizeheader(self):
         # length: 16
-        expectedBinary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
         
         self.MPDWillReturnBinary(b"size: 16\n", b"binary: 16\n",
-            expectedBinary, b"\n", b"OK\n")
+            expected_binary, b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(realBinary, expectedBinary)
+        self.assertEqual(real_binary, expected_binary)
         # readline at beginning for command, readline at end for OK
         self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
         # chunk of specified size for data, size one for terminating newline
@@ -330,22 +330,22 @@ class TestMPDClient(unittest.TestCase):
 
     def test_binary_albumart_even_multichunk(self):
         # length: 16 each
-        expectedChunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
-        expectedChunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11\x13'
-        expectedChunk3 = b'\x99\x88\x77\xDD\xD0\xF0\x20\x70\x71\x17\x13\x31\xFF\xFF\xDD\xFF'
-        expectedBinary = expectedChunk1 + expectedChunk2 + expectedChunk3
+        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11\x13'
+        expected_chunk3 = b'\x99\x88\x77\xDD\xD0\xF0\x20\x70\x71\x17\x13\x31\xFF\xFF\xDD\xFF'
+        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
 
         # 3 distinct commands expected
         self.MPDWillReturnBinary(b"size: 48\n", b"binary: 16\n",
-            expectedChunk1, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
-            expectedChunk2, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
-            expectedChunk3, b"\n", b"OK\n")
+            expected_chunk1, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
+            expected_chunk2, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
+            expected_chunk3, b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.client._wfile.write.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
                                                 mock.call('albumart "a/full/path.mp3" "16"\n'),
                                                 mock.call('albumart "a/full/path.mp3" "32"\n')])
-        self.assertEqual(realBinary, expectedBinary)
+        self.assertEqual(real_binary, expected_binary)
 
         self.client._rbfile.readline.assert_has_calls([mock.call(),
             mock.call(), mock.call(), mock.call(), mock.call(), mock.call()])
@@ -355,21 +355,21 @@ class TestMPDClient(unittest.TestCase):
     def test_binary_albumart_odd_multichunk(self):
         # lengths: 17, 15, 1
         expectedChunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13'
-        expectedChunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11'
-        expectedChunk3 = b'\x99'
-        expectedBinary = expectedChunk1 + expectedChunk2 + expectedChunk3
+        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11'
+        expected_chunk3 = b'\x99'
+        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
 
         # 3 distinct commands expected
         self.MPDWillReturnBinary(b"size: 33\n", b"binary: 17\n",
-            expectedChunk1, b"\n", b"OK\n", b"size: 33\n", b"binary: 15\n",
-            expectedChunk2, b"\n", b"OK\n", b"size: 33\n", b"binary: 1\n",
-            expectedChunk3, b"\n", b"OK\n")
+            expected_chunk1, b"\n", b"OK\n", b"size: 33\n", b"binary: 15\n",
+            expected_chunk2, b"\n", b"OK\n", b"size: 33\n", b"binary: 1\n",
+            expected_chunk3, b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.client._wfile.write.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
                                                 mock.call('albumart "a/full/path.mp3" "17"\n'),
                                                 mock.call('albumart "a/full/path.mp3" "32"\n')])
-        self.assertEqual(realBinary, expectedBinary)
+        self.assertEqual(real_binary, expected_binary)
 
         self.client._rbfile.readline.assert_has_calls([mock.call(),
             mock.call(), mock.call(), mock.call(), mock.call(), mock.call()])
@@ -381,9 +381,9 @@ class TestMPDClient(unittest.TestCase):
         self.MPDWillReturnBinary(b"size: 0\n", b"binary: 0\n",
             b"\n", b"OK\n")
         
-        realBinary = self.client.albumart('a/full/path.mp3')
+        real_binary = self.client.albumart('a/full/path.mp3')
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(realBinary, b"")
+        self.assertEqual(real_binary, b"")
 
         self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
         self.client._rbfile.read.assert_has_calls([mock.call(1)])

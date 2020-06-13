@@ -551,15 +551,15 @@ class MPDClient(MPDClientBase):
             yield line
             line = self._read_line()
 
-    def _read_numbytes(self, numToRead):
-        retVal = bytearray()
-        while numToRead > 0:
-            readResult = self._rbfile.read(numToRead)
-            if len(readResult) == 0:
+    def _read_chunk(self, amount):
+        chunk = bytearray()
+        while amount > 0:
+            result = self._rbfile.read(amount)
+            if len(result) == 0:
                 break
-            retVal.extend(readResult)
-            numToRead -= len(readResult)
-        return bytes(retVal)
+            chunk.extend(result)
+            amount -= len(result)
+        return bytes(chunk)
 
     def _read_binary(self):
         size = None
@@ -582,7 +582,7 @@ class MPDClient(MPDClientBase):
         if size is None:
             size = chunk_size
         
-        data = self._read_numbytes(chunk_size)
+        data = self._read_chunk(chunk_size)
 
         if len(data) != chunk_size:
             self.disconnect()
