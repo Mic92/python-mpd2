@@ -283,6 +283,21 @@ class TestMPDClient(unittest.TestCase):
         
         self.assertIs(self.client._sock, None)
 
+    def test_binary_albumart_singlechunk_networkinterrupted(self):
+        # length 16
+        expectedBinary = b'\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF'
+        
+        self.MPDWillReturnBinary(b"binary: 16\n",
+            expectedBinary[0:9],
+            expectedBinary[9:14],
+            expectedBinary[14:16], b"\n", b"OK\n")
+        
+        realBinary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
+        self.assertEqual(realBinary, expectedBinary)
+        self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
+        self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(7), mock.call(2), mock.call(1)])
+
     def test_binary_albumart_singlechunk_nosize(self):
         # length: 16
         expectedBinary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
@@ -364,14 +379,14 @@ class TestMPDClient(unittest.TestCase):
     # MPD server can return empty response if a file exists but is empty
     def test_binary_albumart_emptyresponse(self):
         self.MPDWillReturnBinary(b"size: 0\n", b"binary: 0\n",
-            b"", b"\n", b"OK\n")
+            b"\n", b"OK\n")
         
         realBinary = self.client.albumart('a/full/path.mp3')
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
         self.assertEqual(realBinary, b"")
 
         self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
-        self.client._rbfile.read.assert_has_calls([mock.call(0), mock.call(1)])
+        self.client._rbfile.read.assert_has_calls([mock.call(1)])
 
     def test_iterating(self):
         self.MPDWillReturn("file: my-song.ogg\n",
@@ -566,15 +581,30 @@ class TestMPDClient(unittest.TestCase):
     @unittest.skipIf(sys.version_info < (3, 0),
                      "Automatic decoding/encoding from the socket is only "
                      "available in Python 3")
-    def test_force_socket_encoding_to_utf8(self):
+    def test_force_socket_encoding_and_nonbuffering(self):
         # Force the reconnection to refill the mock
         self.client.disconnect()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-        self.assertEqual([mock.call('r', encoding="utf-8", newline="\n"),
-                          mock.call('w', encoding="utf-8", newline="\n")],
-                         # We are onlyy interested into the 2 first entries,
+        self.assertEqual([mock.call('r', encoding="utf-8", newline="\n", buffering=1),
+                          mock.call('w', encoding="utf-8", newline="\n"),
+                          mock.call('rb', buffering=0)],
+                         # We are only interested into the 3 first entries,
                          # otherwise we get all the readline() & co...
-                         self.client._sock.makefile.call_args_list[0:2])
+                         self.client._sock.makefile.call_args_list[0:3])
+
+    @unittest.skipIf(sys.version_info >= (3, 0),
+                     "sock.makefile arguments differ between Python 2 and 3, "
+                     "see test_force_socket_encoding_and_nonbuffering")
+    def test_force_socket_nonbuffering_python2(self):
+        # Force the reconnection to refill the mock
+        self.client.disconnect()
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+        self.assertEqual([mock.call('r', 1),
+                          mock.call('w'),
+                          mock.call('rb', 0)],
+                         # We are only interested into the 3 first entries,
+                         # otherwise we get all the readline() & co...
+                         self.client._sock.makefile.call_args_list[0:3])          
 
     def test_ranges_as_argument(self):
         self.MPDWillReturn('OK\n')

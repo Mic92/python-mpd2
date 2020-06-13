@@ -551,6 +551,16 @@ class MPDClient(MPDClientBase):
             yield line
             line = self._read_line()
 
+    def _read_numbytes(self, numToRead):
+        retVal = bytearray()
+        while numToRead > 0:
+            readResult = self._rbfile.read(numToRead)
+            if len(readResult) == 0:
+                break
+            retVal.extend(readResult)
+            numToRead -= len(readResult)
+        return bytes(retVal)
+
     def _read_binary(self):
         size = None
         chunk_size = None
@@ -572,12 +582,12 @@ class MPDClient(MPDClientBase):
         if size is None:
             size = chunk_size
         
-        data = self._rbfile.read(chunk_size)
-        
-        # _rbfile.read is expected to return full chunk unless socket is closed
+        data = self._read_numbytes(chunk_size)
+
         if len(data) != chunk_size:
             self.disconnect()
-            raise ConnectionError("Connection lost while reading binary data")
+            raise ConnectionError("Connection lost while reading binary data: "
+                "expected %d bytes, got %d" % (chunk_size, len(data)))
         
         if self._rbfile.read(1) != b"\n":
             # newline after binary content
@@ -712,10 +722,14 @@ class MPDClient(MPDClientBase):
             if port is None:
                 raise ValueError("port argument must be specified when connecting via tcp")
             self._sock = self._connect_tcp(host, port)
+
+        # line buffering on the text read socket (should not buffer past end of line)
+        # no buffering on the binary read socket
+        # this should be OK because MPD is text-based and good about using newlines
         if IS_PYTHON2:
-            self._rfile = self._sock.makefile("r")
+            self._rfile = self._sock.makefile("r", 1)
             self._wfile = self._sock.makefile("w")
-            self._rbfile = self._sock.makefile("rb")
+            self._rbfile = self._sock.makefile("rb", 0)
         else:
             # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
             #   locale.
@@ -724,12 +738,15 @@ class MPDClient(MPDClientBase):
             self._rfile = self._sock.makefile(
                 "r",
                 encoding="utf-8",
-                newline="\n")
+                newline="\n",
+                buffering=1)
             self._wfile = self._sock.makefile(
                 "w",
                 encoding="utf-8",
                 newline="\n")
-            self._rbfile = self._sock.makefile("rb")
+            self._rbfile = self._sock.makefile(
+                "rb",
+                buffering=0)
 
         try:
             helloline = self._rfile.readline()
