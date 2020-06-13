@@ -256,6 +256,33 @@ class TestMPDClient(unittest.TestCase):
 
         self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
 
+    def test_binary_albumart_disconnect_afterchunk(self):
+        self.MPDWillReturnBinary(b"size: 17\n", b"binary: 3\n",
+            b"\x00\x00\x00", b"\n", b"OK\n")
+        
+        realWriteFunc = self.client._wfile.write
+
+        self.assertRaises(mpd.ConnectionError,
+            lambda: self.client.albumart('a/full/path.mp3'))
+        
+        realWriteFunc.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
+            mock.call('albumart "a/full/path.mp3" "3"\n')])
+        
+        self.assertIs(self.client._sock, None)
+
+    def test_binary_albumart_disconnect_midchunk(self):
+        self.MPDWillReturnBinary(b"size: 8\n", b"binary: 8\n",
+            b"\x00\x01\x02\x03")
+        
+        realWriteFunc = self.client._wfile.write
+
+        self.assertRaises(mpd.ConnectionError,
+            lambda: self.client.albumart('a/full/path.mp3'))
+        
+        realWriteFunc.assert_called_with('albumart "a/full/path.mp3" "0"\n')
+        
+        self.assertIs(self.client._sock, None)
+
     def test_binary_albumart_singlechunk_nosize(self):
         # length: 16
         expectedBinary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'

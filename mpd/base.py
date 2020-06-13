@@ -568,11 +568,35 @@ class MPDClient(MPDClientBase):
                 size = int(val)
             elif field == "binary":
                 chunk_size = int(val)
+        
         if size is None:
             size = chunk_size
+        
         data = self._rbfile.read(chunk_size)
-        self._rbfile.read(1)  # discard newline after binary content
-        self._rbfile.readline().decode("utf-8") # trailing "OK\n"
+        
+        # _rbfile.read is expected to return full chunk unless socket is closed
+        if len(data) != chunk_size:
+            self.disconnect()
+            raise ConnectionError("Connection lost while reading binary data")
+        
+        if self._rbfile.read(1) != b"\n":
+            # newline after binary content
+            self.disconnect()
+            raise ConnectionError("Connection lost while reading line")
+        
+        # trailing status indicator
+        # typically OK, but protocol documentation indicates that it is completion code
+        line = self._rbfile.readline().decode("utf-8")
+
+        if not line.endswith("\n"):
+            self.disconnect()
+            raise ConnectionError("Connection lost while reading line")
+        
+        line = line.rstrip("\n")
+        if line.startswith(ERROR_PREFIX):
+            error = line[len(ERROR_PREFIX):].strip()
+            raise CommandError(error)
+        
         return size, data
 
     def _execute_binary(self, command, args):
