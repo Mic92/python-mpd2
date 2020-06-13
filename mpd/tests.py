@@ -354,7 +354,7 @@ class TestMPDClient(unittest.TestCase):
                 
     def test_binary_albumart_odd_multichunk(self):
         # lengths: 17, 15, 1
-        expectedChunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13'
+        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13'
         expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11'
         expected_chunk3 = b'\x99'
         expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
