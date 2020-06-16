@@ -427,7 +427,6 @@ class MPDClient(MPDClientBase):
         self._pending = []
         self._iterating = False
         self._sock = None
-        self._rfile = _NotConnected()
         self._rbfile = _NotConnected()
         self._wfile = _NotConnected()
 
@@ -525,7 +524,9 @@ class MPDClient(MPDClientBase):
         self._write_line(cmd)
 
     def _read_line(self):
-        line = self._rfile.readline()
+        line = self._rbfile.readline()
+        if not IS_PYTHON2:
+            line = line.decode("utf-8")
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
@@ -727,29 +728,23 @@ class MPDClient(MPDClientBase):
             self._sock = self._connect_tcp(host, port)
 
         if IS_PYTHON2:
-            self._rfile = self._sock.makefile("r", 1)
+            self._rbfile = self._sock.makefile("rb")
             self._wfile = self._sock.makefile("w")
-            self._rbfile = self._sock.makefile("rb", 0)
         else:
             # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
             #   locale.
             # - by setting newline explicit, we force to send '\n' also on
             #   windows
-            self._rfile = self._sock.makefile(
-                "r",
-                encoding="utf-8",
-                newline="\n",
-                buffering=1)
+            self._rbfile = self._sock.makefile(
+                "rb",
+                newline="\n")
             self._wfile = self._sock.makefile(
                 "w",
                 encoding="utf-8",
                 newline="\n")
-            self._rbfile = self._sock.makefile(
-                "rb",
-                buffering=0)
 
         try:
-            helloline = self._rfile.readline()
+            helloline = self._rbfile.readline().decode('utf-8')
             self._hello(helloline)
         except Exception:
             self.disconnect()
@@ -757,9 +752,6 @@ class MPDClient(MPDClientBase):
 
     def disconnect(self):
         logger.info("Calling MPD disconnect()")
-        if (self._rfile is not None and
-                not isinstance(self._rfile, _NotConnected)):
-            self._rfile.close()
         if (self._rbfile is not None and
                 not isinstance(self._rbfile, _NotConnected)):
             self._rbfile.close()

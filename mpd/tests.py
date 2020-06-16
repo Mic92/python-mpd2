@@ -80,8 +80,11 @@ class TestMPDClient(unittest.TestCase):
     def MPDWillReturn(self, *lines):
         # Return what the caller wants first, then do as if the socket was
         # disconnected.
-        self.client._rfile.readline.side_effect = itertools.chain(
-            lines, itertools.repeat(''))
+        innerIter = itertools.chain(lines, itertools.repeat(''))
+        if sys.version_info >= (3, 0):
+            self.client._rbfile.readline.side_effect = (x.encode("utf-8") for x in innerIter)
+        else:
+            self.client._rbfile.readline.side_effect = innerIter
 
     def assertMPDReceived(self, *lines):
         self.client._wfile.write.assert_called_with(*lines)
@@ -436,26 +439,11 @@ class TestMPDClient(unittest.TestCase):
         # Force the reconnection to refill the mock
         self.client.disconnect()
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-        self.assertEqual([mock.call('r', encoding="utf-8", newline="\n", buffering=1),
-                          mock.call('w', encoding="utf-8", newline="\n"),
-                          mock.call('rb', buffering=0)],
-                         # We are only interested into the 3 first entries,
+        self.assertEqual([mock.call('rb', newline="\n"),
+                          mock.call('w', encoding="utf-8", newline="\n")],
+                         # We are only interested into the 2 first entries,
                          # otherwise we get all the readline() & co...
-                         self.client._sock.makefile.call_args_list[0:3])
-
-    @unittest.skipIf(sys.version_info >= (3, 0),
-                     "sock.makefile arguments differ between Python 2 and 3, "
-                     "see test_force_socket_encoding_and_nonbuffering")
-    def test_force_socket_nonbuffering_python2(self):
-        # Force the reconnection to refill the mock
-        self.client.disconnect()
-        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
-        self.assertEqual([mock.call('r', 1),
-                          mock.call('w'),
-                          mock.call('rb', 0)],
-                         # We are only interested into the 3 first entries,
-                         # otherwise we get all the readline() & co...
-                         self.client._sock.makefile.call_args_list[0:3])          
+                         self.client._sock.makefile.call_args_list[0:2])
 
     def test_ranges_as_argument(self):
         self.MPDWillReturn('OK\n')
