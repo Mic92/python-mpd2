@@ -22,7 +22,6 @@ import socket
 import sys
 import warnings
 
-
 ###############################################################################
 # constants
 ###############################################################################
@@ -564,50 +563,54 @@ class MPDClient(MPDClientBase):
     def _read_binary(self):
         size = None
         chunk_size = None
-        while chunk_size is None:
+        try:
+            while chunk_size is None:
+                line = self._rbfile.readline().decode("utf-8")
+                if not line.endswith("\n"):
+                    self.disconnect()
+                    raise ConnectionError("Connection lost while reading line")
+                line = line.rstrip("\n")
+                if line.startswith(ERROR_PREFIX):
+                    error = line[len(ERROR_PREFIX):].strip()
+                    raise CommandError(error)
+                field, val = line.split(": ")
+                if field == "size":
+                    size = int(val)
+                elif field == "binary":
+                    chunk_size = int(val)
+            
+            if size is None:
+                size = chunk_size
+            
+            data = self._read_chunk(chunk_size)
+
+            if len(data) != chunk_size:
+                self.disconnect()
+                raise ConnectionError("Connection lost while reading binary data: "
+                    "expected %d bytes, got %d" % (chunk_size, len(data)))
+            
+            if self._rbfile.read(1) != b"\n":
+                # newline after binary content
+                self.disconnect()
+                raise ConnectionError("Connection lost while reading line")
+            
+            # trailing status indicator
+            # typically OK, but protocol documentation indicates that it is completion code
             line = self._rbfile.readline().decode("utf-8")
+
             if not line.endswith("\n"):
                 self.disconnect()
                 raise ConnectionError("Connection lost while reading line")
+            
             line = line.rstrip("\n")
             if line.startswith(ERROR_PREFIX):
                 error = line[len(ERROR_PREFIX):].strip()
                 raise CommandError(error)
-            field, val = line.split(": ")
-            if field == "size":
-                size = int(val)
-            elif field == "binary":
-                chunk_size = int(val)
-        
-        if size is None:
-            size = chunk_size
-        
-        data = self._read_chunk(chunk_size)
-
-        if len(data) != chunk_size:
+            
+            return size, data
+        except IOError as err:
             self.disconnect()
-            raise ConnectionError("Connection lost while reading binary data: "
-                "expected %d bytes, got %d" % (chunk_size, len(data)))
-        
-        if self._rbfile.read(1) != b"\n":
-            # newline after binary content
-            self.disconnect()
-            raise ConnectionError("Connection lost while reading line")
-        
-        # trailing status indicator
-        # typically OK, but protocol documentation indicates that it is completion code
-        line = self._rbfile.readline().decode("utf-8")
-
-        if not line.endswith("\n"):
-            self.disconnect()
-            raise ConnectionError("Connection lost while reading line")
-        
-        line = line.rstrip("\n")
-        if line.startswith(ERROR_PREFIX):
-            error = line[len(ERROR_PREFIX):].strip()
-            raise CommandError(error)
-        
-        return size, data
+            raise ConnectionError("Connection IO error while processing binary command: " + str(err))
 
     def _execute_binary(self, command, args):
         data = bytearray()
@@ -723,9 +726,6 @@ class MPDClient(MPDClientBase):
                 raise ValueError("port argument must be specified when connecting via tcp")
             self._sock = self._connect_tcp(host, port)
 
-        # line buffering on the text read socket (should not buffer past end of line)
-        # no buffering on the binary read socket
-        # this should be OK because MPD is text-based and good about using newlines
         if IS_PYTHON2:
             self._rfile = self._sock.makefile("r", 1)
             self._wfile = self._sock.makefile("w")

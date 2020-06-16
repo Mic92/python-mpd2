@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import itertools
 import mpd
 import os
+import socket
 import sys
 import types
 import warnings
@@ -47,7 +48,8 @@ warnings.simplefilter('default')
 
 
 TEST_MPD_HOST, TEST_MPD_PORT = ('example.com', 10000)
-
+TEST_MPD_UNIXHOST = '/example/test/host'
+TEST_MPD_UNIXTIMEOUT = 0.5
 
 class TestMPDClient(unittest.TestCase):
 
@@ -71,7 +73,6 @@ class TestMPDClient(unittest.TestCase):
         self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
         self.client._sock.reset_mock()
         self.MPDWillReturn("ACK don't forget to setup your mock\n")
-        self.MPDWillReturnBinary("ACK don't forget to setup your mock (binary)\n")
 
     def tearDown(self):
         self.socket_patch.stop()
@@ -81,15 +82,6 @@ class TestMPDClient(unittest.TestCase):
         # disconnected.
         self.client._rfile.readline.side_effect = itertools.chain(
             lines, itertools.repeat(''))
-
-    def MPDWillReturnBinary(self, *byteLists):
-        # Return what the caller wants first, then do as if the socket was
-        # disconnected.
-        # Both readline and read refer to the same iterator
-        retVals = itertools.chain(
-            byteLists, itertools.repeat(b''))
-        self.client._rbfile.readline.side_effect = retVals
-        self.client._rbfile.read.side_effect = retVals
 
     def assertMPDReceived(self, *lines):
         self.client._wfile.write.assert_called_with(*lines)
@@ -246,147 +238,6 @@ class TestMPDClient(unittest.TestCase):
         self.assertEqual(comments['major_brand'], "M4V")
         self.assertEqual(comments['minor_version'], "1")
         self.assertEqual(comments['lyrics'], "Lalala")
-
-    def test_readbinary_error(self):
-        self.MPDWillReturnBinary(b"ACK [50@0] {albumart} No file exists\n")
-        
-        self.assertRaises(
-            mpd.CommandError,
-            lambda: self.client.albumart('a/full/path.mp3'))
-
-        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-
-    def test_binary_albumart_disconnect_afterchunk(self):
-        self.MPDWillReturnBinary(b"size: 17\n", b"binary: 3\n",
-            b"\x00\x00\x00", b"\n", b"OK\n")
-        
-        real_write_func = self.client._wfile.write
-
-        self.assertRaises(mpd.ConnectionError,
-            lambda: self.client.albumart('a/full/path.mp3'))
-        
-        real_write_func.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
-            mock.call('albumart "a/full/path.mp3" "3"\n')])
-        
-        self.assertIs(self.client._sock, None)
-
-    def test_binary_albumart_disconnect_midchunk(self):
-        self.MPDWillReturnBinary(b"size: 8\n", b"binary: 8\n",
-            b"\x00\x01\x02\x03")
-        
-        real_write_func = self.client._wfile.write
-
-        self.assertRaises(mpd.ConnectionError,
-            lambda: self.client.albumart('a/full/path.mp3'))
-        
-        real_write_func.assert_called_with('albumart "a/full/path.mp3" "0"\n')
-        
-        self.assertIs(self.client._sock, None)
-
-    def test_binary_albumart_singlechunk_networkinterrupted(self):
-        # length 16
-        expected_binary = b'\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF'
-        
-        self.MPDWillReturnBinary(b"binary: 16\n",
-            expected_binary[0:9],
-            expected_binary[9:14],
-            expected_binary[14:16], b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
-        self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
-        self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(7), mock.call(2), mock.call(1)])
-
-    def test_binary_albumart_singlechunk_nosize(self):
-        # length: 16
-        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
-        
-        self.MPDWillReturnBinary(b"binary: 16\n",
-            expected_binary, b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
-        # readline at beginning for command, readline at end for OK
-        self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
-        # chunk of specified size for data, size one for terminating newline
-        self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(1)])
-
-    def test_binary_albumart_singlechunk_sizeheader(self):
-        # length: 16
-        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
-        
-        self.MPDWillReturnBinary(b"size: 16\n", b"binary: 16\n",
-            expected_binary, b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
-        # readline at beginning for command, readline at end for OK
-        self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
-        # chunk of specified size for data, size one for terminating newline
-        self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(1)])
-
-    def test_binary_albumart_even_multichunk(self):
-        # length: 16 each
-        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
-        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11\x13'
-        expected_chunk3 = b'\x99\x88\x77\xDD\xD0\xF0\x20\x70\x71\x17\x13\x31\xFF\xFF\xDD\xFF'
-        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
-
-        # 3 distinct commands expected
-        self.MPDWillReturnBinary(b"size: 48\n", b"binary: 16\n",
-            expected_chunk1, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
-            expected_chunk2, b"\n", b"OK\n", b"size: 48\n", b"binary: 16\n",
-            expected_chunk3, b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.client._wfile.write.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
-                                                mock.call('albumart "a/full/path.mp3" "16"\n'),
-                                                mock.call('albumart "a/full/path.mp3" "32"\n')])
-        self.assertEqual(real_binary, expected_binary)
-
-        self.client._rbfile.readline.assert_has_calls([mock.call(),
-            mock.call(), mock.call(), mock.call(), mock.call(), mock.call()])
-        self.client._rbfile.read.assert_has_calls([mock.call(16), mock.call(1),
-            mock.call(16), mock.call(1), mock.call(16), mock.call(1)])
-                
-    def test_binary_albumart_odd_multichunk(self):
-        # lengths: 17, 15, 1
-        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13'
-        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11'
-        expected_chunk3 = b'\x99'
-        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
-
-        # 3 distinct commands expected
-        self.MPDWillReturnBinary(b"size: 33\n", b"binary: 17\n",
-            expected_chunk1, b"\n", b"OK\n", b"size: 33\n", b"binary: 15\n",
-            expected_chunk2, b"\n", b"OK\n", b"size: 33\n", b"binary: 1\n",
-            expected_chunk3, b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.client._wfile.write.assert_has_calls([mock.call('albumart "a/full/path.mp3" "0"\n'),
-                                                mock.call('albumart "a/full/path.mp3" "17"\n'),
-                                                mock.call('albumart "a/full/path.mp3" "32"\n')])
-        self.assertEqual(real_binary, expected_binary)
-
-        self.client._rbfile.readline.assert_has_calls([mock.call(),
-            mock.call(), mock.call(), mock.call(), mock.call(), mock.call()])
-        self.client._rbfile.read.assert_has_calls([mock.call(17), mock.call(1),
-            mock.call(15), mock.call(1), mock.call(1), mock.call(1)])
-
-    # MPD server can return empty response if a file exists but is empty
-    def test_binary_albumart_emptyresponse(self):
-        self.MPDWillReturnBinary(b"size: 0\n", b"binary: 0\n",
-            b"\n", b"OK\n")
-        
-        real_binary = self.client.albumart('a/full/path.mp3')
-        self.assertMPDReceived('albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, b"")
-
-        self.client._rbfile.readline.assert_has_calls([mock.call(), mock.call()])
-        self.client._rbfile.read.assert_has_calls([mock.call(1)])
 
     def test_iterating(self):
         self.MPDWillReturn("file: my-song.ogg\n",
@@ -844,6 +695,169 @@ class TestMPDClient(unittest.TestCase):
             ('xfade', '5')], sorted(res[5].items()))
 
 
+# MPD client tests which do not mock the socket, but rather replace it
+# with a real socket from a socket
+class TestMPDClientSocket(unittest.TestCase):
+
+    longMessage = True
+
+    def setUp(self):
+        self.connect_patch = mock.patch("mpd.MPDClient._connect_unix")
+        self.connect_mock = self.connect_patch.start()
+
+        test_socketpair = socket.socketpair()
+
+        self.connect_mock.return_value = test_socketpair[0]
+        self.server_socket = test_socketpair[1]
+        self.server_socket_reader = self.server_socket.makefile("rb")
+        self.server_socket_writer = self.server_socket.makefile("wb")
+
+        self.MPDWillReturnBinary(b"OK MPD 0.21.24\n")
+
+        self.client = mpd.MPDClient()
+        self.client.connect(TEST_MPD_UNIXHOST)
+        self.client.timeout = TEST_MPD_UNIXTIMEOUT
+
+        self.connect_mock.assert_called_once()
+
+    def tearDown(self):
+        self.close_server_socket()
+        self.connect_patch.stop()
+
+    def close_server_socket(self):
+        self.server_socket_reader.close()
+        self.server_socket_writer.close()
+        self.server_socket.close()
+
+    def MPDWillReturnBinary(self, byteStr):
+        self.server_socket_writer.write(byteStr)
+        self.server_socket_writer.flush()
+
+    def assertMPDReceived(self, byteStr):
+        '''
+        Assert MPD received the given bytestring.
+        Note: this disconnects the client.
+        '''
+        # to ensure we don't block, close the socket on client side
+        self.client.disconnect()
+
+        # read one extra to ensure nothing extraneous was written
+        received = self.server_socket_reader.read(len(byteStr) + 1)
+        
+        self.assertEqual(received, byteStr)
+
+    def test_readbinary_error(self):
+        self.MPDWillReturnBinary(b"ACK [50@0] {albumart} No file exists\n")
+        
+        self.assertRaises(
+            mpd.CommandError,
+            lambda: self.client.albumart('a/full/path.mp3'))
+
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+
+    def test_binary_albumart_disconnect_afterchunk(self):
+        self.MPDWillReturnBinary(b"size: 17\nbinary: 3\n"
+            b"\x00\x00\x00\nOK\n")
+        
+        # we're expecting a timeout
+        self.assertRaises(mpd.ConnectionError,
+            lambda: self.client.albumart('a/full/path.mp3'))
+        
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "3"\n')
+        self.assertIs(self.client._sock, None)
+
+    def test_binary_albumart_disconnect_midchunk(self):
+        self.MPDWillReturnBinary(b"size: 8\nbinary: 8\n\x00\x01\x02\x03")
+        
+        # we're expecting a timeout or error of some form
+        self.assertRaises(mpd.ConnectionError,
+            lambda: self.client.albumart('a/full/path.mp3'))
+        
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+        self.assertIs(self.client._sock, None)
+
+    def test_binary_albumart_singlechunk_networkmultiwrite(self):
+        # length 16
+        expected_binary = b'\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF'
+        
+        self.MPDWillReturnBinary(b"binary: 16\n")
+        self.MPDWillReturnBinary(expected_binary[0:4])
+        self.MPDWillReturnBinary(expected_binary[4:9])
+        self.MPDWillReturnBinary(expected_binary[9:14])
+        self.MPDWillReturnBinary(expected_binary[14:16])
+        self.MPDWillReturnBinary(b"\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+        self.assertEqual(real_binary, expected_binary)
+
+    def test_binary_albumart_singlechunk_nosize(self):
+        # length: 16
+        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        
+        self.MPDWillReturnBinary(b"binary: 16\n" + expected_binary + b"\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+        self.assertEqual(real_binary, expected_binary)
+
+    def test_binary_albumart_singlechunk_sizeheader(self):
+        # length: 16
+        expected_binary = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        
+        self.MPDWillReturnBinary(b"size: 16\nbinary: 16\n" +
+            expected_binary + b"\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+        self.assertEqual(real_binary, expected_binary)
+
+    def test_binary_albumart_even_multichunk(self):
+        # length: 16 each
+        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01'
+        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11\x13'
+        expected_chunk3 = b'\x99\x88\x77\xDD\xD0\xF0\x20\x70\x71\x17\x13\x31\xFF\xFF\xDD\xFF'
+        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
+
+        # 3 distinct commands expected
+        self.MPDWillReturnBinary(b"size: 48\nbinary: 16\n" +
+            expected_chunk1 + b"\nOK\nsize: 48\nbinary: 16\n" +
+            expected_chunk2 + b"\nOK\nsize: 48\nbinary: 16\n" +
+            expected_chunk3 + b"\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "16"'
+                               b'\nalbumart "a/full/path.mp3" "32"\n')
+        self.assertEqual(real_binary, expected_binary)
+                
+    def test_binary_albumart_odd_multichunk(self):
+        # lengths: 17, 15, 1
+        expected_chunk1 = b'\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13'
+        expected_chunk2 = b'\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11'
+        expected_chunk3 = b'\x99'
+        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
+
+        # 3 distinct commands expected
+        self.MPDWillReturnBinary(b"size: 33\nbinary: 17\n" +
+            expected_chunk1 + b"\nOK\nsize: 33\nbinary: 15\n" +
+            expected_chunk2 + b"\nOK\nsize: 33\nbinary: 1\n" +
+            expected_chunk3 + b"\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "17"\n'
+                               b'albumart "a/full/path.mp3" "32"\n')
+        self.assertEqual(real_binary, expected_binary)
+
+    # MPD server can return empty response if a file exists but is empty
+    def test_binary_albumart_emptyresponse(self):
+        self.MPDWillReturnBinary(b"size: 0\nbinary: 0\n\nOK\n")
+        
+        real_binary = self.client.albumart('a/full/path.mp3')
+        self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
+        self.assertEqual(real_binary, b"")
+
+
 class MockTransport(object):
 
     def __init__(self):
@@ -1166,7 +1180,7 @@ class AsyncMockServer:
             self.error("Mock got %r, expected %r" % (data, next_write))
 
     def close(self):
-        # todo: make sure calls to self.write fail after callling close
+        # todo: make sure calls to self.write fail after calling close
         pass
     
     def error(self, message):
