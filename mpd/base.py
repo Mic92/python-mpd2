@@ -525,7 +525,7 @@ class MPDClient(MPDClientBase):
 
     def _read_line(self):
         line = self._rbfile.readline()
-        if not IS_PYTHON2:
+        if self.use_unicode or not IS_PYTHON2:
             line = line.decode("utf-8")
         if self.use_unicode:
             line = decode_str(line)
