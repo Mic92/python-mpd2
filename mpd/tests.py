@@ -690,6 +690,9 @@ class TestMPDClientSocket(unittest.TestCase):
     longMessage = True
 
     def setUp(self):
+        if not hasattr(socket, "socketpair"):
+            self.skipTest("Socketpair is not supported on this platform")
+
         self.connect_patch = mock.patch("mpd.MPDClient._connect_unix")
         self.connect_mock = self.connect_patch.start()
 
