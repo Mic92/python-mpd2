@@ -22,7 +22,6 @@ import socket
 import sys
 import warnings
 
-
 ###############################################################################
 # constants
 ###############################################################################
@@ -358,6 +357,8 @@ class MPDClientBase(object):
     def _parse_stickers(self, lines):
         return dict(self._parse_raw_stickers(lines))
 
+    def albumart(self, uri):
+        return self._execute_binary("albumart", [uri])
 
 ###############################################################################
 # sync client
@@ -426,7 +427,7 @@ class MPDClient(MPDClientBase):
         self._pending = []
         self._iterating = False
         self._sock = None
-        self._rfile = _NotConnected()
+        self._rbfile = _NotConnected()
         self._wfile = _NotConnected()
 
     def _send(self, command, args, retval):
@@ -523,7 +524,9 @@ class MPDClient(MPDClientBase):
         self._write_line(cmd)
 
     def _read_line(self):
-        line = self._rfile.readline()
+        line = self._rbfile.readline()
+        if self.use_unicode or not IS_PYTHON2:
+            line = line.decode("utf-8")
         if self.use_unicode:
             line = decode_str(line)
         if not line.endswith("\n"):
@@ -547,6 +550,81 @@ class MPDClient(MPDClientBase):
         while line is not None:
             yield line
             line = self._read_line()
+
+    def _read_chunk(self, amount):
+        chunk = bytearray()
+        while amount > 0:
+            result = self._rbfile.read(amount)
+            if len(result) == 0:
+                break
+            chunk.extend(result)
+            amount -= len(result)
+        return bytes(chunk)
+
+    def _read_binary(self):
+        size = None
+        chunk_size = None
+        try:
+            while chunk_size is None:
+                line = self._rbfile.readline().decode("utf-8")
+                if not line.endswith("\n"):
+                    self.disconnect()
+                    raise ConnectionError("Connection lost while reading line")
+                line = line.rstrip("\n")
+                if line.startswith(ERROR_PREFIX):
+                    error = line[len(ERROR_PREFIX):].strip()
+                    raise CommandError(error)
+                field, val = line.split(": ")
+                if field == "size":
+                    size = int(val)
+                elif field == "binary":
+                    chunk_size = int(val)
+            
+            if size is None:
+                size = chunk_size
+            
+            data = self._read_chunk(chunk_size)
+
+            if len(data) != chunk_size:
+                self.disconnect()
+                raise ConnectionError("Connection lost while reading binary data: "
+                    "expected %d bytes, got %d" % (chunk_size, len(data)))
+            
+            if self._rbfile.read(1) != b"\n":
+                # newline after binary content
+                self.disconnect()
+                raise ConnectionError("Connection lost while reading line")
+            
+            # trailing status indicator
+            # typically OK, but protocol documentation indicates that it is completion code
+            line = self._rbfile.readline().decode("utf-8")
+
+            if not line.endswith("\n"):
+                self.disconnect()
+                raise ConnectionError("Connection lost while reading line")
+            
+            line = line.rstrip("\n")
+            if line.startswith(ERROR_PREFIX):
+                error = line[len(ERROR_PREFIX):].strip()
+                raise CommandError(error)
+            
+            return size, data
+        except IOError as err:
+            self.disconnect()
+            raise ConnectionError("Connection IO error while processing binary command: " + str(err))
+
+    def _execute_binary(self, command, args):
+        data = bytearray()
+        assert len(args) == 1
+        args.append(0)
+        while True:
+            self._write_command(command, args)
+            size, chunk = self._read_binary()
+            data += chunk
+            args[-1] += len(chunk)
+            if len(data) == size:
+                break
+        return data
 
     def _read_command_list(self):
         try:
@@ -648,24 +726,25 @@ class MPDClient(MPDClientBase):
             if port is None:
                 raise ValueError("port argument must be specified when connecting via tcp")
             self._sock = self._connect_tcp(host, port)
+
         if IS_PYTHON2:
-            self._rfile = self._sock.makefile("r")
+            self._rbfile = self._sock.makefile("rb")
             self._wfile = self._sock.makefile("w")
         else:
             # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
             #   locale.
             # - by setting newline explicit, we force to send '\n' also on
             #   windows
-            self._rfile = self._sock.makefile(
-                "r",
-                encoding="utf-8",
+            self._rbfile = self._sock.makefile(
+                "rb",
                 newline="\n")
             self._wfile = self._sock.makefile(
                 "w",
                 encoding="utf-8",
                 newline="\n")
+
         try:
-            helloline = self._rfile.readline()
+            helloline = self._rbfile.readline().decode('utf-8')
             self._hello(helloline)
         except Exception:
             self.disconnect()
@@ -673,9 +752,9 @@ class MPDClient(MPDClientBase):
 
     def disconnect(self):
         logger.info("Calling MPD disconnect()")
-        if (self._rfile is not None and
-                not isinstance(self._rfile, _NotConnected)):
-            self._rfile.close()
+        if (self._rbfile is not None and
+                not isinstance(self._rbfile, _NotConnected)):
+            self._rbfile.close()
         if (self._wfile is not None and
                 not isinstance(self._wfile, _NotConnected)):
             self._wfile.close()

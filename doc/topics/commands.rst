@@ -598,7 +598,15 @@ Stored playlists
 The music database
 ------------------
 
+.. function:: MPDClient.albumart(uri)
 
+
+    Returns the album art image for the given song.
+
+    *URI* is always a single file or URL.
+
+    The returned value is the binary contents of the album art image. If the given URI is invalid,
+    or the song does not have an album cover art file that MPD recognizes, a CommandError is thrown.
 .. function:: MPDClient.count(tag, needle[, ..., "group", grouptype])
 
 
