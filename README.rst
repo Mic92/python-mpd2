@@ -1,4 +1,4 @@
-python-mpd2
+Python Library: python-mpd2
 ===========
 
 .. image:: https://travis-ci.org/Mic92/python-mpd2.png?branch=master
