@@ -119,7 +119,7 @@ Install Sphinx::
 
     $ easy_install -U Sphinx
 
-Change to the source directory an run::
+Change to the source directory and run::
 
     $ python ./setup.py build_sphinx
 
