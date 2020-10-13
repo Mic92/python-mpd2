@@ -13,6 +13,13 @@ async def main():
 
     print("Connected to MPD version", client.mpd_version)
 
+    withalbumart = await client.albumart("ji/intro.mp3")
+    print("albumart:",withalbumart)
+    nocoverfile = await client.readpicture("nocoverfile/intro.mp3")
+    print("readpicture:",nocoverfile)
+    notfound = await client.readpicture("nocover/file.mp3")
+    print("readpicture, no data",notfound)
+
     try:
         status = await client.status()
     except Exception as e:

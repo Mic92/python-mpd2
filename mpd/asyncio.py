@@ -31,11 +31,12 @@ class BaseCommandResult(asyncio.Future):
     """A future that carries its command/args/callback with it for the
     convenience of passing it around to the command queue."""
 
-    def __init__(self, command, args, callback):
+    def __init__(self, command, args, callback,has_binary_payload=False):
         super().__init__()
         self._command = command
         self._args = args
         self._callback = callback
+        self.has_binary_payload = has_binary_payload
 
 class CommandResult(BaseCommandResult):
     def __init__(self, *args, **kwargs):
@@ -187,7 +188,12 @@ class MPDClient(MPDClientBase):
 
                     self.__command_enqueued = asyncio.Future()
 
-                self._write_command(result._command, result._args)
+                offset = 0
+                size = 0
+                if not result.has_binary_payload:
+                    self._write_command(result._command, result._args)
+                else:
+                    self._write_command(result._command, list(result._args)+[offset])
                 while True:
                     try:
                         if self.__command_enqueued is not None:
@@ -201,6 +207,21 @@ class MPDClient(MPDClientBase):
                             l = await line_future
                         else:
                             l = await self.__read_output_line()
+                            if isinstance(l, str) and l.startswith("size: "):
+                                field, val = l.split(": ")
+                                size = int(val)
+                            if isinstance(l, str) and l.startswith("binary: "):
+                                #parse binary
+                                field, val = l.split(": ")
+                                chunk_size = int(val)
+                                binarychunk = await self._read_chunk(chunk_size+1)
+                                result._feed_line(binarychunk[:-1])
+                                offset += chunk_size
+                                # OK after data
+                                l = await self.__read_output_line()
+                                if l is None and offset < size:
+                                    self._write_command(result._command, list(result._args)+[offset])
+                                    continue
                     except CommandError as e:
                         result._feed_error(e)
                         break
@@ -324,6 +345,11 @@ class MPDClient(MPDClientBase):
                     line = await lines.get()
                     if isinstance(line, BaseException):
                         raise line
+                    if isinstance(line, bytes):
+                        if "binary" not in self.obj.keys():
+                            self.obj["binary"] = bytearray()
+                        self.obj["binary"] += line
+                        continue
                     if line is None:
                         self.exhausted = True
                         if self.obj:
@@ -356,7 +382,7 @@ class MPDClient(MPDClientBase):
             # Idle and noidle are explicitly implemented, skipping them.
             return
         def f(self, *args):
-            result = command_class(name, args, partial(callback, self))
+            result = command_class(name, args, partial(callback, self), has_binary_payload=callback.mpd_commands_has_binary_payload)
             if self.__run_task is None:
                 raise ConnectionError("Can not send command to disconnected client")
             self.__commandqueue.put_nowait(result)
@@ -411,3 +437,24 @@ class MPDClient(MPDClientBase):
 
     def noidle(self):
         raise AttributeError("noidle is not supported / required in mpd.asyncio")
+
+    async def __read(self,len_,binary=False):
+        """Wrapper around .__rfile.read that handles encoding"""
+        data = await self.__rfile.read(len_)
+        if binary:
+            return data
+        try:
+            return data.decode('utf8')
+        except UnicodeDecodeError:
+            self.disconnect()
+            raise ProtocolError("Invalid UTF8 received")
+
+    async def _read_chunk(self, amount):
+        chunk = bytearray()
+        while amount > 0:
+            result = await self.__read(amount,binary=True)
+            if len(result) == 0:
+                break
+            chunk.extend(result)
+            amount -= len(result)
+        return bytes(chunk)

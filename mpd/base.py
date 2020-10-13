@@ -118,6 +118,7 @@ class mpd_commands(object):
     def __init__(self, *commands, **kwargs):
         self.commands = commands
         self.is_direct = kwargs.pop('is_direct', False)
+        self.has_binary_payload = kwargs.pop('has_binary_payload', False)
         if kwargs:
             raise AttributeError(
                 "mpd_commands() got unexpected keyword"
@@ -127,6 +128,7 @@ class mpd_commands(object):
     def __call__(self, ob):
         ob.mpd_commands = self.commands
         ob.mpd_commands_direct = self.is_direct
+        ob.mpd_commands_has_binary_payload = self.has_binary_payload
         return ob
 
 
@@ -221,7 +223,15 @@ class MPDClientBase(object):
 
     def _parse_objects(self, lines, delimiters=[], lookup_delimiter=False):
         obj = {}
-        for key, value in self._parse_pairs(lines):
+        for line in lines:
+            if isinstance(line, bytes):
+                if "binary" not in obj.keys():
+                    obj["binary"] = bytearray()
+                obj["binary"] += line
+                continue
+            if line is None:
+                break
+            (key,value) = self._parse_pair(line, ": ")
             key = key.lower()
             if lookup_delimiter and not delimiters:
                 delimiters = [key]
@@ -357,8 +367,12 @@ class MPDClientBase(object):
     def _parse_stickers(self, lines):
         return dict(self._parse_raw_stickers(lines))
 
-    def albumart(self, uri):
-        return self._execute_binary("albumart", [uri])
+    @mpd_commands('albumart',has_binary_payload=True,is_direct=True)
+    def _albumart(self, lines):
+        return self._parse_objects_direct(lines)
+    @mpd_commands('readpicture',has_binary_payload=True,is_direct=True)
+    def _readpicture(self, lines):
+        return self._parse_objects_direct(lines,["type"])
 
 ###############################################################################
 # sync client
@@ -477,7 +491,13 @@ class MPDClient(MPDClientBase):
             self._write_command(command, args)
             self._command_list.append(retval)
         else:
-            self._write_command(command, args)
+            #FIXME
+            if command.startswith("readpicture") or command.startswith("albumart") and len(args) < 3:
+                self._write_command(command, list(args)+["0"])
+            else:
+                self._write_command(command, args)
+
+
             if callable(retval):
                 return retval()
             return retval
@@ -515,11 +535,11 @@ class MPDClient(MPDClientBase):
             else:
                 parts.append('"{}"'.format(escape(encode_str(arg))))
         # Minimize logging cost if the logging is not activated.
-        if logger.isEnabledFor(logging.DEBUG):
-            if command == "password":
-                logger.debug("Calling MPD password(******)")
-            else:
-                logger.debug("Calling MPD %s%r", command, args)
+        #if logger.isEnabledFor(logging.DEBUG):
+        #    if command == "password":
+        #        logger.debug("Calling MPD password(******)")
+        #    else:
+        #        logger.debug("Calling MPD %s%r", command, args)
         cmd = " ".join(parts)
         self._write_line(cmd)
 
@@ -547,7 +567,26 @@ class MPDClient(MPDClientBase):
 
     def _read_lines(self):
         line = self._read_line()
+        offset = 0
+        size = 0
+
         while line is not None:
+            if isinstance(line, str) and line.startswith("size: "):
+                field, val = line.split(": ")
+                size = int(val)
+            if isinstance(line, str) and line.startswith("binary: "):
+                #parse binary
+                field, val = line.split(": ")
+                chunk_size = int(val)
+                binarychunk = self._read_chunk(chunk_size+1)
+                yield binarychunk[:-1]
+                offset += chunk_size
+                # OK after data
+                line = self._read_line()
+                if line is None and offset < size:
+                    self._write_command(result._command, list(result._args)+[offset])
+                    continue
+
             yield line
             line = self._read_line()
 
@@ -560,71 +599,6 @@ class MPDClient(MPDClientBase):
             chunk.extend(result)
             amount -= len(result)
         return bytes(chunk)
-
-    def _read_binary(self):
-        size = None
-        chunk_size = None
-        try:
-            while chunk_size is None:
-                line = self._rbfile.readline().decode("utf-8")
-                if not line.endswith("\n"):
-                    self.disconnect()
-                    raise ConnectionError("Connection lost while reading line")
-                line = line.rstrip("\n")
-                if line.startswith(ERROR_PREFIX):
-                    error = line[len(ERROR_PREFIX):].strip()
-                    raise CommandError(error)
-                field, val = line.split(": ")
-                if field == "size":
-                    size = int(val)
-                elif field == "binary":
-                    chunk_size = int(val)
-            
-            if size is None:
-                size = chunk_size
-            
-            data = self._read_chunk(chunk_size)
-
-            if len(data) != chunk_size:
-                self.disconnect()
-                raise ConnectionError("Connection lost while reading binary data: "
-                    "expected %d bytes, got %d" % (chunk_size, len(data)))
-            
-            if self._rbfile.read(1) != b"\n":
-                # newline after binary content
-                self.disconnect()
-                raise ConnectionError("Connection lost while reading line")
-            
-            # trailing status indicator
-            # typically OK, but protocol documentation indicates that it is completion code
-            line = self._rbfile.readline().decode("utf-8")
-
-            if not line.endswith("\n"):
-                self.disconnect()
-                raise ConnectionError("Connection lost while reading line")
-            
-            line = line.rstrip("\n")
-            if line.startswith(ERROR_PREFIX):
-                error = line[len(ERROR_PREFIX):].strip()
-                raise CommandError(error)
-            
-            return size, data
-        except IOError as err:
-            self.disconnect()
-            raise ConnectionError("Connection IO error while processing binary command: " + str(err))
-
-    def _execute_binary(self, command, args):
-        data = bytearray()
-        assert len(args) == 1
-        args.append(0)
-        while True:
-            self._write_command(command, args)
-            size, chunk = self._read_binary()
-            data += chunk
-            args[-1] += len(chunk)
-            if len(data) == size:
-                break
-        return data
 
     def _read_command_list(self):
         try:
