@@ -5,9 +5,10 @@ stdenv.mkDerivation {
   buildInputs = [
     bashInteractive
     python27
-    python35
     python36
     python37
+    python38
+    python39
     pypy
     (python.withPackages(ps: [ps.setuptools]))
     python38.pkgs.tox
