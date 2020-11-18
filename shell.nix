@@ -12,5 +12,4 @@ stdenv.mkDerivation {
     pypy
     (python38.withPackages(ps: [ps.setuptools ps.tox ps.wheel ps.twine]))
   ];
-  SOURCE_DATE_EPOCH="";
 }
