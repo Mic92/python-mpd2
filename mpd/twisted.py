@@ -62,7 +62,7 @@ class MPDProtocol(basic.LineReceiver, MPDClientBase):
     delimiter = b'\n'
 
     def __init__(self, default_idle=True, idle_result=None):
-        super(MPDProtocol, self).__init__(use_unicode=True)
+        super(MPDProtocol, self).__init__()
         # flag whether client should idle by default
         self._default_idle = default_idle
         self.idle_result = idle_result

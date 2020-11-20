@@ -37,23 +37,6 @@ NEXT = "list_OK"
 # utils
 ###############################################################################
 
-IS_PYTHON2 = sys.version_info < (3, 0)
-if IS_PYTHON2:
-    def decode_str(s):
-        return s.decode("utf-8")
-
-    def encode_str(s):
-        if type(s) == str:
-            return s
-        else:
-            return (unicode(s)).encode("utf-8")
-else:
-    def decode_str(s):
-        return s
-
-    encode_str = str
-
-
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -179,9 +162,8 @@ class MPDClientBase(object):
     subclasses.
     """
 
-    def __init__(self, use_unicode=False):
+    def __init__(self):
         self.iterate = False
-        self.use_unicode = use_unicode
         self._reset()
 
     @classmethod
@@ -416,11 +398,9 @@ class MPDClient(MPDClientBase):
         MPDClientBase._parse_outputs,
         MPDClientBase._parse_plugins
     ]
-    if IS_PYTHON2:
-        _wrap_iterator_parsers = [f.__func__ for f in _wrap_iterator_parsers]
 
-    def __init__(self, use_unicode=False):
-        super(MPDClient, self).__init__(use_unicode=use_unicode)
+    def __init__(self):
+        super(MPDClient, self).__init__()
 
     def _reset(self):
         super(MPDClient, self)._reset()
@@ -490,17 +470,8 @@ class MPDClient(MPDClientBase):
             error_message = "Connection to server was reset"
             logger.info(error_message)
             self._reset()
-            if IS_PYTHON2:
-                # Utilizing exec is not particularly elegant, however, it seems
-                # to be the only way as Python3 handles exceptions quite
-                # different to Python2. Without exec, the whole script is not
-                # executable in Python3. Also "six" does it the same way:
-                # https://bitbucket.org/gutworth/six/src/ (search "reraise")
-                exec('raise ConnectionError, "' + error_message + '",'
-                     'sys.exc_info()[2]')
-            else:
-                e = ConnectionError(error_message)
-                raise e.with_traceback(sys.exc_info()[2])
+            e = ConnectionError(error_message)
+            raise e.with_traceback(sys.exc_info()[2])
 
     def _write_command(self, command, args=[]):
         parts = [command]
@@ -513,7 +484,7 @@ class MPDClient(MPDClientBase):
                 else:
                     parts.append('"{}:{}"'.format(int(arg[0]), int(arg[1])))
             else:
-                parts.append('"{}"'.format(escape(encode_str(arg))))
+                parts.append('"{}"'.format(escape(str(arg))))
         # Minimize logging cost if the logging is not activated.
         if logger.isEnabledFor(logging.DEBUG):
             if command == "password":
@@ -524,11 +495,7 @@ class MPDClient(MPDClientBase):
         self._write_line(cmd)
 
     def _read_line(self):
-        line = self._rbfile.readline()
-        if self.use_unicode or not IS_PYTHON2:
-            line = line.decode("utf-8")
-        if self.use_unicode:
-            line = decode_str(line)
+        line = self._rbfile.readline().decode("utf-8")
         if not line.endswith("\n"):
             self.disconnect()
             raise ConnectionError("Connection lost while reading line")
@@ -727,21 +694,17 @@ class MPDClient(MPDClientBase):
                 raise ValueError("port argument must be specified when connecting via tcp")
             self._sock = self._connect_tcp(host, port)
 
-        if IS_PYTHON2:
-            self._rbfile = self._sock.makefile("rb")
-            self._wfile = self._sock.makefile("w")
-        else:
-            # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
-            #   locale.
-            # - by setting newline explicit, we force to send '\n' also on
-            #   windows
-            self._rbfile = self._sock.makefile(
-                "rb",
-                newline="\n")
-            self._wfile = self._sock.makefile(
-                "w",
-                encoding="utf-8",
-                newline="\n")
+        # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
+        #   locale.
+        # - by setting newline explicit, we force to send '\n' also on
+        #   windows
+        self._rbfile = self._sock.makefile(
+            "rb",
+            newline="\n")
+        self._wfile = self._sock.makefile(
+            "w",
+            encoding="utf-8",
+            newline="\n")
 
         try:
             helloline = self._rbfile.readline().decode('utf-8')

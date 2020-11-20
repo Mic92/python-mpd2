@@ -3,18 +3,22 @@ from random import choice
 from mpd import MPDClient
 
 class LockableMPDClient(MPDClient):
-    def __init__(self, use_unicode=False):
+    def __init__(self):
         super(LockableMPDClient, self).__init__()
-        self.use_unicode = use_unicode
         self._lock = Lock()
+
     def acquire(self):
         self._lock.acquire()
+
     def release(self):
         self._lock.release()
+
     def __enter__(self):
         self.acquire()
+
     def __exit__(self, type, value, traceback):
         self.release()
+
 
 client = LockableMPDClient()
 client.connect("localhost", 6600)
@@ -37,6 +41,7 @@ def fetch_playlist():
             with client:
                 playlist = client.playlist()
             assert isinstance(playlist, list)
+
 
 threads = []
 for i in range(5):

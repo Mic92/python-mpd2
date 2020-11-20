@@ -10,18 +10,7 @@ import sys
 import types
 import warnings
 
-try:
-    # is required for python2.6
-    # python2.7 works with this module too
-    import unittest2 as unittest
-except ImportError:
-    # required for python3
-    # python2.7 works with this module too!
-    if sys.version_info >= (2, 7):
-        import unittest
-    else:
-        print("Please install unittest2 from PyPI to run tests!")
-        sys.exit(1)
+import unittest
 
 try:
     from twisted.python.failure import Failure
@@ -362,17 +351,6 @@ class TestMPDClient(unittest.TestCase):
             res = self.client.find("file", "☯☾☝♖✽")
             self.assertIsInstance(res, list)
             self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
-
-    @unittest.skipIf(sys.version_info >= (3, 0),
-                     "Test special unicode handling only if python2")
-    def test_unicode_as_reponse(self):
-        self.MPDWillReturn("handler: http://\n", "OK\n")
-        self.client.use_unicode = True
-        self.assertIsInstance(self.client.urlhandlers()[0], unicode)
-
-        self.MPDWillReturn("handler: http://\n", "OK\n")
-        self.client.use_unicode = False
-        self.assertIsInstance(self.client.urlhandlers()[0], str)
 
     def test_numbers_as_command_args(self):
         self.MPDWillReturn("OK\n")

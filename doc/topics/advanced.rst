@@ -43,26 +43,3 @@ With Python 3:
 In Python 3, Unicode string is the default string type. So just pass these
 strings as arguments for MPD commands and *python-mpd2* will also return such
 Unicode string.
-
-With Python 2.x
-~~~~~~~~~~~~~~~
-
-For backward compatibility with *python-mpd*, when running with Python 2.x,
-*python-mpd2* accepts both Unicode strings (ex. u"♥") and UTF-8 encoded strings
-(ex. "♥").
-
-In order for *MPDClient* to return Unicode strings with Python 2, create the
-instance with the ``use_unicode`` parameter set to ``True``.
-
-Using Unicode strings should be prefered as it is done transparently by the
-library for you, and makes the transition to Python 3 easier::
-
-    >>> import mpd
-    >>> client = MPDClient(use_unicode=True)
-    >>> client.urlhandlers()[0]
-    u'http'
-    >>> client.use_unicode = False # Can be switched back later
-    >>> client.urlhandlers()[0]
-    'http'
-
-Using this option in Python 3 doesn't have any effect.
