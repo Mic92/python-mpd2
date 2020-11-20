@@ -1261,6 +1261,35 @@ class TestAsyncioMPD(unittest.TestCase):
             'volume': '70',
             })
 
+    async def _test_outputs(self):
+        self.mockserver.expect_exchange([b"outputs\n"], [
+            b"outputid: 0\n",
+            b"outputname: My ALSA Device\n",
+            b"plugin: alsa\n",
+            b"outputenabled: 0\n",
+            b"attribute: dop=0\n",
+            b"outputid: 1\n",
+            b"outputname: My FM transmitter\n",
+            b"plugin: fmradio\n",
+            b"outputenabled: 1\n",
+            b"OK\n",
+            ])
+
+        outputs = self.client.outputs()
+
+        expected = iter([
+                {'outputid': '0', 'outputname': 'My ALSA Device', 'plugin': 'alsa', 'outputenabled': '0', 'attribute': 'dop=0'},
+                {'outputid': '1', 'outputname': 'My FM transmitter', 'plugin': 'fmradio', 'outputenabled': '1'},
+                ])
+
+        async for o in outputs:
+            self.assertEqual(o, next(expected))
+        self.assertRaises(StopIteration, next, expected)
+
+    def test_outputs(self):
+        self.init_client()
+        self._await(self._test_outputs())
+
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""
         self.init_client()
