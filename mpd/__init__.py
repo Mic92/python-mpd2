@@ -30,6 +30,7 @@ from mpd.base import VERSION
 try:
     from mpd.twisted import MPDProtocol
 except ImportError:
+
     class MPDProtocol:
         def __init__():
             raise "No twisted module found"

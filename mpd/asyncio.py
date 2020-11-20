@@ -27,6 +27,7 @@ from mpd.base import MPDClient as SyncMPDClient
 from mpd.base import ProtocolError, ConnectionError, CommandError
 from mpd.base import mpd_command_provider
 
+
 class BaseCommandResult(asyncio.Future):
     """A future that carries its command/args/callback with it for the
     convenience of passing it around to the command queue."""
@@ -36,6 +37,7 @@ class BaseCommandResult(asyncio.Future):
         self._command = command
         self._args = args
         self._callback = callback
+
 
 class CommandResult(BaseCommandResult):
     def __init__(self, *args, **kwargs):
@@ -51,6 +53,7 @@ class CommandResult(BaseCommandResult):
 
     def _feed_error(self, error):
         self.set_exception(error)
+
 
 class CommandResultIterable(BaseCommandResult):
     """Variant of CommandResult where the underlying callback is an
@@ -78,7 +81,7 @@ class CommandResultIterable(BaseCommandResult):
         asyncio.Task(self.__feed_future())
         return super().__await__()
 
-    __iter__ = __await__ # for 'yield from' style invocation
+    __iter__ = __await__  # for 'yield from' style invocation
 
     async def __feed_future(self):
         result = []
@@ -95,7 +98,7 @@ class CommandResultIterable(BaseCommandResult):
 @mpd_command_provider
 class MPDClient(MPDClientBase):
     __idle_task = None
-    __run_task = None # doubles as indicator for being connected
+    __run_task = None  # doubles as indicator for being connected
 
     #: When in idle, this is a Future on which incoming commands should set a
     #: result. (This works around asyncio.Queue not having a .peek() coroutine)
@@ -109,15 +112,17 @@ class MPDClient(MPDClientBase):
     async def connect(self, host, port=6600, loop=None):
         self.__loop = loop
 
-        if '/' in host:
+        if "/" in host:
             r, w = await asyncio.open_unix_connection(host, loop=loop)
         else:
             r, w = await asyncio.open_connection(host, port, loop=loop)
         self.__rfile, self.__wfile = r, w
 
         self.__commandqueue = asyncio.Queue(loop=loop)
-        self.__idle_results = asyncio.Queue(loop=loop) #: a queue of CommandResult("idle") futures
-        self.__idle_consumers = [] #: list of (subsystem-list, callbacks) tuples
+        self.__idle_results = asyncio.Queue(
+            loop=loop
+        )  #: a queue of CommandResult("idle") futures
+        self.__idle_consumers = []  #: list of (subsystem-list, callbacks) tuples
 
         try:
             helloline = await asyncio.wait_for(self.__readline(), timeout=5)
@@ -131,7 +136,9 @@ class MPDClient(MPDClientBase):
         self.__idle_task = asyncio.Task(self.__distribute_idle_results())
 
     def disconnect(self):
-        if self.__run_task is not None: # is None eg. when connection fails in .connect()
+        if (
+            self.__run_task is not None
+        ):  # is None eg. when connection fails in .connect()
             self.__run_task.cancel()
         if self.__idle_task is not None:
             self.__idle_task.cancel()
@@ -167,10 +174,10 @@ class MPDClient(MPDClientBase):
             while True:
                 try:
                     result = await asyncio.wait_for(
-                            self.__commandqueue.get(),
-                            timeout=self.IMMEDIATE_COMMAND_TIMEOUT,
-                            loop=self.__loop,
-                            )
+                        self.__commandqueue.get(),
+                        timeout=self.IMMEDIATE_COMMAND_TIMEOUT,
+                        loop=self.__loop,
+                    )
                 except asyncio.TimeoutError:
                     # The cancellation of the __commandqueue.get() that happens
                     # in this case is intended, and is just what asyncio.Queue
@@ -193,8 +200,10 @@ class MPDClient(MPDClientBase):
                         if self.__command_enqueued is not None:
                             # We're in idle mode.
                             line_future = asyncio.shield(self.__read_output_line())
-                            await asyncio.wait([line_future, self.__command_enqueued],
-                                    return_when=asyncio.FIRST_COMPLETED)
+                            await asyncio.wait(
+                                [line_future, self.__command_enqueued],
+                                return_when=asyncio.FIRST_COMPLETED,
+                            )
                             if self.__command_enqueued.done():
                                 self._write_command("noidle")
                                 self.__command_enqueued = None
@@ -242,20 +251,21 @@ class MPDClient(MPDClientBase):
         """Wrapper around .__rfile.readline that handles encoding"""
         data = await self.__rfile.readline()
         try:
-            return data.decode('utf8')
+            return data.decode("utf8")
         except UnicodeDecodeError:
             self.disconnect()
             raise ProtocolError("Invalid UTF8 received")
 
     def __write(self, text):
         """Wrapper around .__wfile.write that handles encoding."""
-        self.__wfile.write(text.encode('utf8'))
+        self.__wfile.write(text.encode("utf8"))
 
     # copied and subtly modifiedstuff from base
 
     # This is just a wrapper for the below.
     def _write_line(self, text):
         self.__write(text + "\n")
+
     # FIXME This code should be shareable.
     _write_command = SyncMPDClient._write_command
 
@@ -266,7 +276,7 @@ class MPDClient(MPDClientBase):
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
-            error = line[len(ERROR_PREFIX):].strip()
+            error = line[len(ERROR_PREFIX) :].strip()
             raise CommandError(error)
         if line == SUCCESS:
             return None
@@ -301,10 +311,13 @@ class MPDClient(MPDClientBase):
     # command provider interface
     @classmethod
     def add_command(cls, name, callback):
-        command_class = CommandResultIterable if callback.mpd_commands_direct else CommandResult
+        command_class = (
+            CommandResultIterable if callback.mpd_commands_direct else CommandResult
+        )
         if hasattr(cls, name):
             # Idle and noidle are explicitly implemented, skipping them.
             return
+
         def f(self, *args):
             result = command_class(name, args, partial(callback, self))
             if self.__run_task is None:
@@ -312,6 +325,7 @@ class MPDClient(MPDClientBase):
             self.__commandqueue.put_nowait(result)
             self._nudge_idle()
             return result
+
         escaped_name = name.replace(" ", "_")
         f.__name__ = escaped_name
         setattr(cls, escaped_name, f)

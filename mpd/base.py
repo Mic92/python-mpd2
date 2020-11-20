@@ -37,6 +37,7 @@ NEXT = "list_OK"
 # utils
 ###############################################################################
 
+
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -48,6 +49,7 @@ def escape(text):
 try:
     from logging import NullHandler
 except ImportError:  # NullHandler was introduced in python2.7
+
     class NullHandler(logging.Handler):
         def emit(self, record):
             pass
@@ -60,6 +62,7 @@ logger.addHandler(NullHandler())
 ###############################################################################
 # exceptions
 ###############################################################################
+
 
 class MPDError(Exception):
     pass
@@ -93,6 +96,7 @@ class IteratingError(MPDError):
 # command registration
 ###############################################################################
 
+
 class mpd_commands(object):
     """Decorator for registering MPD commands with it's corresponding result
     callback.
@@ -100,7 +104,7 @@ class mpd_commands(object):
 
     def __init__(self, *commands, **kwargs):
         self.commands = commands
-        self.is_direct = kwargs.pop('is_direct', False)
+        self.is_direct = kwargs.pop("is_direct", False)
         if kwargs:
             raise AttributeError(
                 "mpd_commands() got unexpected keyword"
@@ -120,6 +124,7 @@ def mpd_command_provider(cls):
     A class using this decorator must inherit from ``MPDClientBase`` and
     implement it's ``add_command`` function.
     """
+
     def collect(cls, callbacks=dict()):
         """Collect MPD command callbacks from given class.
 
@@ -146,12 +151,14 @@ class Noop(object):
     """An instance of this class represents a MPD command callback which
     does nothing.
     """
+
     mpd_commands = None
 
 
 ###############################################################################
 # abstract base client
 ###############################################################################
+
 
 class MPDClientBase(object):
     """Abstract MPD client.
@@ -169,21 +176,23 @@ class MPDClientBase(object):
     @classmethod
     def add_command(cls, name, callback):
         raise NotImplementedError(
-            'Abstract ``MPDClientBase`` does not implement ``add_command``')
+            "Abstract ``MPDClientBase`` does not implement ``add_command``"
+        )
 
     def noidle(self):
         raise NotImplementedError(
-            'Abstract ``MPDClientBase`` does not implement ``noidle``')
+            "Abstract ``MPDClientBase`` does not implement ``noidle``"
+        )
 
     def command_list_ok_begin(self):
         raise NotImplementedError(
-            'Abstract ``MPDClientBase`` does not implement '
-            '``command_list_ok_begin``')
+            "Abstract ``MPDClientBase`` does not implement " "``command_list_ok_begin``"
+        )
 
     def command_list_end(self):
         raise NotImplementedError(
-            'Abstract ``MPDClientBase`` does not implement '
-            '``command_list_end``')
+            "Abstract ``MPDClientBase`` does not implement " "``command_list_end``"
+        )
 
     def _reset(self):
         self.mpd_version = None
@@ -227,27 +236,26 @@ class MPDClientBase(object):
 
     def _parse_raw_stickers(self, lines):
         for key, sticker in self._parse_pairs(lines):
-            value = sticker.split('=', 1)
+            value = sticker.split("=", 1)
             if len(value) < 2:
-                raise ProtocolError(
-                    "Could not parse sticker: {}".format(repr(sticker)))
+                raise ProtocolError("Could not parse sticker: {}".format(repr(sticker)))
             yield tuple(value)
 
-    NOOP = mpd_commands('close', 'kill')(Noop())
+    NOOP = mpd_commands("close", "kill")(Noop())
 
-    @mpd_commands('plchangesposid', is_direct=True)
+    @mpd_commands("plchangesposid", is_direct=True)
     def _parse_changes(self, lines):
         return self._parse_objects_direct(lines, ["cpos"])
 
-    @mpd_commands('listall', 'listallinfo', 'listfiles', 'lsinfo', is_direct=True)
+    @mpd_commands("listall", "listallinfo", "listfiles", "lsinfo", is_direct=True)
     def _parse_database(self, lines):
         return self._parse_objects_direct(lines, ["file", "directory", "playlist"])
 
-    @mpd_commands('idle')
+    @mpd_commands("idle")
     def _parse_idle(self, lines):
         return self._parse_list(lines)
 
-    @mpd_commands('addid', 'config', 'replay_gain_status', 'rescan', 'update')
+    @mpd_commands("addid", "config", "replay_gain_status", "rescan", "update")
     def _parse_item(self, lines):
         pairs = list(self._parse_pairs(lines))
         if len(pairs) != 1:
@@ -255,96 +263,155 @@ class MPDClientBase(object):
         return pairs[0][1]
 
     @mpd_commands(
-        'channels', 'commands', 'listplaylist', 'notcommands',
-        'tagtypes', 'urlhandlers')
+        "channels", "commands", "listplaylist", "notcommands", "tagtypes", "urlhandlers"
+    )
     def _parse_list(self, lines):
         seen = None
         for key, value in self._parse_pairs(lines):
             if key != seen:
                 if seen is not None:
-                    raise ProtocolError(
-                        "Expected key '{}', got '{}'".format(seen, key))
+                    raise ProtocolError("Expected key '{}', got '{}'".format(seen, key))
                 seen = key
             yield value
 
-    @mpd_commands('list', is_direct=True)
+    @mpd_commands("list", is_direct=True)
     def _parse_list_groups(self, lines):
         return self._parse_objects_direct(lines, lookup_delimiter=True)
 
-    @mpd_commands('readmessages', is_direct=True)
+    @mpd_commands("readmessages", is_direct=True)
     def _parse_messages(self, lines):
         return self._parse_objects_direct(lines, ["channel"])
 
-    @mpd_commands('listmounts', is_direct=True)
+    @mpd_commands("listmounts", is_direct=True)
     def _parse_mounts(self, lines):
         return self._parse_objects_direct(lines, ["mount"])
 
-    @mpd_commands('listneighbors', is_direct=True)
+    @mpd_commands("listneighbors", is_direct=True)
     def _parse_neighbors(self, lines):
         return self._parse_objects_direct(lines, ["neighbor"])
 
     @mpd_commands(
-        'add', 'addtagid', 'clear', 'clearerror', 'cleartagid', 'consume',
-        'crossfade', 'delete', 'deleteid', 'disableoutput', 'enableoutput',
-        'findadd', 'load', 'mixrampdb', 'mixrampdelay', 'mount', 'move',
-        'moveid', 'next', 'outputvolume', 'password', 'pause', 'ping', 'play',
-        'playid', 'playlistadd', 'playlistclear', 'playlistdelete', 'playlistmove',
-        'previous', 'prio', 'prioid', 'random', 'rangeid', 'rename', 'repeat',
-        'replay_gain_mode', 'rm', 'save', 'searchadd', 'searchaddpl', 'seek',
-        'seekcur', 'seekid', 'sendmessage', 'setvol', 'shuffle', 'single',
-        'sticker delete', 'sticker set', 'stop', 'subscribe', 'swap', 'swapid',
-        'toggleoutput', 'umount', 'unsubscribe', 'volume')
+        "add",
+        "addtagid",
+        "clear",
+        "clearerror",
+        "cleartagid",
+        "consume",
+        "crossfade",
+        "delete",
+        "deleteid",
+        "disableoutput",
+        "enableoutput",
+        "findadd",
+        "load",
+        "mixrampdb",
+        "mixrampdelay",
+        "mount",
+        "move",
+        "moveid",
+        "next",
+        "outputvolume",
+        "password",
+        "pause",
+        "ping",
+        "play",
+        "playid",
+        "playlistadd",
+        "playlistclear",
+        "playlistdelete",
+        "playlistmove",
+        "previous",
+        "prio",
+        "prioid",
+        "random",
+        "rangeid",
+        "rename",
+        "repeat",
+        "replay_gain_mode",
+        "rm",
+        "save",
+        "searchadd",
+        "searchaddpl",
+        "seek",
+        "seekcur",
+        "seekid",
+        "sendmessage",
+        "setvol",
+        "shuffle",
+        "single",
+        "sticker delete",
+        "sticker set",
+        "stop",
+        "subscribe",
+        "swap",
+        "swapid",
+        "toggleoutput",
+        "umount",
+        "unsubscribe",
+        "volume",
+    )
     def _parse_nothing(self, lines):
         for line in lines:
             raise ProtocolError(
-                "Got unexpected return value: '{}'".format(', '.join(lines)))
+                "Got unexpected return value: '{}'".format(", ".join(lines))
+            )
 
-    @mpd_commands('count', 'currentsong', 'readcomments', 'stats', 'status')
+    @mpd_commands("count", "currentsong", "readcomments", "stats", "status")
     def _parse_object(self, lines):
         objs = list(self._parse_objects(lines))
         if not objs:
             return {}
         return objs[0]
 
-    @mpd_commands('outputs', is_direct=True)
+    @mpd_commands("outputs", is_direct=True)
     def _parse_outputs(self, lines):
         return self._parse_objects_direct(lines, ["outputid"])
 
-    @mpd_commands('playlist')
+    @mpd_commands("playlist")
     def _parse_playlist(self, lines):
         for key, value in self._parse_pairs(lines, ":"):
             yield value
 
-    @mpd_commands('listplaylists', is_direct=True)
+    @mpd_commands("listplaylists", is_direct=True)
     def _parse_playlists(self, lines):
         return self._parse_objects_direct(lines, ["playlist"])
 
-    @mpd_commands('decoders', is_direct=True)
+    @mpd_commands("decoders", is_direct=True)
     def _parse_plugins(self, lines):
         return self._parse_objects_direct(lines, ["plugin"])
 
     @mpd_commands(
-        'find', 'listplaylistinfo', 'playlistfind', 'playlistid',
-        'playlistinfo', 'playlistsearch', 'plchanges', 'search',
-        'sticker find', is_direct=True)
+        "find",
+        "listplaylistinfo",
+        "playlistfind",
+        "playlistid",
+        "playlistinfo",
+        "playlistsearch",
+        "plchanges",
+        "search",
+        "sticker find",
+        is_direct=True,
+    )
     def _parse_songs(self, lines):
         return self._parse_objects_direct(lines, ["file"])
 
-    @mpd_commands('sticker get')
+    @mpd_commands("sticker get")
     def _parse_sticker(self, lines):
         key, value = list(self._parse_raw_stickers(lines))[0]
         return value
 
-    @mpd_commands('sticker list')
+    @mpd_commands("sticker list")
     def _parse_stickers(self, lines):
         return dict(self._parse_raw_stickers(lines))
 
     def albumart(self, uri):
         return self._execute_binary("albumart", [uri])
 
+
 ###############################################################################
 # sync client
 ###############################################################################
+
 
 def _create_callback(self, function, wrap_result):
     """Create MPD command related response callback.
@@ -360,15 +427,18 @@ def _create_callback(self, function, wrap_result):
         if wrap_result:
             res = self._wrap_iterator(res)
         return res
+
     return command_callback
 
 
 def _create_command(wrapper, name, return_value, wrap_result):
     """Create MPD command related function.
     """
+
     def mpd_command(self, *args):
         callback = _create_callback(self, return_value, wrap_result)
         return wrapper(self, name, args, callback)
+
     return mpd_command
 
 
@@ -396,7 +466,7 @@ class MPDClient(MPDClientBase):
         MPDClientBase._parse_database,
         MPDClientBase._parse_messages,
         MPDClientBase._parse_outputs,
-        MPDClientBase._parse_plugins
+        MPDClientBase._parse_plugins,
     ]
 
     def __init__(self):
@@ -412,12 +482,13 @@ class MPDClient(MPDClientBase):
 
     def _send(self, command, args, retval):
         warnings.warn(
-            "``send_{}`` is deprecated in favor of "
-            "asynchronous API".format(command),
-            DeprecationWarning)
+            "``send_{}`` is deprecated in favor of " "asynchronous API".format(command),
+            DeprecationWarning,
+        )
         if self._command_list is not None:
             raise CommandListError(
-                "Cannot use send_{} in a command list".format(command))
+                "Cannot use send_{} in a command list".format(command)
+            )
         self._write_command(command, args)
         if retval is not None:
             self._pending.append(command)
@@ -426,18 +497,20 @@ class MPDClient(MPDClientBase):
         warnings.warn(
             "``fetch_{}`` is deprecated in favor of "
             "asynchronous API".format(command),
-            DeprecationWarning)
+            DeprecationWarning,
+        )
         if self._command_list is not None:
             raise CommandListError(
-                "Cannot use fetch_{} in a command list".format(command))
+                "Cannot use fetch_{} in a command list".format(command)
+            )
         if self._iterating:
-            raise IteratingError(
-                "Cannot use fetch_{} while iterating".format(command))
+            raise IteratingError("Cannot use fetch_{} while iterating".format(command))
         if not self._pending:
             raise PendingCommandError("No pending commands to fetch")
         if self._pending[0] != command:
             raise PendingCommandError(
-                "'{}' is not the currently pending command".format(command))
+                "'{}' is not the currently pending command".format(command)
+            )
         del self._pending[0]
         if callable(retval):
             return retval()
@@ -445,15 +518,16 @@ class MPDClient(MPDClientBase):
 
     def _execute(self, command, args, retval):
         if self._iterating:
-            raise IteratingError(
-                "Cannot execute '{}' while iterating".format(command))
+            raise IteratingError("Cannot execute '{}' while iterating".format(command))
         if self._pending:
             raise PendingCommandError(
-                "Cannot execute '{}' with pending commands".format(command))
+                "Cannot execute '{}' with pending commands".format(command)
+            )
         if self._command_list is not None:
             if not callable(retval):
                 raise CommandListError(
-                    "'{}' not allowed in command list".format(command))
+                    "'{}' not allowed in command list".format(command)
+                )
             self._write_command(command, args)
             self._command_list.append(retval)
         else:
@@ -501,7 +575,7 @@ class MPDClient(MPDClientBase):
             raise ConnectionError("Connection lost while reading line")
         line = line.rstrip("\n")
         if line.startswith(ERROR_PREFIX):
-            error = line[len(ERROR_PREFIX):].strip()
+            error = line[len(ERROR_PREFIX) :].strip()
             raise CommandError(error)
         if self._command_list is not None:
             if line == NEXT:
@@ -539,29 +613,31 @@ class MPDClient(MPDClientBase):
                     raise ConnectionError("Connection lost while reading line")
                 line = line.rstrip("\n")
                 if line.startswith(ERROR_PREFIX):
-                    error = line[len(ERROR_PREFIX):].strip()
+                    error = line[len(ERROR_PREFIX) :].strip()
                     raise CommandError(error)
                 field, val = line.split(": ")
                 if field == "size":
                     size = int(val)
                 elif field == "binary":
                     chunk_size = int(val)
-            
+
             if size is None:
                 size = chunk_size
-            
+
             data = self._read_chunk(chunk_size)
 
             if len(data) != chunk_size:
                 self.disconnect()
-                raise ConnectionError("Connection lost while reading binary data: "
-                    "expected %d bytes, got %d" % (chunk_size, len(data)))
-            
+                raise ConnectionError(
+                    "Connection lost while reading binary data: "
+                    "expected %d bytes, got %d" % (chunk_size, len(data))
+                )
+
             if self._rbfile.read(1) != b"\n":
                 # newline after binary content
                 self.disconnect()
                 raise ConnectionError("Connection lost while reading line")
-            
+
             # trailing status indicator
             # typically OK, but protocol documentation indicates that it is completion code
             line = self._rbfile.readline().decode("utf-8")
@@ -569,16 +645,18 @@ class MPDClient(MPDClientBase):
             if not line.endswith("\n"):
                 self.disconnect()
                 raise ConnectionError("Connection lost while reading line")
-            
+
             line = line.rstrip("\n")
             if line.startswith(ERROR_PREFIX):
-                error = line[len(ERROR_PREFIX):].strip()
+                error = line[len(ERROR_PREFIX) :].strip()
                 raise CommandError(error)
-            
+
             return size, data
         except IOError as err:
             self.disconnect()
-            raise ConnectionError("Connection IO error while processing binary command: " + str(err))
+            raise ConnectionError(
+                "Connection IO error while processing binary command: " + str(err)
+            )
 
     def _execute_binary(self, command, args):
         data = bytearray()
@@ -621,12 +699,11 @@ class MPDClient(MPDClientBase):
         line = line.rstrip("\n")
         if not line.startswith(HELLO_PREFIX):
             raise ProtocolError("Got invalid MPD hello: '{}'".format(line))
-        self.mpd_version = line[len(HELLO_PREFIX):].strip()
+        self.mpd_version = line[len(HELLO_PREFIX) :].strip()
 
     def _connect_unix(self, path):
         if not hasattr(socket, "AF_UNIX"):
-            raise ConnectionError(
-                "Unix domain sockets not supported on this platform")
+            raise ConnectionError("Unix domain sockets not supported on this platform")
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.settimeout(self.timeout)
         sock.connect(path)
@@ -638,9 +715,9 @@ class MPDClient(MPDClientBase):
         except AttributeError:
             flags = 0
         err = None
-        for res in socket.getaddrinfo(host, port, socket.AF_UNSPEC,
-                                      socket.SOCK_STREAM, socket.IPPROTO_TCP,
-                                      flags):
+        for res in socket.getaddrinfo(
+            host, port, socket.AF_UNSPEC, socket.SOCK_STREAM, socket.IPPROTO_TCP, flags
+        ):
             af, socktype, proto, canonname, sa = res
             sock = None
             try:
@@ -659,7 +736,7 @@ class MPDClient(MPDClientBase):
         else:
             raise ConnectionError("getaddrinfo returns an empty list")
 
-    @mpd_commands('idle')
+    @mpd_commands("idle")
     def _parse_idle(self, lines):
         self._sock.settimeout(self.idletimeout)
         ret = self._wrap_iterator(self._parse_list(lines))
@@ -677,37 +754,34 @@ class MPDClient(MPDClientBase):
             self._sock.settimeout(timeout)
 
     def connect(self, host, port=None, timeout=None):
-        logger.info(
-            "Calling MPD connect(%r, %r, timeout=%r)", host, port, timeout)
+        logger.info("Calling MPD connect(%r, %r, timeout=%r)", host, port, timeout)
         if self._sock is not None:
             raise ConnectionError("Already connected")
         if timeout is not None:
             warnings.warn(
                 "The timeout parameter in connect() is deprecated! "
                 "Use MPDClient.timeout = yourtimeout instead.",
-                DeprecationWarning)
+                DeprecationWarning,
+            )
             self.timeout = timeout
         if host.startswith("/"):
             self._sock = self._connect_unix(host)
         else:
             if port is None:
-                raise ValueError("port argument must be specified when connecting via tcp")
+                raise ValueError(
+                    "port argument must be specified when connecting via tcp"
+                )
             self._sock = self._connect_tcp(host, port)
 
         # - Force UTF-8 encoding, since this is dependant from the LC_CTYPE
         #   locale.
         # - by setting newline explicit, we force to send '\n' also on
         #   windows
-        self._rbfile = self._sock.makefile(
-            "rb",
-            newline="\n")
-        self._wfile = self._sock.makefile(
-            "w",
-            encoding="utf-8",
-            newline="\n")
+        self._rbfile = self._sock.makefile("rb", newline="\n")
+        self._wfile = self._sock.makefile("w", encoding="utf-8", newline="\n")
 
         try:
-            helloline = self._rbfile.readline().decode('utf-8')
+            helloline = self._rbfile.readline().decode("utf-8")
             self._hello(helloline)
         except Exception:
             self.disconnect()
@@ -715,11 +789,9 @@ class MPDClient(MPDClientBase):
 
     def disconnect(self):
         logger.info("Calling MPD disconnect()")
-        if (self._rbfile is not None and
-                not isinstance(self._rbfile, _NotConnected)):
+        if self._rbfile is not None and not isinstance(self._rbfile, _NotConnected):
             self._rbfile.close()
-        if (self._wfile is not None and
-                not isinstance(self._wfile, _NotConnected)):
+        if self._wfile is not None and not isinstance(self._wfile, _NotConnected):
             self._wfile.close()
         if self._sock is not None:
             self._sock.close()
@@ -731,8 +803,8 @@ class MPDClient(MPDClientBase):
         return self._sock.fileno()
 
     def noidle(self):
-        if not self._pending or self._pending[0] != 'idle':
-            msg = 'cannot send noidle if send_idle was not called'
+        if not self._pending or self._pending[0] != "idle":
+            msg = "cannot send noidle if send_idle was not called"
             raise CommandError(msg)
         del self._pending[0]
         self._write_command("noidle")
@@ -744,8 +816,7 @@ class MPDClient(MPDClientBase):
         if self._iterating:
             raise IteratingError("Cannot begin command list while iterating")
         if self._pending:
-            raise PendingCommandError(
-                "Cannot begin command list with pending commands")
+            raise PendingCommandError("Cannot begin command list with pending commands")
         self._write_command("command_list_ok_begin")
         self._command_list = []
 
@@ -773,11 +844,11 @@ class MPDClient(MPDClientBase):
     @classmethod
     def remove_command(cls, name):
         if not hasattr(cls, name):
-            raise ValueError(
-                "Can't remove not existent '{}' command".format(name))
+            raise ValueError("Can't remove not existent '{}' command".format(name))
         name = name.replace(" ", "_")
         delattr(cls, str(name))
         delattr(cls, str("send_" + name))
         delattr(cls, str("fetch_" + name))
+
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:
