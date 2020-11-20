@@ -66,6 +66,7 @@ def read(fname):
 setup(
     name="python-mpd2",
     version=VERSION,
+    python_requires='>=3.6',
     description="A Python MPD client library",
     long_description=read('README.rst'),
     classifiers=CLASSIFIERS,

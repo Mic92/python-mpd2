@@ -259,7 +259,6 @@ class MPDClient(MPDClientBase):
     # FIXME This code should be shareable.
     _write_command = SyncMPDClient._write_command
 
-
     async def __read_output_line(self):
         """Kind of like SyncMPDClient._read_line"""
         line = await self.__readline()
@@ -273,82 +272,33 @@ class MPDClient(MPDClientBase):
             return None
         return line
 
-
-#    async def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
-#        obj = {}
-#        while True:
-#            line = await lines.get()
-#            if isinstance(line, BaseException):
-#                raise line
-#            if line is None:
-#                break
-#            key, value = self._parse_pair(line, separator=": ")
-#            key = key.lower()
-#            if lookup_delimiter and not delimiters:
-#                delimiters = [key]
-#            if obj:
-#                if key in delimiters:
-#                    yield obj
-#                    obj = {}
-#                elif key in obj:
-#                    if not isinstance(obj[key], list):
-#                        obj[key] = [obj[key], value]
-#                    else:
-#                        obj[key].append(value)
-#                    continue
-#            obj[key] = value
-#        if obj:
-#            yield obj
-
-    def _parse_objects_direct(self, lines, delimiters=None, lookup_delimiter=False):
-        # This is a workaround implementing the above comment on Python 3.5. It
-        # is recommended that the commented-out code be used for reasoning, and
-        # that changes are applied there and only copied over to this
-        # implementation.
-
-        outerself = self
-        class WrappedLoop:
-            def __init__(self, delimiters):
-                self.obj = {}
-                self.exhausted = False
-                self.delimiters = delimiters
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                while True:
-                    if self.exhausted:
-                        raise StopAsyncIteration()
-
-                    line = await lines.get()
-                    if isinstance(line, BaseException):
-                        raise line
-                    if line is None:
-                        self.exhausted = True
-                        if self.obj:
-                            return self.obj
-                        continue
-                    key, value = outerself._parse_pair(line, separator=": ")
-                    key = key.lower()
-                    if lookup_delimiter and not self.delimiters:
-                        self.delimiters = [key]
-                    if self.obj:
-                        if key in self.delimiters:
-                            oldobj = self.obj
-                            self.obj = {key: value}
-                            return oldobj
-                        if key in self.obj:
-                            if not isinstance(self.obj[key], list):
-                                self.obj[key] = [self.obj[key], value]
-                            else:
-                                self.obj[key].append(value)
-                            continue
-                    self.obj[key] = value
-        return WrappedLoop(delimiters)
+    async def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
+        obj = {}
+        while True:
+            line = await lines.get()
+            if isinstance(line, BaseException):
+                raise line
+            if line is None:
+                break
+            key, value = self._parse_pair(line, separator=": ")
+            key = key.lower()
+            if lookup_delimiter and not delimiters:
+                delimiters = [key]
+            if obj:
+                if key in delimiters:
+                    yield obj
+                    obj = {}
+                elif key in obj:
+                    if not isinstance(obj[key], list):
+                        obj[key] = [obj[key], value]
+                    else:
+                        obj[key].append(value)
+                    continue
+            obj[key] = value
+        if obj:
+            yield obj
 
     # command provider interface
-
     @classmethod
     def add_command(cls, name, callback):
         command_class = CommandResultIterable if callback.mpd_commands_direct else CommandResult
@@ -367,47 +317,18 @@ class MPDClient(MPDClientBase):
         setattr(cls, escaped_name, f)
 
     # commands that just work differently
-
-#    async def idle(self, subsystems=()):
-#        interests_before = self._get_idle_interests()
-#        changes = asyncio.Queue()
-#        try:
-#            entry = (subsystems, changes.put_nowait)
-#            self.__idle_consumers.append(entry)
-#            if self._get_idle_interests != interests_before:
-#                self._nudge_idle()
-#            while True:
-#                yield await changes.get()
-#        finally:
-#            self.__idle_consumers.remove(entry)
-
-    def idle(self, subsystems=()):
-        # This is a desugared workaround for python 3.5.
-        # Please consider the above block authoritative and this a workaround,
-        # and only apply changes here once they're incorporated there.
-
-        def final():
-            self.__idle_consumers.remove(entry)
-
-        class IdleAIter:
-            def __aiter__(self):
-                return self
-
-            def __anext__(self):
-                return changes.get()
-
-            def __del__(self):
-                final()
-
+    async def idle(self, subsystems=()):
         interests_before = self._get_idle_interests()
         changes = asyncio.Queue()
-
-        entry = (subsystems, changes.put_nowait)
-        self.__idle_consumers.append(entry)
-        if self._get_idle_interests != interests_before:
-            self._nudge_idle()
-
-        return IdleAIter()
+        try:
+            entry = (subsystems, changes.put_nowait)
+            self.__idle_consumers.append(entry)
+            if self._get_idle_interests != interests_before:
+                self._nudge_idle()
+            while True:
+                yield await changes.get()
+        finally:
+            self.__idle_consumers.remove(entry)
 
     def noidle(self):
         raise AttributeError("noidle is not supported / required in mpd.asyncio")

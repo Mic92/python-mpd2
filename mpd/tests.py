@@ -31,8 +31,7 @@ except ImportError:
                   "(twisted is not available for python >= 3.0 && python < 3.3)")
     TWISTED_MISSING = True
 
-if sys.version_info >= (3, 5):
-    # asyncio would be available in 3.4, but it's not supported by mpd.asyncio
+if sys.version_info >= (3,):
     import asyncio
 else:
     asyncio = None
@@ -1261,6 +1260,57 @@ class TestAsyncioMPD(unittest.TestCase):
             'time': '28:403',
             'volume': '70',
             })
+
+    async def _test_outputs(self):
+        self.mockserver.expect_exchange([b"outputs\n"], [
+            b"outputid: 0\n",
+            b"outputname: My ALSA Device\n",
+            b"plugin: alsa\n",
+            b"outputenabled: 0\n",
+            b"attribute: dop=0\n",
+            b"outputid: 1\n",
+            b"outputname: My FM transmitter\n",
+            b"plugin: fmradio\n",
+            b"outputenabled: 1\n",
+            b"OK\n",
+            ])
+
+        outputs = self.client.outputs()
+
+        expected = iter([
+                {'outputid': '0', 'outputname': 'My ALSA Device', 'plugin': 'alsa', 'outputenabled': '0', 'attribute': 'dop=0'},
+                {'outputid': '1', 'outputname': 'My FM transmitter', 'plugin': 'fmradio', 'outputenabled': '1'},
+                ])
+
+        async for o in outputs:
+            self.assertEqual(o, next(expected))
+        self.assertRaises(StopIteration, next, expected)
+
+    def test_outputs(self):
+        self.init_client()
+        self._await(self._test_outputs())
+
+    async def _test_list(self):
+        self.mockserver.expect_exchange([b'list "album"\n'], [
+            b"Album: first\n",
+            b"Album: second\n",
+            b"OK\n",
+            ])
+
+        list_ = self.client.list("album")
+
+        expected = iter([
+                {'album': 'first'},
+                {'album': 'second'},
+                ])
+
+        async for o in list_:
+            self.assertEqual(o, next(expected))
+        self.assertRaises(StopIteration, next, expected)
+
+    def test_list(self):
+        self.init_client()
+        self._await(self._test_list())
 
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""
