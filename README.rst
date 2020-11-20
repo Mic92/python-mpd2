@@ -19,7 +19,7 @@ for more information)
 
 The following features were added:
 
--  Python 3 support (but you need at least Python 2.7 or 3.4)
+-  Python 3 support (but you need at least Python 3.6)
 -  asyncio/twisted support
 -  support for the client-to-client protocol
 -  support for new commands from MPD (seekcur, prio, prioid,
