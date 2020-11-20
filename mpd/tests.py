@@ -31,8 +31,7 @@ except ImportError:
                   "(twisted is not available for python >= 3.0 && python < 3.3)")
     TWISTED_MISSING = True
 
-if sys.version_info >= (3, 5):
-    # asyncio would be available in 3.4, but it's not supported by mpd.asyncio
+if sys.version_info >= (3,):
     import asyncio
 else:
     asyncio = None
