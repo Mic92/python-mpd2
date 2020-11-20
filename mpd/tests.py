@@ -1290,6 +1290,28 @@ class TestAsyncioMPD(unittest.TestCase):
         self.init_client()
         self._await(self._test_outputs())
 
+    async def _test_list(self):
+        self.mockserver.expect_exchange([b'list "album"\n'], [
+            b"Album: first\n",
+            b"Album: second\n",
+            b"OK\n",
+            ])
+
+        list_ = self.client.list("album")
+
+        expected = iter([
+                {'album': 'first'},
+                {'album': 'second'},
+                ])
+
+        async for o in list_:
+            self.assertEqual(o, next(expected))
+        self.assertRaises(StopIteration, next, expected)
+
+    def test_list(self):
+        self.init_client()
+        self._await(self._test_list())
+
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""
         self.init_client()
