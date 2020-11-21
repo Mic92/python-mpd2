@@ -85,9 +85,13 @@ class CommandResultIterable(BaseCommandResult):
 
     async def __feed_future(self):
         result = []
-        async for r in self:
-            result.append(r)
-        self.set_result(result)
+        try:
+            async for r in self:
+                result.append(r)
+        except Exception as e:
+            self.set_exception(e)
+        else:
+            self.set_result(result)
 
     def __aiter__(self):
         if self.done():
