@@ -75,6 +75,14 @@ class CommandResult(BaseCommandResult):
             # sleep(0) that ensures it can be cancelled properly at any time.
             raise error
 
+class BinaryCommandResult(asyncio.Future):
+    # Unlike the regular commands that defer to any callback that may be
+    # defined for them, this uses the predefined _read_binary mechanism of the
+    # mpdclient
+    async def _feed_from(self, mpdclient):
+        self.set_result(await mpdclient._read_binary())
+
+    _feed_error = CommandResult._feed_error
 
 class CommandResultIterable(BaseCommandResult):
     """Variant of CommandResult where the underlying callback is an
@@ -275,6 +283,12 @@ class MPDClient(MPDClientBase):
             self.disconnect()
             raise ProtocolError("Invalid UTF8 received")
 
+    async def _read_chunk(self, length):
+        try:
+            return await self.__rfile.readexactly(length)
+        except asyncio.IncompleteReadError:
+            raise ConnectionError("Connection lost while reading binary")
+
     def __write(self, text):
         """Wrapper around .__wfile.write that handles encoding."""
         self.__wfile.write(text.encode("utf8"))
@@ -326,48 +340,132 @@ class MPDClient(MPDClientBase):
         if obj:
             yield obj
 
+    async def _execute_binary(self, command, args):
+        # Fun fact: By fetching data in lockstep, this is a bit less efficient
+        # than it could be (which would be "after having received the first
+        # chunk, guess that the other chunks are of equal size and request at
+        # several multiples concurrently, ensuring the TCP connection can stay
+        # full), but at the other hand it leaves the command queue empty so
+        # that more time critical commands can be executed right away
+
+        data = None
+        args = list(args)
+        assert len(args) == 1
+        args.append(0)
+        final_metadata = None
+        while True:
+            partial_result = BinaryCommandResult()
+            await self.__command_queue.put(partial_result)
+            self._end_idle()
+            self._write_command(command, args)
+            metadata = await partial_result
+            chunk = metadata.pop('binary', None)
+
+            if final_metadata is None:
+                final_metadata = metadata
+                try:
+                    size = int(final_metadata['size'])
+                except KeyError:
+                    size = len(chunk)
+                except ValueError:
+                    raise CommandError("Size data unsuitable for binary transfer")
+                data = chunk
+                if not data:
+                    break
+            else:
+                if metadata != final_metadata:
+                    raise CommandError("Metadata of binary data changed during transfer")
+                if chunk is None:
+                    raise CommandError("Binary field vanished changed during transfer")
+                data += chunk
+            args[-1] = len(data)
+            if len(data) > size:
+                raise CommandListError("Binary data announced size exceeded")
+            elif len(data) == size:
+                break
+
+        if data is not None:
+            final_metadata['binary'] = data
+
+        final_metadata.pop('size', None)
+
+        return final_metadata
+
+    # omits _read_chunk checking because the async version already
+    # raises; otherwise it's just awaits sprinkled in
+    async def _read_binary(self):
+        obj = {}
+
+        while True:
+            line = await self._read_line()
+            if line is None:
+                break
+
+            key, value = self._parse_pair(line, ": ")
+
+            if key == "binary":
+                chunk_size = int(value)
+                value = await self._read_chunk(chunk_size)
+
+                if await self.__rfile.readexactly(1) != b"\n":
+                    # newline after binary content
+                    self.disconnect()
+                    raise ConnectionError("Connection lost while reading line")
+
+            obj[key] = value
+        return obj
+
     # command provider interface
     @classmethod
     def add_command(cls, name, callback):
-        command_class = (
-            CommandResultIterable if callback.mpd_commands_direct else CommandResult
-        )
-        if hasattr(cls, name):
-            # Idle and noidle are explicitly implemented, skipping them.
-            return
+        if callback.mpd_commands_binary:
+            async def f(self, *args):
+                result = await self._execute_binary(name, args)
 
-        def f(self, *args):
-            result = command_class(name, args, partial(callback, self))
-            if self.__run_task is None:
-                raise ConnectionError("Can not send command to disconnected client")
+                # With binary, the callback is applied to the final result
+                # rather than to the iterator over the lines (cf.
+                # MPDClient._execute_binary)
+                return callback(self, result)
+        else:
+            command_class = (
+                CommandResultIterable if callback.mpd_commands_direct else CommandResult
+            )
+            if hasattr(cls, name):
+                # Idle and noidle are explicitly implemented, skipping them.
+                return
 
-            try:
-                self.__command_queue.put_nowait(result)
-            except asyncio.QueueFull as e:
-                e.args = ("Command queue overflowing; this indicates the"
-                        " application sending commands in an uncontrolled"
-                        " fashion without awaiting them, and typically"
-                        " indicates a memory leak.",)
-                # While we *could* indicate to the queued result that it has
-                # yet to send its request, that'd practically create a queue of
-                # awaited items in the user application that's growing
-                # unlimitedly, eliminating any chance of timely responses.
-                # Furthermore, the author sees no practical use case that's not
-                # violating MPD's guidance of "Do not manage a client-side copy
-                # of MPD's database". If a use case *does* come up, any change
-                # would need to maintain the property of providing backpressure
-                # information. That would require an API change.
-                raise
+            def f(self, *args):
+                result = command_class(name, args, partial(callback, self))
+                if self.__run_task is None:
+                    raise ConnectionError("Can not send command to disconnected client")
 
-            self._end_idle()
-            # Careful: There can't be any await points between the queue
-            # appending and the write
-            try:
-                self._write_command(result._command, result._args)
-            except BaseException as e:
-                self.disconnect()
-                result.set_exception(e)
-            return result
+                try:
+                    self.__command_queue.put_nowait(result)
+                except asyncio.QueueFull as e:
+                    e.args = ("Command queue overflowing; this indicates the"
+                            " application sending commands in an uncontrolled"
+                            " fashion without awaiting them, and typically"
+                            " indicates a memory leak.",)
+                    # While we *could* indicate to the queued result that it has
+                    # yet to send its request, that'd practically create a queue of
+                    # awaited items in the user application that's growing
+                    # unlimitedly, eliminating any chance of timely responses.
+                    # Furthermore, the author sees no practical use case that's not
+                    # violating MPD's guidance of "Do not manage a client-side copy
+                    # of MPD's database". If a use case *does* come up, any change
+                    # would need to maintain the property of providing backpressure
+                    # information. That would require an API change.
+                    raise
+
+                self._end_idle()
+                # Careful: There can't be any await points between the queue
+                # appending and the write
+                try:
+                    self._write_command(result._command, result._args)
+                except BaseException as e:
+                    self.disconnect()
+                    result.set_exception(e)
+                return result
 
         escaped_name = name.replace(" ", "_")
         f.__name__ = escaped_name

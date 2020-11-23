@@ -1102,6 +1102,12 @@ class AsyncMockServer:
         # directly passing around the awaitable
         return self._output.get()
 
+    async def readexactly(self, length):
+        ret = await self._output.get()
+        if len(ret) != length:
+            self.error("Mock data is not chuncked in the way the client expects to read it")
+        return ret
+
     def write(self, data):
         try:
             next_write = self._expectations[0][0][0]
@@ -1279,6 +1285,38 @@ class TestAsyncioMPD(unittest.TestCase):
     def test_list(self):
         self.init_client()
         self._await(self._test_list())
+
+    async def _test_albumart(self):
+        self.mockserver.expect_exchange(
+            [b'albumart "x.mp3" "0"\n'],
+            [
+                b"size: 32\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ]
+        )
+        self.mockserver.expect_exchange(
+            [b'albumart "x.mp3" "16"\n'],
+            [
+                b"size: 32\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ],
+        )
+
+        albumart = await self.client.albumart("x.mp3")
+
+        expected = {"binary": bytes(range(16)) + bytes(range(16))}
+
+        self.assertEqual(albumart, expected)
+
+    def test_albumart(self):
+        self.init_client()
+        self._await(self._test_albumart())
 
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""
