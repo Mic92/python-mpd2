@@ -103,10 +103,6 @@ class TestMPDClient(unittest.TestCase):
         # space should be replaced
         self.assertFalse(hasattr(self.client, "sticker get"))
         self.assertTrue(hasattr(self.client, "sticker_get"))
-        # each command should have prefixe
-        self.assertTrue(hasattr(self.client, "close"))
-        self.assertTrue(hasattr(self.client, "fetch_close"))
-        self.assertTrue(hasattr(self.client, "send_close"))
 
     def test_duplicate_tags(self):
         self.MPDWillReturn("Track: file1\n", "Track: file2\n", "OK\n")
@@ -208,16 +204,6 @@ class TestMPDClient(unittest.TestCase):
         self.assertEqual("0", e["pos"])
         self.assertEqual("66", e["id"])
 
-    def test_send_and_fetch(self):
-        self.MPDWillReturn("volume: 50\n", "OK\n")
-        result = self.client.send_status()
-        self.assertEqual(None, result)
-        self.assertMPDReceived("status\n")
-
-        status = self.client.fetch_status()
-        self.assertEqual(1, self.client._wfile.write.call_count)
-        self.assertEqual({"volume": "50"}, status)
-
     def test_readcomments(self):
         self.MPDWillReturn(
             "major_brand: M4V\n", "minor_version: 1\n", "lyrics: Lalala\n", "OK\n"
@@ -240,59 +226,16 @@ class TestMPDClient(unittest.TestCase):
             self.assertEqual("0", song["pos"])
             self.assertEqual("66", song["id"])
 
-    def test_idle(self):
-        self.MPDWillReturn("OK\n")  # nothing changed after idle-ing
-        self.client.idletimeout = 456
-        res = self.client.idle()
-        self.assertMPDReceived("idle\n")
-        self.client._sock.settimeout.assert_has_calls([mock.call(456), mock.call(None)])
-        self.assertEqual([], res)
-
-        self.client.send_idle()
-        # new event
-        self.MPDWillReturn("changed: update\n", "OK\n")
-
-        event = self.client.fetch_idle()
-        self.assertEqual(event, ["update"])
-
-    def test_noidle(self):
-        self.MPDWillReturn("OK\n")  # nothing changed after idle-ing
-        self.client.send_idle()
-        self.MPDWillReturn("OK\n")  # nothing changed after noidle
-        self.assertEqual(self.client.noidle(), [])
-        self.assertMPDReceived("noidle\n")
-        self.MPDWillReturn("volume: 50\n", "OK\n")
-        self.client.status()
-        self.assertMPDReceived("status\n")
-
-    def test_noidle_while_idle_started_sending(self):
-        self.MPDWillReturn("OK\n")  # nothing changed after idle-ing
-        self.client.send_idle()
-        self.MPDWillReturn("changed: player\n", "OK\n")  # noidle response
-        self.assertEqual(self.client.noidle(), ["player"])
-        self.MPDWillReturn("volume: 50\n", "OK\n")
-        status = self.client.status()
-        self.assertEqual({"volume": "50"}, status)
-
-    def test_throw_when_calling_noidle_withoutidling(self):
-        self.assertRaises(mpd.CommandError, self.client.noidle)
-        self.client.send_status()
-        self.assertRaises(mpd.CommandError, self.client.noidle)
-
     def test_add_and_remove_command(self):
         self.MPDWillReturn("ACK awesome command\n")
 
         self.client.add_command("awesome command", mpd.MPDClient._parse_nothing)
         self.assertTrue(hasattr(self.client, "awesome_command"))
-        self.assertTrue(hasattr(self.client, "send_awesome_command"))
-        self.assertTrue(hasattr(self.client, "fetch_awesome_command"))
         # should be unknown by mpd
         self.assertRaises(mpd.CommandError, self.client.awesome_command)
 
         self.client.remove_command("awesome_command")
         self.assertFalse(hasattr(self.client, "awesome_command"))
-        self.assertFalse(hasattr(self.client, "send_awesome_command"))
-        self.assertFalse(hasattr(self.client, "fetch_awesome_command"))
 
         # remove non existing command
         self.assertRaises(ValueError, self.client.remove_command, "awesome_command")
@@ -328,21 +271,10 @@ class TestMPDClient(unittest.TestCase):
         self.assertEqual([], channels)
 
     def test_unicode_as_command_args(self):
-        if sys.version_info < (3, 0):
-            self.MPDWillReturn("OK\n")
-            res = self.client.find("file", unicode("☯☾☝♖✽", "utf-8"))
-            self.assertIsInstance(res, list)
-            self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
-
-            self.MPDWillReturn("OK\n")
-            res2 = self.client.find("file", "☯☾☝♖✽")
-            self.assertIsInstance(res2, list)
-            self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
-        else:
-            self.MPDWillReturn("OK\n")
-            res = self.client.find("file", "☯☾☝♖✽")
-            self.assertIsInstance(res, list)
-            self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
+        self.MPDWillReturn("OK\n")
+        res = self.client.find("file", "☯☾☝♖✽")
+        self.assertIsInstance(res, list)
+        self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
 
     def test_numbers_as_command_args(self):
         self.MPDWillReturn("OK\n")
