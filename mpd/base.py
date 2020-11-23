@@ -474,55 +474,14 @@ class MPDClient(MPDClientBase):
 
     def _reset(self):
         super(MPDClient, self)._reset()
-        self._pending = []
         self._iterating = False
         self._sock = None
         self._rbfile = _NotConnected()
         self._wfile = _NotConnected()
 
-    def _send(self, command, args, retval):
-        warnings.warn(
-            "``send_{}`` is deprecated in favor of " "asynchronous API".format(command),
-            DeprecationWarning,
-        )
-        if self._command_list is not None:
-            raise CommandListError(
-                "Cannot use send_{} in a command list".format(command)
-            )
-        self._write_command(command, args)
-        if retval is not None:
-            self._pending.append(command)
-
-    def _fetch(self, command, args, retval):
-        warnings.warn(
-            "``fetch_{}`` is deprecated in favor of "
-            "asynchronous API".format(command),
-            DeprecationWarning,
-        )
-        if self._command_list is not None:
-            raise CommandListError(
-                "Cannot use fetch_{} in a command list".format(command)
-            )
-        if self._iterating:
-            raise IteratingError("Cannot use fetch_{} while iterating".format(command))
-        if not self._pending:
-            raise PendingCommandError("No pending commands to fetch")
-        if self._pending[0] != command:
-            raise PendingCommandError(
-                "'{}' is not the currently pending command".format(command)
-            )
-        del self._pending[0]
-        if callable(retval):
-            return retval()
-        return retval
-
     def _execute(self, command, args, retval):
         if self._iterating:
             raise IteratingError("Cannot execute '{}' while iterating".format(command))
-        if self._pending:
-            raise PendingCommandError(
-                "Cannot execute '{}' with pending commands".format(command)
-            )
         if self._command_list is not None:
             if not callable(retval):
                 raise CommandListError(
@@ -802,21 +761,11 @@ class MPDClient(MPDClientBase):
             raise ConnectionError("Not connected")
         return self._sock.fileno()
 
-    def noidle(self):
-        if not self._pending or self._pending[0] != "idle":
-            msg = "cannot send noidle if send_idle was not called"
-            raise CommandError(msg)
-        del self._pending[0]
-        self._write_command("noidle")
-        return self._wrap_iterator(self._parse_list(self._read_lines()))
-
     def command_list_ok_begin(self):
         if self._command_list is not None:
             raise CommandListError("Already in command list")
         if self._iterating:
             raise IteratingError("Cannot begin command list while iterating")
-        if self._pending:
-            raise PendingCommandError("Cannot begin command list with pending commands")
         self._write_command("command_list_ok_begin")
         self._command_list = []
 
@@ -832,14 +781,9 @@ class MPDClient(MPDClientBase):
     def add_command(cls, name, callback):
         wrap_result = callback in cls._wrap_iterator_parsers
         method = _create_command(cls._execute, name, callback, wrap_result)
-        send_method = _create_command(cls._send, name, callback, wrap_result)
-        fetch_method = _create_command(cls._fetch, name, callback, wrap_result)
-        # create new mpd commands as function in three flavors:
-        # normal, with "send_"-prefix and with "fetch_"-prefix
+        # create new mpd commands as function:
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, method)
-        setattr(cls, "send_" + escaped_name, send_method)
-        setattr(cls, "fetch_" + escaped_name, fetch_method)
 
     @classmethod
     def remove_command(cls, name):
@@ -847,8 +791,6 @@ class MPDClient(MPDClientBase):
             raise ValueError("Can't remove not existent '{}' command".format(name))
         name = name.replace(" ", "_")
         delattr(cls, str(name))
-        delattr(cls, str("send_" + name))
-        delattr(cls, str("fetch_" + name))
 
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:
