@@ -40,23 +40,32 @@ class BaseCommandResult(asyncio.Future):
 
     async def _feed_from(self, mpdclient):
         while True:
-            line = await mpdclient._read_line()
+            binary_size = self._read_next_chunk_as_binary()
+            if binary_size is None:
+                line = await mpdclient._read_line()
+            else:
+                line = await mpdclient._read_bytes(binary_size)
             self._feed_line(line)
             if line is None:
                 return
+
+    def _read_next_chunk_as_binary(self):
+        """Return a length of binary data to be expected next, or None to read
+        a line"""
+        return None
 
 
 class CommandResult(BaseCommandResult):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.__spooled_lines = []
+        self._spooled_lines = []
 
-    def _feed_line(self, line): # FIXME just inline?
+    def _feed_line(self, line):
         """Put the given line into the callback machinery, and set the result on a None line."""
         if line is None:
-            self.set_result(self._callback(self.__spooled_lines))
+            self.set_result(self._callback(self._spooled_lines))
         else:
-            self.__spooled_lines.append(line)
+            self._spooled_lines.append(line)
 
     def _feed_error(self, error):
         if not self.done():
@@ -75,6 +84,18 @@ class CommandResult(BaseCommandResult):
             # sleep(0) that ensures it can be cancelled properly at any time.
             raise error
 
+class BinaryCommandResult(CommandResult):
+    def _read_next_chunk_as_binary(self):
+        if self._spooled_lines and \
+                isinstance(self._spooled_lines[-1], str) and \
+                self._spooled_lines[-1].startswith("binary:"):
+            try:
+                length = int(self._spooled_lines[-1][len("binary:"):].strip())
+            except ValueError:
+                raise ProtocolError("Binary data without numeric length")
+            return length
+        else:
+            return None
 
 class CommandResultIterable(BaseCommandResult):
     """Variant of CommandResult where the underlying callback is an
@@ -275,6 +296,12 @@ class MPDClient(MPDClientBase):
             self.disconnect()
             raise ProtocolError("Invalid UTF8 received")
 
+    async def _read_bytes(self, length):
+        try:
+            return await self.__rfile.readexactly(length)
+        except asyncio.IncompleteReadError:
+            raise ConnectionError("Connection lost while reading binary")
+
     def __write(self, text):
         """Wrapper around .__wfile.write that handles encoding."""
         self.__wfile.write(text.encode("utf8"))
@@ -325,6 +352,67 @@ class MPDClient(MPDClientBase):
             obj[key] = value
         if obj:
             yield obj
+
+    async def _execute_binary(self, command, args):
+        # Fun fact: By fetching data in lockstep, this is a bit less efficient
+        # than it could be (which would be "after having received the first
+        # chunk, guess that the other chunks are of equal size and request at
+        # several multiples concurrently, ensuring the TCP connection can stay
+        # full), but at the other hand it leaves the command queue empty so
+        # that more time critical commands can be executed right away
+        data = bytearray()
+        assert len(args) == 1
+        args.append(0)
+        while True:
+            # lambda x:x: There are no callbacks in execute_binary, at least
+            # not until a binary command comes up that actually carries
+            # metadata beside the binary data
+            partial_result = BinaryCommandResult(command, args, self._read_binary)
+            await self.__command_queue.put(partial_result)
+            self._write_command(command, args)
+            partial_result = await partial_result
+            size, chunk = partial_result
+            data += chunk
+            args[-1] += len(chunk)
+            if len(data) == size:
+                break
+        return data
+
+    # losely following base.MPDClient._read_binary, but doesn't need to deal
+    # with any of the connection termination (raised in _read_bytes), incomplete
+    # reads (_read_bytes employs readexactly), errors (handled in _read_line) or
+    # decoding/newline-trimming (handled in _read_line)
+    @staticmethod
+    def _read_binary(lines):
+        lines = iter(lines)
+        size = None
+        chunk_size = None
+
+        while chunk_size is None:
+            line = next(lines)
+            field, val = line.split(": ")
+            if field == "size":
+                size = int(val)
+            elif field == "binary":
+                chunk_size = int(val)
+
+        if size is None:
+            size = chunk_size
+
+        data = next(lines)
+
+        if next(lines) != "":
+            # newline after binary content
+            raise ConnectionError("Connection lost while reading line")
+
+        try:
+            next(lines)
+        except StopIteration:
+            pass
+        else:
+            raise ProtocolError("Additional data after binary data")
+
+        return size, data
 
     # command provider interface
     @classmethod
