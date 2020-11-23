@@ -1,6 +1,13 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v2.0.0
+-----------------
+
+* Minimum python version was increased to python3.6, python2.7 support was dropped
+* asyncio: fix parsing delimiters
+* add support for albumart command
+
 Changes in v1.1.0
 -----------------
 
