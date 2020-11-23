@@ -6,9 +6,8 @@ stdenv.mkDerivation {
     bashInteractive
     python36
     python37
-    python38
+    (python38.withPackages(ps: [ps.setuptools ps.tox ps.wheel ps.twine]))
     python39
     pypy3
-    (python38.withPackages(ps: [ps.setuptools ps.tox ps.wheel ps.twine]))
   ];
 }
