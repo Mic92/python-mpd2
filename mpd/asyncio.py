@@ -38,13 +38,20 @@ class BaseCommandResult(asyncio.Future):
         self._args = args
         self._callback = callback
 
+    async def _feed_from(self, mpdclient):
+        while True:
+            line = await mpdclient._read_line()
+            self._feed_line(line)
+            if line is None:
+                return
+
 
 class CommandResult(BaseCommandResult):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__spooled_lines = []
 
-    def _feed_line(self, line):
+    def _feed_line(self, line): # FIXME just inline?
         """Put the given line into the callback machinery, and set the result on a None line."""
         if line is None:
             self.set_result(self._callback(self.__spooled_lines))
@@ -52,7 +59,21 @@ class CommandResult(BaseCommandResult):
             self.__spooled_lines.append(line)
 
     def _feed_error(self, error):
-        self.set_exception(error)
+        if not self.done():
+            self.set_exception(error)
+        else:
+            # These do occur (especially during the test suite run) when a
+            # disconnect was already initialized, but the run task being
+            # cancelled has not ever yielded at all and thus still needs to run
+            # through to its first await point (which is then in a situation
+            # where properties it'd like to access are already cleaned up,
+            # resulting in an AttributeError)
+            #
+            # Rather than quenching them here, they are made visible (so that
+            # other kinds of double errors raise visibly, even though none are
+            # known right now); instead, the run loop yields initially with a
+            # sleep(0) that ensures it can be cancelled properly at any time.
+            raise error
 
 
 class CommandResultIterable(BaseCommandResult):
@@ -101,31 +122,44 @@ class CommandResultIterable(BaseCommandResult):
 
 @mpd_command_provider
 class MPDClient(MPDClientBase):
-    __idle_task = None
     __run_task = None  # doubles as indicator for being connected
 
-    #: When in idle, this is a Future on which incoming commands should set a
-    #: result. (This works around asyncio.Queue not having a .peek() coroutine)
-    __command_enqueued = None
+    #: Indicator of whether there is a pending idle command that was not terminated yet.
+    # When in doubt; this is True, thus erring at the side of caution (because
+    # a "noidle" being sent while racing against an incmoing idle notification
+    # does no harm)
+    __in_idle = False
 
     #: Seconds after a command's completion to send idle. Setting this too high
     # causes "blind spots" in the client's view of the server, setting it too
     # low sends needless idle/noidle after commands in quick succession.
     IMMEDIATE_COMMAND_TIMEOUT = 0.1
 
-    async def connect(self, host, port=6600, loop=None):
-        self.__loop = loop
+    #: FIFO list of processors that may consume the read stream one after the
+    # other
+    #
+    # As we don't have any other form of backpressure in the sending side
+    # (which is not expected to be limited), its limit of COMMAND_QUEUE_LENGTH
+    # serves as a limit against commands queuing up indefinitely. (It's not
+    # *directly* throttling output, but as the convention is to put the
+    # processor on the queue and then send the command, and commands are of
+    # limited size, this is practically creating backpressure.)
+    __command_queue = None
 
+    #: Construction size of __command_queue. The default limit is high enough
+    # that a client can easily send off all existing commands simultaneously
+    # without needlessly blocking the TCP flow, but small enough that
+    # freespinning tasks create warnings.
+    COMMAND_QUEUE_LENGTH = 128
+
+    async def connect(self, host, port=6600, loop=None):
         if "/" in host:
             r, w = await asyncio.open_unix_connection(host, loop=loop)
         else:
             r, w = await asyncio.open_connection(host, port, loop=loop)
         self.__rfile, self.__wfile = r, w
 
-        self.__commandqueue = asyncio.Queue(loop=loop)
-        self.__idle_results = asyncio.Queue(
-            loop=loop
-        )  #: a queue of CommandResult("idle") futures
+        self.__command_queue = asyncio.Queue(maxsize=self.COMMAND_QUEUE_LENGTH)
         self.__idle_consumers = []  #: list of (subsystem-list, callbacks) tuples
 
         try:
@@ -137,20 +171,18 @@ class MPDClient(MPDClientBase):
         SyncMPDClient._hello(self, helloline)
 
         self.__run_task = asyncio.Task(self.__run())
-        self.__idle_task = asyncio.Task(self.__distribute_idle_results())
 
     def disconnect(self):
         if (
             self.__run_task is not None
         ):  # is None eg. when connection fails in .connect()
             self.__run_task.cancel()
-        if self.__idle_task is not None:
-            self.__idle_task.cancel()
-        self.__wfile.close()
+        if self.__wfile is not None:
+            self.__wfile.close()
         self.__rfile = self.__wfile = None
-        self.__run_task = self.__idle_task = None
-        self.__commandqueue = self.__command_enqueued = None
-        self.__idle_results = self.__idle_consumers = None
+        self.__run_task = None
+        self.__command_queue = None
+        self.__idle_consumers = None
 
     def _get_idle_interests(self):
         """Accumulate a set of interests from the current __idle_consumers.
@@ -164,26 +196,27 @@ class MPDClient(MPDClientBase):
             return []
         return set.union(*(set(s) for (s, c) in self.__idle_consumers))
 
-    def _nudge_idle(self):
+    def _end_idle(self):
         """If the main task is currently idling, make it leave idle and process
         the next command (if one is present) or just restart idle"""
 
-        if self.__command_enqueued is not None and not self.__command_enqueued.done():
-            self.__command_enqueued.set_result(None)
+        if self.__in_idle:
+            self.__write("noidle\n")
+            self.__in_idle = False
 
     async def __run(self):
-        result = None
+        # See CommandResult._feed_error documentation
+        await asyncio.sleep(0)
 
         try:
             while True:
                 try:
                     result = await asyncio.wait_for(
-                        self.__commandqueue.get(),
+                        self.__command_queue.get(),
                         timeout=self.IMMEDIATE_COMMAND_TIMEOUT,
-                        loop=self.__loop,
                     )
                 except asyncio.TimeoutError:
-                    # The cancellation of the __commandqueue.get() that happens
+                    # The cancellation of the __command_queue.get() that happens
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
@@ -193,35 +226,20 @@ class MPDClient(MPDClientBase):
                         # idle is only used to keep the connection alive.
                         subsystems = ["database"]
 
-                    result = CommandResult("idle", subsystems, self._parse_list)
-                    self.__idle_results.put_nowait(result)
+                    # Careful: There can't be any await points between the
+                    # except and here, or the sequence between the idle and the
+                    # command processor might be wrong.
+                    result = CommandResult("idle", subsystems, lambda result: self.__distribute_idle_result(self._parse_list(result)))
+                    self.__in_idle = True
+                    self._write_command(result._command, result._args)
 
-                    self.__command_enqueued = asyncio.Future()
-
-                self._write_command(result._command, result._args)
-                while True:
-                    try:
-                        if self.__command_enqueued is not None:
-                            # We're in idle mode.
-                            line_future = asyncio.shield(self.__read_output_line())
-                            await asyncio.wait(
-                                [line_future, self.__command_enqueued],
-                                return_when=asyncio.FIRST_COMPLETED,
-                            )
-                            if self.__command_enqueued.done():
-                                self._write_command("noidle")
-                                self.__command_enqueued = None
-                            l = await line_future
-                        else:
-                            l = await self.__read_output_line()
-                    except CommandError as e:
-                        result._feed_error(e)
-                        break
-                    result._feed_line(l)
-                    if l is None:
-                        break
-
-                result = None
+                try:
+                    await result._feed_from(self)
+                except CommandError as e:
+                    result._feed_error(e)
+                    # This kind of error we can tolerate without breaking up
+                    # the connection; any other would fly out, be reported
+                    # through the result and terminate the connection
 
         except Exception as e:
             # Prevent the destruction of the pending task in the shutdown
@@ -233,21 +251,18 @@ class MPDClient(MPDClientBase):
                 result._feed_error(e)
                 return
             else:
-                # Typically this is a bug in mpd.asyncio.
                 raise
+                # Typically this is a bug in mpd.asyncio.
 
-    async def __distribute_idle_results(self):
+    def __distribute_idle_result(self, result):
         # An exception flying out of here probably means a connection
         # interruption during idle. This will just show like any other
         # unhandled task exception and that's probably the best we can do.
-        while True:
-            result = await self.__idle_results.get()
-            idle_changes = list(await result)
-            if not idle_changes:
-                continue
-            for subsystems, callback in self.__idle_consumers:
-                if not subsystems or any(s in subsystems for s in idle_changes):
-                    callback(idle_changes)
+
+        idle_changes = list(result)
+        for subsystems, callback in self.__idle_consumers:
+            if not subsystems or any(s in subsystems for s in idle_changes):
+                callback(idle_changes)
 
     # helper methods
 
@@ -273,8 +288,7 @@ class MPDClient(MPDClientBase):
     # FIXME This code should be shareable.
     _write_command = SyncMPDClient._write_command
 
-    async def __read_output_line(self):
-        """Kind of like SyncMPDClient._read_line"""
+    async def _read_line(self):
         line = await self.__readline()
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading line")
@@ -326,8 +340,33 @@ class MPDClient(MPDClientBase):
             result = command_class(name, args, partial(callback, self))
             if self.__run_task is None:
                 raise ConnectionError("Can not send command to disconnected client")
-            self.__commandqueue.put_nowait(result)
-            self._nudge_idle()
+
+            try:
+                self.__command_queue.put_nowait(result)
+            except asyncio.QueueFull as e:
+                e.args = ("Command queue overflowing; this indicates the"
+                        " application sending commands in an uncontrolled"
+                        " fashion without awaiting them, and typically"
+                        " indicates a memory leak.",)
+                # While we *could* indicate to the queued result that it has
+                # yet to send its request, that'd practically create a queue of
+                # awaited items in the user application that's growing
+                # unlimitedly, eliminating any chance of timely responses.
+                # Furthermore, the author sees no practical use case that's not
+                # violating MPD's guidance of "Do not manage a client-side copy
+                # of MPD's database". If a use case *does* come up, any change
+                # would need to maintain the property of providing backpressure
+                # information. That would require an API change.
+                raise
+
+            self._end_idle()
+            # Careful: There can't be any await points between the queue
+            # appending and the write
+            try:
+                self._write_command(result._command, result._args)
+            except BaseException as e:
+                self.disconnect()
+                result.set_exception(e)
             return result
 
         escaped_name = name.replace(" ", "_")
@@ -336,17 +375,24 @@ class MPDClient(MPDClientBase):
 
     # commands that just work differently
     async def idle(self, subsystems=()):
+        if self.__idle_consumers is None:
+            raise ConnectionError("Can not start idle on a disconnected client")
+
         interests_before = self._get_idle_interests()
         changes = asyncio.Queue()
         try:
             entry = (subsystems, changes.put_nowait)
             self.__idle_consumers.append(entry)
             if self._get_idle_interests != interests_before:
-                self._nudge_idle()
+                # Technically this does not enter idle *immediately* but rather
+                # only after any commands after IMMEDIATE_COMMAND_TIMEOUT;
+                # practically that should be a good thing.
+                self._end_idle()
             while True:
                 yield await changes.get()
         finally:
-            self.__idle_consumers.remove(entry)
+            if self.__idle_consumers is not None:
+                self.__idle_consumers.remove(entry)
 
     def noidle(self):
         raise AttributeError("noidle is not supported / required in mpd.asyncio")
