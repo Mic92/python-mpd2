@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 import itertools
 import mpd
+import mpd.asyncio
 import os
 import socket
 import sys
@@ -23,10 +24,7 @@ except ImportError:
     )
     TWISTED_MISSING = True
 
-if sys.version_info >= (3,):
-    import asyncio
-else:
-    asyncio = None
+import asyncio
 
 try:
     import mock
@@ -1133,11 +1131,8 @@ class AsyncMockServer:
         self._feed()
 
 
-@unittest.skipIf(asyncio is None, "requires asyncio to be available")
 class TestAsyncioMPD(unittest.TestCase):
     def init_client(self, odd_hello=None):
-        import mpd.asyncio
-
         self.loop = asyncio.get_event_loop()
 
         self.mockserver = AsyncMockServer()
