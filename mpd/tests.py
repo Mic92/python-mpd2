@@ -718,7 +718,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_singlechunk_nosize(self):
         # length: 16
@@ -730,7 +730,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_singlechunk_sizeheader(self):
         # length: 16
@@ -744,7 +744,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_even_multichunk(self):
         # length: 16 each
@@ -776,7 +776,7 @@ class TestMPDClientSocket(unittest.TestCase):
             b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "16"'
             b'\nalbumart "a/full/path.mp3" "32"\n'
         )
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_odd_multichunk(self):
         # lengths: 17, 15, 1
@@ -805,7 +805,7 @@ class TestMPDClientSocket(unittest.TestCase):
             b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "17"\n'
             b'albumart "a/full/path.mp3" "32"\n'
         )
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     # MPD server can return empty response if a file exists but is empty
     def test_binary_albumart_emptyresponse(self):
@@ -813,7 +813,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, b"")
+        self.assertEqual(real_binary, {"binary": b""})
 
 
 class MockTransport(object):

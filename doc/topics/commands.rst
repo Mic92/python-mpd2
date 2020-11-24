@@ -605,8 +605,9 @@ The music database
 
     *URI* is always a single file or URL.
 
-    The returned value is the binary contents of the album art image. If the given URI is invalid,
-    or the song does not have an album cover art file that MPD recognizes, a CommandError is thrown.
+    The returned value is a dictionary containing the album art image in its
+    ``'binary'`` entry. If the given URI is invalid, or the song does not have
+    an album cover art file that MPD recognizes, a CommandError is thrown.
 .. function:: MPDClient.count(tag, needle[, ..., "group", grouptype])
 
 
