@@ -684,7 +684,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         # we're expecting a timeout
         self.assertRaises(
-            mpd.ConnectionError, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
         )
 
         self.assertMPDReceived(
@@ -697,7 +697,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         # we're expecting a timeout or error of some form
         self.assertRaises(
-            mpd.ConnectionError, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
         )
 
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
