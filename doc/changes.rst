@@ -1,6 +1,13 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v2.0.1
+-----------------
+
+* 2.0.0 also dropped use_unicode parameter with no backwards compatibility.
+  This versions just deprecates the parameter.
+
+
 Changes in v2.0.0
 -----------------
 
