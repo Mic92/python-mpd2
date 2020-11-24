@@ -169,9 +169,26 @@ class MPDClientBase(object):
     subclasses.
     """
 
-    def __init__(self):
+    def __init__(self, use_unicode=None):
         self.iterate = False
+        if use_unicode is not None:
+            warnings.warn(
+                "use_unicode parameter to ``MPDClientBase`` constructor is "
+                "deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         self._reset()
+
+    @property
+    def use_unicode(self):
+        warnings.warn(
+            "``use_unicode`` is deprecated: python-mpd 2.x always uses "
+            "Unicode",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return True
 
     @classmethod
     def add_command(cls, name, callback):
@@ -469,7 +486,14 @@ class MPDClient(MPDClientBase):
         MPDClientBase._parse_plugins,
     ]
 
-    def __init__(self):
+    def __init__(self, use_unicode=None):
+        if use_unicode is not None:
+            warnings.warn(
+                "use_unicode parameter to ``MPDClient`` constructor is "
+                "deprecated",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         super(MPDClient, self).__init__()
 
     def _reset(self):
