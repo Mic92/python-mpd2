@@ -4,6 +4,7 @@
 from __future__ import absolute_import
 import itertools
 import mpd
+import mpd.asyncio
 import os
 import socket
 import sys
@@ -23,10 +24,7 @@ except ImportError:
     )
     TWISTED_MISSING = True
 
-if sys.version_info >= (3,):
-    import asyncio
-else:
-    asyncio = None
+import asyncio
 
 try:
     import mock
@@ -686,7 +684,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         # we're expecting a timeout
         self.assertRaises(
-            mpd.ConnectionError, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
         )
 
         self.assertMPDReceived(
@@ -699,7 +697,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         # we're expecting a timeout or error of some form
         self.assertRaises(
-            mpd.ConnectionError, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
         )
 
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
@@ -720,7 +718,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_singlechunk_nosize(self):
         # length: 16
@@ -732,7 +730,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_singlechunk_sizeheader(self):
         # length: 16
@@ -746,7 +744,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_even_multichunk(self):
         # length: 16 each
@@ -778,7 +776,7 @@ class TestMPDClientSocket(unittest.TestCase):
             b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "16"'
             b'\nalbumart "a/full/path.mp3" "32"\n'
         )
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     def test_binary_albumart_odd_multichunk(self):
         # lengths: 17, 15, 1
@@ -807,7 +805,7 @@ class TestMPDClientSocket(unittest.TestCase):
             b'albumart "a/full/path.mp3" "0"\nalbumart "a/full/path.mp3" "17"\n'
             b'albumart "a/full/path.mp3" "32"\n'
         )
-        self.assertEqual(real_binary, expected_binary)
+        self.assertEqual(real_binary, {"binary": expected_binary})
 
     # MPD server can return empty response if a file exists but is empty
     def test_binary_albumart_emptyresponse(self):
@@ -815,7 +813,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
         real_binary = self.client.albumart("a/full/path.mp3")
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertEqual(real_binary, b"")
+        self.assertEqual(real_binary, {"binary": b""})
 
 
 class MockTransport(object):
@@ -1104,6 +1102,12 @@ class AsyncMockServer:
         # directly passing around the awaitable
         return self._output.get()
 
+    async def readexactly(self, length):
+        ret = await self._output.get()
+        if len(ret) != length:
+            self.error("Mock data is not chuncked in the way the client expects to read it")
+        return ret
+
     def write(self, data):
         try:
             next_write = self._expectations[0][0][0]
@@ -1133,11 +1137,8 @@ class AsyncMockServer:
         self._feed()
 
 
-@unittest.skipIf(asyncio is None, "requires asyncio to be available")
 class TestAsyncioMPD(unittest.TestCase):
     def init_client(self, odd_hello=None):
-        import mpd.asyncio
-
         self.loop = asyncio.get_event_loop()
 
         self.mockserver = AsyncMockServer()
@@ -1284,6 +1285,38 @@ class TestAsyncioMPD(unittest.TestCase):
     def test_list(self):
         self.init_client()
         self._await(self._test_list())
+
+    async def _test_albumart(self):
+        self.mockserver.expect_exchange(
+            [b'albumart "x.mp3" "0"\n'],
+            [
+                b"size: 32\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ]
+        )
+        self.mockserver.expect_exchange(
+            [b'albumart "x.mp3" "16"\n'],
+            [
+                b"size: 32\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ],
+        )
+
+        albumart = await self.client.albumart("x.mp3")
+
+        expected = {"binary": bytes(range(16)) + bytes(range(16))}
+
+        self.assertEqual(albumart, expected)
+
+    def test_albumart(self):
+        self.init_client()
+        self._await(self._test_albumart())
 
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""

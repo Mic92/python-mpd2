@@ -105,6 +105,7 @@ class mpd_commands(object):
     def __init__(self, *commands, **kwargs):
         self.commands = commands
         self.is_direct = kwargs.pop("is_direct", False)
+        self.is_binary = kwargs.pop("is_binary", False)
         if kwargs:
             raise AttributeError(
                 "mpd_commands() got unexpected keyword"
@@ -114,6 +115,7 @@ class mpd_commands(object):
     def __call__(self, ob):
         ob.mpd_commands = self.commands
         ob.mpd_commands_direct = self.is_direct
+        ob.mpd_commands_binary = self.is_binary
         return ob
 
 
@@ -421,8 +423,9 @@ class MPDClientBase(object):
     def _parse_stickers(self, lines):
         return dict(self._parse_raw_stickers(lines))
 
-    def albumart(self, uri):
-        return self._execute_binary("albumart", [uri])
+    @mpd_commands("albumart", is_binary=True)
+    def _parse_plain_binary(self, structure):
+        return structure
 
 
 ###############################################################################
@@ -586,73 +589,92 @@ class MPDClient(MPDClientBase):
         return bytes(chunk)
 
     def _read_binary(self):
-        size = None
-        chunk_size = None
-        try:
-            while chunk_size is None:
-                line = self._rbfile.readline().decode("utf-8")
-                if not line.endswith("\n"):
+        """From the data stream, read Unicode lines until one says "binary:
+        <number>\\n"; at that point, read binary data of the given length.
+
+        This behaves like _parse_objects (with empty set of delimiters; even
+        returning only a single result), but rather than feeding from a lines
+        iterable (which would be preprocessed too far), it reads directly off
+        the stream."""
+
+        obj = {}
+
+        while True:
+            line = self._read_line()
+            if line is None:
+                break
+
+            key, value = self._parse_pair(line, ": ")
+
+            if key == "binary":
+                chunk_size = int(value)
+                value = self._read_chunk(chunk_size)
+
+                if len(value) != chunk_size:
+                    self.disconnect()
+                    raise ConnectionError(
+                        "Connection lost while reading binary data: "
+                        "expected %d bytes, got %d" % (chunk_size, len(data))
+                    )
+
+                if self._rbfile.read(1) != b"\n":
+                    # newline after binary content
                     self.disconnect()
                     raise ConnectionError("Connection lost while reading line")
-                line = line.rstrip("\n")
-                if line.startswith(ERROR_PREFIX):
-                    error = line[len(ERROR_PREFIX) :].strip()
-                    raise CommandError(error)
-                field, val = line.split(": ")
-                if field == "size":
-                    size = int(val)
-                elif field == "binary":
-                    chunk_size = int(val)
 
-            if size is None:
-                size = chunk_size
-
-            data = self._read_chunk(chunk_size)
-
-            if len(data) != chunk_size:
-                self.disconnect()
-                raise ConnectionError(
-                    "Connection lost while reading binary data: "
-                    "expected %d bytes, got %d" % (chunk_size, len(data))
-                )
-
-            if self._rbfile.read(1) != b"\n":
-                # newline after binary content
-                self.disconnect()
-                raise ConnectionError("Connection lost while reading line")
-
-            # trailing status indicator
-            # typically OK, but protocol documentation indicates that it is completion code
-            line = self._rbfile.readline().decode("utf-8")
-
-            if not line.endswith("\n"):
-                self.disconnect()
-                raise ConnectionError("Connection lost while reading line")
-
-            line = line.rstrip("\n")
-            if line.startswith(ERROR_PREFIX):
-                error = line[len(ERROR_PREFIX) :].strip()
-                raise CommandError(error)
-
-            return size, data
-        except IOError as err:
-            self.disconnect()
-            raise ConnectionError(
-                "Connection IO error while processing binary command: " + str(err)
-            )
+            obj[key] = value
+        return obj
 
     def _execute_binary(self, command, args):
-        data = bytearray()
+        """Execute a command repeatedly with an additional offset argument,
+        keeping all the identical returned dictionary items and concatenating
+        the binary chunks following the binary item into one of exactly size.
+
+        This differs from _execute in that rather than passing the lines to the
+        callback which'd then call on something like _parse_objects, it builds
+        a parsed object on its own (as a prerequisite to the chunk driving
+        process) and then joins together the chunks into a single big response."""
+        if self._iterating or self._command_list is not None:
+            raise IteratingError("Cannot execute '{}' with command lists".format(command))
+        data = None
+        args = list(args)
         assert len(args) == 1
         args.append(0)
+        final_metadata = None
         while True:
             self._write_command(command, args)
-            size, chunk = self._read_binary()
-            data += chunk
-            args[-1] += len(chunk)
-            if len(data) == size:
+            metadata = self._read_binary()
+            chunk = metadata.pop('binary', None)
+
+            if final_metadata is None:
+                final_metadata = metadata
+                try:
+                    size = int(final_metadata['size'])
+                except KeyError:
+                    size = len(chunk)
+                except ValueError:
+                    raise CommandError("Size data unsuitable for binary transfer")
+                data = chunk
+                if not data:
+                    break
+            else:
+                if metadata != final_metadata:
+                    raise CommandError("Metadata of binary data changed during transfer")
+                if chunk is None:
+                    raise CommandError("Binary field vanished changed during transfer")
+                data += chunk
+            args[-1] = len(data)
+            if len(data) > size:
+                raise CommandListError("Binary data announced size exceeded")
+            elif len(data) == size:
                 break
-        return data
+
+        if data is not None:
+            final_metadata['binary'] = data
+
+        final_metadata.pop('size', None)
+
+        return final_metadata
 
     def _read_command_list(self):
         try:
@@ -804,7 +826,10 @@ class MPDClient(MPDClientBase):
     @classmethod
     def add_command(cls, name, callback):
         wrap_result = callback in cls._wrap_iterator_parsers
-        method = _create_command(cls._execute, name, callback, wrap_result)
+        if callback.mpd_commands_binary:
+            method = lambda self, *args: callback(self, cls._execute_binary(self, name, args))
+        else:
+            method = _create_command(cls._execute, name, callback, wrap_result)
         # create new mpd commands as function:
         escaped_name = name.replace(" ", "_")
         setattr(cls, escaped_name, method)
