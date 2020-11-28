@@ -815,6 +815,90 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
         self.assertEqual(real_binary, {"binary": b""})
 
+    # readpicture returns empty object if the song exists but has no picture
+    def test_binary_readpicture_emptyresponse(self):
+        self.MPDWillReturnBinary(b"OK\n")
+
+        real_binary = self.client.readpicture("plainsong.mp3")
+        self.assertMPDReceived(b'readpicture "plainsong.mp3" "0"\n')
+        self.assertEqual(real_binary, {})
+
+    def test_binary_readpicture_untyped(self):
+        # length: 16 each
+        expected_chunk1 = (
+            b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01"
+        )
+        expected_chunk2 = (
+            b"\x0A\x0B\x0C\x0D\x0E\x0F\x10\x1F\x2F\x2D\x33\x0D\x00\x00\x11\x13"
+        )
+        expected_chunk3 = (
+            b"\x99\x88\x77\xDD\xD0\xF0\x20\x70\x71\x17\x13\x31\xFF\xFF\xDD\xFF"
+        )
+        expected_binary = expected_chunk1 + expected_chunk2 + expected_chunk3
+
+        # 3 distinct commands expected
+        self.MPDWillReturnBinary(
+            b"size: 48\nbinary: 16\n"
+            + expected_chunk1
+            + b"\nOK\nsize: 48\nbinary: 16\n"
+            + expected_chunk2
+            + b"\nOK\nsize: 48\nbinary: 16\n"
+            + expected_chunk3
+            + b"\nOK\n"
+        )
+
+        real_binary = self.client.readpicture("a/full/path.mp3")
+
+        self.assertMPDReceived(
+            b'readpicture "a/full/path.mp3" "0"\nreadpicture "a/full/path.mp3" "16"'
+            b'\nreadpicture "a/full/path.mp3" "32"\n'
+        )
+        self.assertEqual(real_binary, {"binary": expected_binary})
+
+    def test_binary_readpicture_typed(self):
+        # length: 16 each
+        expected_binary = bytes(range(48))
+
+        # 3 distinct commands expected
+        self.MPDWillReturnBinary(
+            b"size: 48\ntype: image/png\nbinary: 16\n"
+            + expected_binary[0:16]
+            + b"\nOK\nsize: 48\ntype: image/png\nbinary: 16\n"
+            + expected_binary[16:32]
+            + b"\nOK\nsize: 48\ntype: image/png\nbinary: 16\n"
+            + expected_binary[32:48]
+            + b"\nOK\n"
+        )
+
+        real_binary = self.client.readpicture("a/full/path.mp3")
+
+        self.assertMPDReceived(
+            b'readpicture "a/full/path.mp3" "0"\nreadpicture "a/full/path.mp3" "16"'
+            b'\nreadpicture "a/full/path.mp3" "32"\n'
+        )
+        self.assertEqual(real_binary, {"binary": expected_binary, "type": "image/png"})
+
+    def test_binary_readpicture_badheaders(self):
+        expected_binary = bytes(range(32))
+
+        # inconsistent type header from response 1 to response 2
+        # exception is expected
+        self.MPDWillReturnBinary(
+            b"size: 32\ntype: image/jpeg\nbinary: 16\n"
+            + expected_binary[0:16]
+            + b"\nOK\nsize: 32\ntype: image/png\nbinary: 16\n"
+            + expected_binary[16:32]
+            + b"\nOK\n"
+        )
+
+        self.assertRaises(
+            mpd.CommandError, lambda: self.client.readpicture("song.mp3")
+        )
+
+        self.assertMPDReceived(
+            b'readpicture "song.mp3" "0"\nreadpicture "song.mp3" "16"\n'
+        )
+
 
 class MockTransport(object):
     def __init__(self):
@@ -1314,9 +1398,57 @@ class TestAsyncioMPD(unittest.TestCase):
 
         self.assertEqual(albumart, expected)
 
+    async def _test_readpicture(self):
+            self.mockserver.expect_exchange(
+                [b'readpicture "x.mp3" "0"\n'],
+                [
+                    b"size: 32\n",
+                    b"type: image/jpeg\n",
+                    b"binary: 16\n",
+                    bytes(range(16)),
+                    b"\n",
+                    b"OK\n",
+                ]
+            )
+            self.mockserver.expect_exchange(
+                [b'readpicture "x.mp3" "16"\n'],
+                [
+                    b"size: 32\n",
+                    b"type: image/jpeg\n",
+                    b"binary: 16\n",
+                    bytes(range(16)),
+                    b"\n",
+                    b"OK\n",
+                ],
+            )
+
+            art = await self.client.readpicture("x.mp3")
+
+            expected = {"binary": bytes(range(16)) + bytes(range(16)), "type": "image/jpeg"}
+
+            self.assertEqual(art, expected)
+
+    async def _test_readpicture_empty(self):
+            self.mockserver.expect_exchange(
+                [b'readpicture "x.mp3" "0"\n'],
+                [
+                    b"OK\n",
+                ]
+            )
+
+            art = await self.client.readpicture("x.mp3")
+
+            expected = {}
+
+            self.assertEqual(art, expected)
+
     def test_albumart(self):
         self.init_client()
         self._await(self._test_albumart())
+
+    def test_readpicture(self):
+        self.init_client()
+        self._await(self._test_readpicture())
 
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""

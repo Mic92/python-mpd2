@@ -743,6 +743,20 @@ The music database
     Vorbis comments.
 
 
+.. function:: MPDClient.readpicture(uri)
+
+
+    Returns the embedded cover image for the given song.
+
+    *URI* is always a single file or URL.
+
+    The returned value is a dictionary containing the embedded cover image in its
+    ``'binary'`` entry, and potentially the picture's MIME type in its ``'type'`` entry.
+    If the given URI is invalid, a CommandError is thrown. If the given song URI exists,
+    but the song does not have an embedded cover image that MPD recognizes, an empty
+    dictionary is returned.
+
+
 .. function:: MPDClient.search(type, what[, ..., startend])
 
 
