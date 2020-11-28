@@ -22,10 +22,6 @@ import socket
 import sys
 import warnings
 
-###############################################################################
-# constants
-###############################################################################
-
 VERSION = (2, 0, 0)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
@@ -33,18 +29,9 @@ SUCCESS = "OK"
 NEXT = "list_OK"
 
 
-###############################################################################
-# utils
-###############################################################################
-
-
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
 
-
-###############################################################################
-# logging
-###############################################################################
 
 try:
     from logging import NullHandler
@@ -57,11 +44,6 @@ except ImportError:  # NullHandler was introduced in python2.7
 
 logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
-
-
-###############################################################################
-# exceptions
-###############################################################################
 
 
 class MPDError(Exception):
@@ -90,11 +72,6 @@ class PendingCommandError(MPDError):
 
 class IteratingError(MPDError):
     pass
-
-
-###############################################################################
-# command registration
-###############################################################################
 
 
 class mpd_commands(object):
@@ -155,11 +132,6 @@ class Noop(object):
     """
 
     mpd_commands = None
-
-
-###############################################################################
-# abstract base client
-###############################################################################
 
 
 class MPDClientBase(object):
@@ -426,11 +398,6 @@ class MPDClientBase(object):
     @mpd_commands("albumart", "readpicture", is_binary=True)
     def _parse_plain_binary(self, structure):
         return structure
-
-
-###############################################################################
-# sync client
-###############################################################################
 
 
 def _create_callback(self, function, wrap_result):
