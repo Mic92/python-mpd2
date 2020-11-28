@@ -1450,6 +1450,10 @@ class TestAsyncioMPD(unittest.TestCase):
         self.init_client()
         self._await(self._test_readpicture())
 
+    def test_readpicture_empty(self):
+        self.init_client()
+        self._await(self._test_readpicture_empty())
+
     def test_mocker(self):
         """Does the mock server refuse unexpected writes?"""
         self.init_client()

@@ -362,16 +362,16 @@ class MPDClient(MPDClientBase):
             chunk = metadata.pop('binary', None)
 
             if final_metadata is None:
+                data = chunk
                 final_metadata = metadata
+                if not data:
+                    break
                 try:
                     size = int(final_metadata['size'])
                 except KeyError:
                     size = len(chunk)
                 except ValueError:
                     raise CommandError("Size data unsuitable for binary transfer")
-                data = chunk
-                if not data:
-                    break
             else:
                 if metadata != final_metadata:
                     raise CommandError("Metadata of binary data changed during transfer")
