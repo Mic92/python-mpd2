@@ -71,6 +71,9 @@ Querying
     * options: options like
 
 
+    * partition: a partition was added, removed or changed
+
+
     * sticker: the sticker database has been modified.
 
 
@@ -87,6 +90,9 @@ Querying
 
 
     Returns the current status of the player and the volume level.
+
+
+    * *partition*: the name of the current partition
 
 
     * *volume*: 0-100
@@ -950,6 +956,36 @@ Connection settings
 
 
     Does nothing but return "OK".
+
+
+Partition commands
+------------------
+
+    These commands allow a client to inspect and manage
+    "partitions".  A partition is one frontend of a multi-player
+    MPD process: it has separate queue, player and outputs.  A
+    client is assigned to one partition at a time.
+
+
+.. function:: MPDClient.partition(name)
+    Switch the client to a different partition.
+
+
+.. function:: MPDClient.listpartitions()
+    Return a list of partitions.
+
+
+.. function:: MPDClient.newpartition(name)
+    Create a new partition.
+
+
+.. function:: MPDClient.delpartition(name)
+    Delete a partition.  The partition must be empty (no connected
+    clients and no outputs).
+
+
+.. function:: MPDClient.moveoutput(output_name)
+    Move an output to the current partition.
 
 
 Audio output devices
