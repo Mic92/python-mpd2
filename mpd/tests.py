@@ -238,6 +238,34 @@ class TestMPDClient(unittest.TestCase):
         # remove non existing command
         self.assertRaises(ValueError, self.client.remove_command, "awesome_command")
 
+    def test_partitions(self):
+        self.MPDWillReturn("partition: default\n", "partition: partition2\n", "OK\n")
+        partitions = self.client.listpartitions()
+        self.assertMPDReceived("listpartitions\n")
+        self.assertEqual(
+            [
+                {"partition": "default"},
+                {"partition": "partition2"},
+            ],
+            partitions
+        )
+
+        self.MPDWillReturn("OK\n")
+        self.assertIsNone(self.client.newpartition("Another Partition"))
+        self.assertMPDReceived('newpartition "Another Partition"\n')
+
+        self.MPDWillReturn("OK\n")
+        self.assertIsNone(self.client.partition("Another Partition"))
+        self.assertMPDReceived('partition "Another Partition"\n')
+
+        self.MPDWillReturn("OK\n")
+        self.assertIsNone(self.client.delpartition("Another Partition"))
+        self.assertMPDReceived('delpartition "Another Partition"\n')
+
+        self.MPDWillReturn("OK\n")
+        self.assertIsNone(self.client.moveoutput("My ALSA Device"))
+        self.assertMPDReceived('moveoutput "My ALSA Device"\n')
+
     def test_client_to_client(self):
         # client to client is at this time in beta!
 

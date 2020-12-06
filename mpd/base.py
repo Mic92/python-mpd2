@@ -309,6 +309,10 @@ class MPDClientBase(object):
     def _parse_neighbors(self, lines):
         return self._parse_objects_direct(lines, ["neighbor"])
 
+    @mpd_commands("listpartitions", is_direct=True)
+    def _parse_partitions(self, lines):
+        return self._parse_objects_direct(lines, ["partition"])
+
     @mpd_commands(
         "add",
         "addtagid",
@@ -319,6 +323,7 @@ class MPDClientBase(object):
         "crossfade",
         "delete",
         "deleteid",
+        "delpartition",
         "disableoutput",
         "enableoutput",
         "findadd",
@@ -328,8 +333,11 @@ class MPDClientBase(object):
         "mount",
         "move",
         "moveid",
+        "moveoutput",
+        "newpartition",
         "next",
         "outputvolume",
+        "partition",
         "password",
         "pause",
         "ping",
@@ -482,6 +490,7 @@ class MPDClient(MPDClientBase):
         MPDClientBase._parse_songs,
         MPDClientBase._parse_mounts,
         MPDClientBase._parse_neighbors,
+        MPDClientBase._parse_partitions,
         MPDClientBase._parse_playlists,
         MPDClientBase._parse_database,
         MPDClientBase._parse_messages,
