@@ -4,6 +4,11 @@ python-mpd2 Changes List
 Changes in v3.0.0
 -----------------
 
+* Breaking changes: albumart now returns dictionary :code:`{"size": "...",
+"binary": b"..."}` instead of just a string
+* add readpicture command
+* add partition, newpartition and delpartition commands
+* add moveoutput command
 * removed deprecated `send_` and `fetch_` commands. Use the asyncio or twisted API instead for asynchronous mpd commands.
 
 Changes in v2.0.0
