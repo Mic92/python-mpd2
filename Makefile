@@ -1,4 +1,4 @@
-PYTHON? = python3.8
+PYTHON ?= python3.8
 REMOTE = git@github.com:Mic92/python-mpd2
 VERSION = $(shell $(PYTHON) -c "import mpd; print('.'.join(map(str,mpd.VERSION)))")
 
