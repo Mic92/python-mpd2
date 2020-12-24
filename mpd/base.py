@@ -21,7 +21,6 @@ import logging
 import socket
 import sys
 import warnings
-from logging import NullHandler
 
 VERSION = (3, 0, 0)
 HELLO_PREFIX = "OK MPD "
@@ -32,6 +31,15 @@ NEXT = "list_OK"
 
 def escape(text):
     return text.replace("\\", "\\\\").replace('"', '\\"')
+
+
+try:
+    from logging import NullHandler
+except ImportError:  # NullHandler was introduced in python2.7
+
+    class NullHandler(logging.Handler):
+        def emit(self, record):
+            pass
 
 
 logger = logging.getLogger(__name__)
