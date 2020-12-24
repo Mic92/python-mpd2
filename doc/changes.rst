@@ -1,6 +1,11 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.0.1
+-----------------
+* 3.0.0 accidentially introduced typing annotation that were not meant to be published yet.
+
+
 Changes in v3.0.0
 -----------------
 
