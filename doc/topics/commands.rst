@@ -374,7 +374,10 @@ The current playlist
 .. function:: MPDClient.delete(index_or_range)
 
 
-    Deletes a song from the playlist based on the song's position in the playlist.
+    Deletes a song, or a range of songs, from the playlist based on the song's
+    position in the playlist.
+
+    A range can be specified by passing a tuple.
 
 
 .. function:: MPDClient.deleteid(songid)
