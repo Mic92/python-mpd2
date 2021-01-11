@@ -160,6 +160,10 @@ class MPDClient(MPDClientBase):
     # freespinning tasks create warnings.
     COMMAND_QUEUE_LENGTH = 128
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.__rfile = self.__wfile = None
+
     async def connect(self, host, port=6600, loop=None):
         if "/" in host:
             r, w = await asyncio.open_unix_connection(host, loop=loop)
