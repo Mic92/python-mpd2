@@ -54,7 +54,13 @@ class CommandResult(BaseCommandResult):
     def _feed_line(self, line): # FIXME just inline?
         """Put the given line into the callback machinery, and set the result on a None line."""
         if line is None:
-            self.set_result(self._callback(self.__spooled_lines))
+            if self.cancelled():
+                # Data was still pulled out of the connection, but the original
+                # requester has cancelled the request -- no need to filter the
+                # data through the preprocessing callback
+                pass
+            else:
+                self.set_result(self._callback(self.__spooled_lines))
         else:
             self.__spooled_lines.append(line)
 
@@ -80,7 +86,12 @@ class BinaryCommandResult(asyncio.Future):
     # defined for them, this uses the predefined _read_binary mechanism of the
     # mpdclient
     async def _feed_from(self, mpdclient):
-        self.set_result(await mpdclient._read_binary())
+        # Data must be pulled out no matter whether will later be ignored or not
+        binary = await mpdclient._read_binary()
+        if self.cancelled():
+            pass
+        else:
+            self.set_result(binary)
 
     _feed_error = CommandResult._feed_error
 
@@ -120,7 +131,8 @@ class CommandResultIterable(BaseCommandResult):
         except Exception as e:
             self.set_exception(e)
         else:
-            self.set_result(result)
+            if not self.cancelled():
+                self.set_result(result)
 
     def __aiter__(self):
         if self.done():
