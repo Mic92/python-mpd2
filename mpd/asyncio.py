@@ -206,6 +206,9 @@ class MPDClient(MPDClientBase):
         self.__rfile = self.__wfile = None
         self.__run_task = None
         self.__command_queue = None
+        # copying the list as each raising callback will remove itself from __idle_consumers
+        for subsystems, callback in list(self.__idle_consumers):
+            callback(ConnectionError())
         self.__idle_consumers = None
 
     def _get_idle_interests(self):
@@ -272,7 +275,14 @@ class MPDClient(MPDClientBase):
             self.disconnect()
 
             if result is not None:
-                result._feed_error(e)
+                if self.__in_idle:
+                    # There isn't anything listening for this result, and
+                    # setting the error would just trigger an error report
+                    # about an uncollected exception.
+                    result.cancel()
+                else:
+                    # The last command has failed: Forward that result.
+                    result._feed_error(e)
                 return
             else:
                 raise
@@ -493,6 +503,8 @@ class MPDClient(MPDClientBase):
             raise ConnectionError("Can not start idle on a disconnected client")
 
         interests_before = self._get_idle_interests()
+        # A queue accepting either a list of things that changed in a single
+        # idle cycle, or an exception to be raised
         changes = asyncio.Queue()
         try:
             entry = (subsystems, changes.put_nowait)
@@ -503,7 +515,10 @@ class MPDClient(MPDClientBase):
                 # practically that should be a good thing.
                 self._end_idle()
             while True:
-                yield await changes.get()
+                item = await changes.get()
+                if isinstance(item, Exception):
+                    raise item
+                yield item
         finally:
             if self.__idle_consumers is not None:
                 self.__idle_consumers.remove(entry)
