@@ -20,6 +20,7 @@ This module requires Python 3.5.2 or later to run.
 
 import asyncio
 from functools import partial
+from typing import Optional, List, Tuple, Iterable, Callable, Union
 
 from mpd.base import HELLO_PREFIX, ERROR_PREFIX, SUCCESS
 from mpd.base import MPDClientBase
@@ -172,6 +173,17 @@ class MPDClient(MPDClientBase):
     # freespinning tasks create warnings.
     COMMAND_QUEUE_LENGTH = 128
 
+    #: Callbacks registered by any current callers of `idle()`.
+    #
+    # The first argument lists the changes that the caller is interested in
+    # (and all current listeners' union is used to populate the `idle`
+    # command's arguments), the latter is an actual callback that will be
+    # passed either a set of changes or an exception.
+    __idle_consumers: Optional[List[Tuple[
+        Iterable[str],
+        Callable[[Union[List[str], Exception]], None]
+        ]]] = None
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__rfile = self.__wfile = None
@@ -206,9 +218,10 @@ class MPDClient(MPDClientBase):
         self.__rfile = self.__wfile = None
         self.__run_task = None
         self.__command_queue = None
-        # copying the list as each raising callback will remove itself from __idle_consumers
-        for subsystems, callback in list(self.__idle_consumers):
-            callback(ConnectionError())
+        if self.__idle_consumers is not None:
+            # copying the list as each raising callback will remove itself from __idle_consumers
+            for subsystems, callback in list(self.__idle_consumers):
+                callback(ConnectionError())
         self.__idle_consumers = None
 
     def _get_idle_interests(self):

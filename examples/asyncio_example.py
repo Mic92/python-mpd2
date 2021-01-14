@@ -5,6 +5,10 @@ from mpd.asyncio import MPDClient
 async def main():
     print("Create MPD client")
     client = MPDClient()
+
+    # Not necessary, but should not cause any trouble either
+    client.disconnect()
+
     try:
         await client.connect('localhost', 6600)
     except Exception as e:
