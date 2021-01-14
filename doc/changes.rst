@@ -1,8 +1,17 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.0.2
+-----------------
+
+* asyncio: fix disconnect happen before connect
+* asyncio: better protection against request cancellation
+* asyncio: idle iterator raises error when connection closed
+
+
 Changes in v3.0.1
 -----------------
+
 * 3.0.0 accidentially introduced typing annotation that were not meant to be published yet.
 
 
