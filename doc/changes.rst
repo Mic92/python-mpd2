@@ -1,6 +1,11 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.0.3
+-----------------
+
+* asyncio: tolerate early disconnects
+
 Changes in v3.0.2
 -----------------
 

@@ -22,7 +22,7 @@ import socket
 import sys
 import warnings
 
-VERSION = (3, 0, 2)
+VERSION = (3, 0, 3)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 SUCCESS = "OK"
