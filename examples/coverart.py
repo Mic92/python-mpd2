@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # IMPORTS
-from mpd import (MPDClient, CommandError)
+from mpd import (MPDClient, CommandError, FailureResponseCode)
 from socket import error as SocketError
 from sys import exit
 from PIL import Image
@@ -28,6 +28,15 @@ if PASSWORD:
         client.password(PASSWORD)
     except CommandError:
         exit(1)
+
+try:
+    missing_cover_art = client.albumart("does/not/exist")
+except CommandError as error:
+    # Asking for media that does not exist or media that has no
+    # albumart should raise:
+    #   mpd.base.CommandError: [50@0] {albumart} No file exists
+    if error.errno is not FailureResponseCode.NO_EXIST:
+        raise error
 
 try:
     cover_art = client.readpicture(SONG)
