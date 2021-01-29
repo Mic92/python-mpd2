@@ -20,12 +20,14 @@
 from mpd.base import CommandError
 from mpd.base import CommandListError
 from mpd.base import ConnectionError
+from mpd.base import FailureResponseCode
 from mpd.base import IteratingError
 from mpd.base import MPDClient
 from mpd.base import MPDError
 from mpd.base import PendingCommandError
 from mpd.base import ProtocolError
 from mpd.base import VERSION
+
 
 try:
     from mpd.twisted import MPDProtocol

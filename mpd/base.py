@@ -18,13 +18,18 @@
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import re
 import socket
 import sys
 import warnings
 
+from enum import Enum
+
+
 VERSION = (3, 0, 3)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
+ERROR_PATTERN = re.compile(r"\[(?P<errno>\d+)@(?P<offset>\d+)\]\s+{(?P<command>\w+)}\s+(?P<msg>.*)")
 SUCCESS = "OK"
 NEXT = "list_OK"
 
@@ -46,6 +51,24 @@ logger = logging.getLogger(__name__)
 logger.addHandler(NullHandler())
 
 
+# MPD Protocol errors as found in CommandError exceptions
+# https://github.com/MusicPlayerDaemon/MPD/blob/master/src/protocol/Ack.hxx
+class FailureResponseCode(Enum):
+    NOT_LIST = 1
+    ARG = 2
+    PASSWORD = 3
+    PERMISSION = 4
+    UNKNOWN = 5
+
+    NO_EXIST = 50
+    PLAYLIST_MAX = 51
+    SYSTEM = 52
+    PLAYLIST_LOAD = 53
+    UPDATE_ALREADY = 54
+    PLAYER_SYNC = 55
+    EXIST = 56
+
+
 class MPDError(Exception):
     pass
 
@@ -59,7 +82,18 @@ class ProtocolError(MPDError):
 
 
 class CommandError(MPDError):
-    pass
+    def __init__(self, error):
+        self.errno = None
+        self.offset = None
+        self.command = None
+        self.msg = None
+
+        match = ERROR_PATTERN.match(error)
+        if match:
+            self.errno = FailureResponseCode(int(match.group("errno")))
+            self.offset = int(match.group("offset"))
+            self.command = match.group("command")
+            self.msg = match.group("msg")
 
 
 class CommandListError(MPDError):

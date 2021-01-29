@@ -44,9 +44,11 @@ class MPDPoller(object):
 
             # Catch errors with the password command (e.g., wrong password)
             except CommandError as e:
+                # On CommandErrors we have access to the parsed error response
+                # split into errno, offset, command and msg.
                 raise PollerError("Could not connect to '%s': "
-                                  "password commmand failed: %s" %
-                                  (self._host, e))
+                                  "password commmand failed: [%d] %s" %
+                                  (self._host, e.errno, e.msg))
 
             # Catch all other possible errors
             except (MPDError, IOError) as e:
