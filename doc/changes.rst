@@ -1,6 +1,11 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.0.4
+-----------------
+
+* exposes failure responses in CommandError exceptions
+
 Changes in v3.0.3
 -----------------
 
