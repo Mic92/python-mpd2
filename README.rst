@@ -130,11 +130,4 @@ In order to update it, install python-lxml and run the following command::
     $ python ./doc/generate_command_reference.py > ./doc/topics/commands.rst
 
 
-Contacting the author
----------------------
-
-Just contact me (Mic92) on Github or via email (joerg@thalheim.io).
-
-.. |Build Status| image:: https://travis-ci.org/Mic92/python-mpd2.png
-
 .. _python-mpd: https://pypi.python.org/pypi/python-mpd/
