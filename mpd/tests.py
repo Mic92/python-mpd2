@@ -1272,6 +1272,13 @@ class TestAsyncioMPD(unittest.TestCase):
             TEST_MPD_HOST, TEST_MPD_PORT, loop=self.loop
         )
 
+    def __del__(self):
+        # Clean up after init_client. (This works for now; if it causes
+        # trouble, change all init_client to a `with init_client` or use
+        # fixtures).
+        if hasattr(self, "client"):
+            self.client.disconnect()
+
     def _await(self, future):
         return self.loop.run_until_complete(future)
 
