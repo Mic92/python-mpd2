@@ -1489,6 +1489,65 @@ class TestAsyncioMPD(unittest.TestCase):
         self.mockserver.expect_exchange([b"expecting odd things\n"], [b""])
         self.assertRaises(AssertionError, self._await, self.client.status())
 
+    async def _test_idle(self):
+        self.mockserver.expect_exchange(
+                [b'idle "database"\n',],
+                [b"ACK [4@0] don't let you yet but you shouldn't care\n"],
+                )
+        self.mockserver.expect_exchange(
+                # code could be smarter and set __in_idle = False and not set
+                # noidle, but it's not *wrong* either
+                [b'noidle\n', b'password "1234"\n',],
+                [b"OK\n"],
+                )
+        self.mockserver.expect_exchange(
+                [b'idle "playlist"\n'],
+                [b'idle: playlist\n', b"OK\n"],
+                )
+        self.mockserver.expect_exchange(
+                [b'noidle\n', b'currentsong\n'],
+                # it's a bit brief but it'll be accepted
+                [b"OK\n", ],
+                )
+        self.mockserver.expect_exchange(
+                [b'idle "playlist"\n'],
+                [b"ACK [4@0] I don't let you observe for no other reason\n"],
+                )
+        self.mockserver.expect_exchange(
+                [b'noidle\n', b'status\n'],
+                [b"ACK [4@0] whatever made the idle failed now fails too\n", ],
+                )
+
+        # clearly longer than IMMEDITE_COMMAND_TIMEOUT
+        await asyncio.sleep(0.5)
+
+        await self.client.password("1234")
+
+        async for changeset in self.client.idle(["playlist"]):
+            # the one regular event sent
+            self.assertEqual(changeset, ["playlist"])
+            break
+
+        await self.client.currentsong()
+
+        async for changeset in self.client.idle(["playlist"]):
+            # watching for regular events but the error also gets shown as an event
+            self.assertEqual(changeset, ["playlist"])
+            break
+
+        try:
+            await self.client.status()
+        except mpd.CommandError:
+            pass
+        else:
+            raise AssertionError("The status should have flushed out the error that made the idle fail in the first place")
+
+        self.client.disconnect()
+
+    def test_idle(self):
+        self.init_client()
+        self._await(self._test_idle())
+
 
 if __name__ == "__main__":
     unittest.main()
