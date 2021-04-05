@@ -151,6 +151,16 @@ class MPDClient(MPDClientBase):
     # does no harm)
     __in_idle = False
 
+    #: Indicator that the last attempted idle failed.
+    #
+    # When set, IMMEDIATE_COMMAND_TIMEOUT is ignored in favor of waiting until
+    # *something* else happens, and only then retried.
+    #
+    # Note that the only known condition in which this happens is when between
+    # start of the connection and the presentation of credentials, more than
+    # IMMEDIATE_COMMAND_TIMEOUT passes.
+    __idle_failed = False
+
     #: Seconds after a command's completion to send idle. Setting this too high
     # causes "blind spots" in the client's view of the server, setting it too
     # low sends needless idle/noidle after commands in quick succession.
@@ -247,6 +257,7 @@ class MPDClient(MPDClientBase):
     async def __run(self):
         # See CommandResult._feed_error documentation
         await asyncio.sleep(0)
+        result = None
 
         try:
             while True:
@@ -260,6 +271,15 @@ class MPDClient(MPDClientBase):
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
+                    if self.__idle_failed:
+                        # We could try for a more elaborate path where we now
+                        # await the command queue indefinitely, but as we're
+                        # already in an error case, this whole situation only
+                        # persists until the error is processed somewhere else,
+                        # so ticking once per idle timeout is OK to keep things
+                        # simple.
+                        continue
+
                     subsystems = self._get_idle_interests()
                     if subsystems is None:
                         # The presumably most quiet subsystem -- in this case,
@@ -269,9 +289,14 @@ class MPDClient(MPDClientBase):
                     # Careful: There can't be any await points between the
                     # except and here, or the sequence between the idle and the
                     # command processor might be wrong.
-                    result = CommandResult("idle", subsystems, lambda result: self.__distribute_idle_result(self._parse_list(result)))
+                    result = CommandResult("idle", subsystems, self._parse_list)
+                    result.add_done_callback(self.__idle_result)
                     self.__in_idle = True
                     self._write_command(result._command, result._args)
+
+                # A new command was issued, so there's a chance that whatever
+                # made idle fail is now fixed.
+                self.__idle_failed = False
 
                 try:
                     await result._feed_from(self)
@@ -288,25 +313,37 @@ class MPDClient(MPDClientBase):
             self.disconnect()
 
             if result is not None:
-                if self.__in_idle:
-                    # There isn't anything listening for this result, and
-                    # setting the error would just trigger an error report
-                    # about an uncollected exception.
-                    result.cancel()
-                else:
-                    # The last command has failed: Forward that result.
-                    result._feed_error(e)
+                # The last command has failed: Forward that result.
+                #
+                # (In idle, that's fine too -- everyone watching see a
+                # nonspecific event).
+                result._feed_error(e)
                 return
             else:
                 raise
                 # Typically this is a bug in mpd.asyncio.
 
-    def __distribute_idle_result(self, result):
-        # An exception flying out of here probably means a connection
-        # interruption during idle. This will just show like any other
-        # unhandled task exception and that's probably the best we can do.
+    def __idle_result(self, result):
+        try:
+            idle_changes = result.result()
+        except CommandError as e:
+            # Don't retry until something changed
+            self.__idle_failed = True
 
-        idle_changes = list(result)
+            # Not raising this any further: The callbacks are notified that
+            # "something is up" (which is all their API gives), and whichever
+            # command is issued to act on it will hopefully run into the same
+            # condition.
+            #
+            # This does swallow the exact error cause.
+
+            idle_changes = set()
+            for subsystems, _ in self.__idle_consumers:
+                idle_changes = idle_changes.union(subsystems)
+
+        # make generator accessible multiple times
+        idle_changes = list(idle_changes)
+
         for subsystems, callback in self.__idle_consumers:
             if not subsystems or any(s in subsystems for s in idle_changes):
                 callback(idle_changes)
