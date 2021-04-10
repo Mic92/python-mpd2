@@ -12,6 +12,7 @@ import types
 import warnings
 
 import unittest
+from unittest import mock
 
 try:
     from twisted.python.failure import Failure
@@ -26,11 +27,6 @@ except ImportError:
 
 import asyncio
 
-try:
-    import mock
-except ImportError:
-    print("Please install mock from PyPI to run tests!")
-    sys.exit(1)
 
 # show deprecation warnings
 warnings.simplefilter("default")
