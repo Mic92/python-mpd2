@@ -80,7 +80,6 @@ setup(
     test_suite="mpd.tests",
     tests_require=[
         'tox',
-        'mock',
         'Twisted'
     ],
     cmdclass={
