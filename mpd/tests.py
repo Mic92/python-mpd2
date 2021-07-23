@@ -51,7 +51,7 @@ class TestMPDClient(unittest.TestCase):
             # Create a new socket.socket() mock with default attributes,
             # each time we are calling it back (otherwise, it keeps set
             # attributes across calls).
-            # That's probablyy what we want, since reconnecting is like
+            # That's probably what we want, since reconnecting is like
             # reinitializing the entire connection, and so, the mock.
             mock.MagicMock(name="socket.socket")
         )

@@ -21,7 +21,7 @@ New commands or special handling of commands can be easily implemented.  Use
 Thread-Safety
 -------------
 
-Currently ``MPDClient`` is **NOT** thread-safe. As it use a socket internaly,
+Currently ``MPDClient`` is **NOT** thread-safe. As it use a socket internally,
 only one thread can send or receive at the time.
 
 But ``MPDClient`` can be easily extended to be thread-safe using `locks

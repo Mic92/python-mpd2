@@ -33,7 +33,7 @@ The following features were added:
 -  API documentation to add new commands (see `Future Compatible <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#future-compatible>`__)
 -  support for Unicode strings in all commands (optionally in python2,
    default in python3 - see `Unicode Handling <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#unicode-handling>`__)
--  configureable timeouts
+-  configurable timeouts
 -  support for `logging <https://python-mpd2.readthedocs.io/en/latest/topics/logging.html>`__
 -  improved support for sticker
 -  improved support for ranges
