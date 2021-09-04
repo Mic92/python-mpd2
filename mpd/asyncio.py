@@ -218,6 +218,10 @@ class MPDClient(MPDClientBase):
 
         self.__run_task = asyncio.Task(self.__run())
 
+    @property
+    def connected(self):
+        return self.__run_task is not None
+
     def disconnect(self):
         if (
             self.__run_task is not None
