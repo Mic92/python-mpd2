@@ -147,7 +147,7 @@ class MPDClient(MPDClientBase):
 
     #: Indicator of whether there is a pending idle command that was not terminated yet.
     # When in doubt; this is True, thus erring at the side of caution (because
-    # a "noidle" being sent while racing against an incmoing idle notification
+    # a "noidle" being sent while racing against an incoming idle notification
     # does no harm)
     __in_idle = False
 

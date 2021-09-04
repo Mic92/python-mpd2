@@ -825,7 +825,7 @@ Mounts and neighbors
 
     Multiple storages can be "mounted" together, similar to the mount
     command on many operating systems, but without cooperation from
-    the kernel. No superuser privileges are necessary, beause this
+    the kernel. No superuser privileges are necessary, because this
     mapping exists only inside the MPD process
 
 .. function:: MPDClient.mount(path, uri)

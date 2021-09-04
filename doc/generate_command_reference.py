@@ -28,7 +28,7 @@ def get_text(elements, itemize=False):
             'function'
     ] + highlight_elements
     for element in elements:
-        # put "Since MPD version..." in paranthese
+        # put "Since MPD version..." in parenthese
         etree.strip_tags(element, "application")
         for e in element.xpath("footnote/simpara"):
             e.text = "(" + e.text.strip() + ")"
