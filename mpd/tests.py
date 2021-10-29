@@ -1262,10 +1262,10 @@ class TestAsyncioMPD(unittest.TestCase):
         self.mockserver.expect_exchange([], hello_lines)
 
         self.client = mpd.asyncio.MPDClient()
-        self._await(self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT, loop=self.loop))
+        self._await(self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT))
 
         asyncio.open_connection.assert_called_with(
-            TEST_MPD_HOST, TEST_MPD_PORT, loop=self.loop
+            TEST_MPD_HOST, TEST_MPD_PORT
         )
 
     def __del__(self):
