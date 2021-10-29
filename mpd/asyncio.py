@@ -18,6 +18,7 @@ Command lists are currently not supported.
 This module requires Python 3.5.2 or later to run.
 """
 
+import warnings
 import asyncio
 from functools import partial
 from typing import Optional, List, Tuple, Iterable, Callable, Union
@@ -199,10 +200,12 @@ class MPDClient(MPDClientBase):
         self.__rfile = self.__wfile = None
 
     async def connect(self, host, port=6600, loop=None):
+        if loop is not None:
+            warnings.warn("loop passed into MPDClient.connect is ignored, this will become an error", DeprecationWarning)
         if "/" in host:
-            r, w = await asyncio.open_unix_connection(host, loop=loop)
+            r, w = await asyncio.open_unix_connection(host)
         else:
-            r, w = await asyncio.open_connection(host, port, loop=loop)
+            r, w = await asyncio.open_connection(host, port)
         self.__rfile, self.__wfile = r, w
 
         self.__command_queue = asyncio.Queue(maxsize=self.COMMAND_QUEUE_LENGTH)
