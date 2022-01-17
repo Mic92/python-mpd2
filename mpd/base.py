@@ -239,12 +239,20 @@ class MPDClientBase(object):
         obj = {}
         for key, value in self._parse_pairs(lines):
             key = key.lower()
-            if lookup_delimiter and not delimiters:
-                delimiters = [key]
+            if lookup_delimiter and key not in delimiters:
+                delimiters = delimiters + [key]
             if obj:
                 if key in delimiters:
-                    yield obj
-                    obj = {}
+                    if lookup_delimiter:
+                        if key in obj:
+                            yield obj
+                            obj = obj.copy()
+                            while delimiters[-1] != key:
+                                obj.pop(delimiters[-1], None)
+                                delimiters.pop()
+                    else:
+                        yield obj
+                        obj = {}
                 elif key in obj:
                     if not isinstance(obj[key], list):
                         obj[key] = [obj[key], value]

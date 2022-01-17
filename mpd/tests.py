@@ -262,6 +262,31 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsNone(self.client.moveoutput("My ALSA Device"))
         self.assertMPDReceived('moveoutput "My ALSA Device"\n')
 
+    def test_list_group(self):
+        self.MPDWillReturn(
+            "AlbumArtist: Kraftwerk\n",
+            "Date: 1970\n",
+            "Album: Tone Float (Unofficial)\n",
+            "Date: 1974\n",
+            "Album: Autobahn\n",
+            "Album: Autobahn (2009 Der Katalog)\n",
+            "OK\n"
+        )
+        grouped_list = self.client.list(
+            "album", "albumartist", "Kraftwerk", "group", "date", "group", "albumartist"
+        )
+        self.assertMPDReceived(
+            'list "album" "albumartist" "Kraftwerk" "group" "date" "group" "albumartist"\n'
+        )
+        self.assertEqual(
+            [
+                {'albumartist': 'Kraftwerk', 'date': '1970', 'album': 'Tone Float (Unofficial)'},
+                {'albumartist': 'Kraftwerk', 'date': '1974', 'album': 'Autobahn'},
+                {'albumartist': 'Kraftwerk', 'date': '1974', 'album': 'Autobahn (2009 Der Katalog)'}
+            ],
+            grouped_list
+        )
+
     def test_client_to_client(self):
         # client to client is at this time in beta!
 
