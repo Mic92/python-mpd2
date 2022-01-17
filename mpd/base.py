@@ -26,7 +26,7 @@ import warnings
 from enum import Enum
 
 
-VERSION = (3, 0, 4)
+VERSION = (3, 0, 5)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 ERROR_PATTERN = re.compile(r"\[(?P<errno>\d+)@(?P<offset>\d+)\]\s+{(?P<command>\w+)}\s+(?P<msg>.*)")

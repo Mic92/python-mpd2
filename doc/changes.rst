@@ -1,6 +1,14 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.0.5
+-----------------
+
+* python 3.10 compatibility
+* fixes for using idle in async
+* use python's internal mock library instead of external mock
+* expose connection status in async (connected property)
+
 Changes in v3.0.4
 -----------------
 
