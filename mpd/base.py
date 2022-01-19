@@ -387,7 +387,7 @@ class MPDClientBase(object):
         "swap",
         "swapid",
         "toggleoutput",
-        "umount",
+        "unmount",
         "unsubscribe",
         "volume",
     )
