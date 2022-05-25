@@ -330,6 +330,7 @@ class MPDClientBase(object):
     @mpd_commands(
         "add",
         "addtagid",
+        "binarylimit",
         "clear",
         "clearerror",
         "cleartagid",
