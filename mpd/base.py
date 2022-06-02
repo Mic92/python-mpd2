@@ -788,7 +788,9 @@ class MPDClient(MPDClientBase):
                 DeprecationWarning,
             )
             self.timeout = timeout
-        if host.startswith("/"):
+        if host.startswith("@"):
+            host = "\0" + host[1:]
+        if host.startswith(("/", "\0")):
             self._sock = self._connect_unix(host)
         else:
             if port is None:

@@ -202,7 +202,9 @@ class MPDClient(MPDClientBase):
     async def connect(self, host, port=6600, loop=None):
         if loop is not None:
             warnings.warn("loop passed into MPDClient.connect is ignored, this will become an error", DeprecationWarning)
-        if "/" in host:
+        if host.startswith("@"):
+            host = "\0" + host[1:]
+        if host.startswith("\0") or "/" in host:
             r, w = await asyncio.open_unix_connection(host)
         else:
             r, w = await asyncio.open_connection(host, port)
