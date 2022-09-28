@@ -26,7 +26,7 @@ from typing import Optional, List, Tuple, Iterable, Callable, Union
 from mpd.base import HELLO_PREFIX, ERROR_PREFIX, SUCCESS
 from mpd.base import MPDClientBase
 from mpd.base import MPDClient as SyncMPDClient
-from mpd.base import ProtocolError, ConnectionError, CommandError
+from mpd.base import ProtocolError, ConnectionError, CommandError, CommandListError
 from mpd.base import mpd_command_provider
 
 

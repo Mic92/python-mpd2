@@ -633,7 +633,7 @@ class MPDClient(MPDClientBase):
                     self.disconnect()
                     raise ConnectionError(
                         "Connection lost while reading binary data: "
-                        "expected %d bytes, got %d" % (chunk_size, len(data))
+                        "expected %d bytes, got %d" % (chunk_size, len(value))
                     )
 
                 if self._rbfile.read(1) != b"\n":
