@@ -280,6 +280,13 @@ class MPDClient(MPDClientBase):
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
+                    if not self.__command_queue.empty():
+                        # A __command_queue.put() has happened after the
+                        # asyncio.wait_for() timeout but before execution of
+                        # this coroutine resumed. Looping around again will
+                        # fetch the new entry from the queue.
+                        continue
+
                     if self.__idle_failed:
                         # We could try for a more elaborate path where we now
                         # await the command queue indefinitely, but as we're
