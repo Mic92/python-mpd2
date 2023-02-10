@@ -1576,6 +1576,18 @@ class TestAsyncioMPD(unittest.TestCase):
         self.init_client()
         self._await(self._test_idle())
 
+    async def _test_idle_timeout(self):
+        self.mockserver.expect_exchange([b'currentsong\n'], [b"OK\n"])
+        self.mockserver.expect_exchange([b'currentsong\n'], [b"OK\n"])
+        await self.client.currentsong()
+        # pausing for exactly this duration triggers a special case in mpd.asyncio.MPDClient.__run
+        await asyncio.sleep(self.client.IMMEDIATE_COMMAND_TIMEOUT)
+        await self.client.currentsong()
+        self.client.disconnect()
+
+    def test_idle_timeout(self):
+        self.init_client()
+        self._await(self._test_idle_timeout())
 
 if __name__ == "__main__":
     unittest.main()
