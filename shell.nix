@@ -1,14 +1,18 @@
-with import <nixpkgs> {};
+# https://github.com/NixOS/nixpkgs/pull/196360
+{ pkgs ? import <nixpkgs> {}
+}:
 
-stdenv.mkDerivation {
+pkgs.stdenv.mkDerivation {
   name = "env";
-  buildInputs = [
+  buildInputs = with pkgs; [
     bashInteractive
-    python37
-    (python38.withPackages(ps: [ps.setuptools ps.tox ps.wheel ps.twine]))
+    python38
     python39
-    python310
+    (python310.withPackages(ps: [ps.setuptools ps.tox ps.wheel]))
+    python311
+    python312
     pypy3
+    twine
   ];
   shellHook = ''
     # breaks python36/python37
