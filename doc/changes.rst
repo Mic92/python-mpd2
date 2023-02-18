@@ -1,6 +1,17 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.1.0
+-----------------
+
+* fixed multiple use of "group" in list command by @SoongNoonien in https://github.com/Mic92/python-mpd2/pull/187
+* fix unmount command not working by @burrocargado in https://github.com/Mic92/python-mpd2/pull/188
+* added binarylimit command by @SoongNoonien in https://github.com/Mic92/python-mpd2/pull/191
+* Implement abstract socket support by @aurieh in https://github.com/Mic92/python-mpd2/pull/193
+* missing import / wrong variable by @mk-81 in https://github.com/Mic92/python-mpd2/pull/196
+* also test python3.12 by @Mic92 in https://github.com/Mic92/python-mpd2/pull/200
+* asyncio: fix race condition in command queue by @yakshaver2000 in https://github.com/Mic92/python-mpd2/pull/199
+
 Changes in v3.0.5
 -----------------
 
