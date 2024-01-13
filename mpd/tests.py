@@ -10,6 +10,7 @@ import socket
 import sys
 import types
 import warnings
+from typing import Any
 
 import unittest
 from unittest import mock
@@ -1270,8 +1271,8 @@ class AsyncMockServer:
         self._feed()
 
 
-class TestAsyncioMPD(unittest.TestCase):
-    def init_client(self, odd_hello=None):
+class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
+    async def init_client(self, odd_hello=None) -> None:
         self.loop = asyncio.get_event_loop()
 
         self.mockserver = AsyncMockServer()
@@ -1287,36 +1288,33 @@ class TestAsyncioMPD(unittest.TestCase):
         self.mockserver.expect_exchange([], hello_lines)
 
         self.client = mpd.asyncio.MPDClient()
-        self._await(self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT))
+        await self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
 
         asyncio.open_connection.assert_called_with(
             TEST_MPD_HOST, TEST_MPD_PORT
         )
 
-    def __del__(self):
+    def __del__(self) -> None:
         # Clean up after init_client. (This works for now; if it causes
         # trouble, change all init_client to a `with init_client` or use
         # fixtures).
         if hasattr(self, "client"):
             self.client.disconnect()
 
-    def _await(self, future):
-        return self.loop.run_until_complete(future)
-
-    def test_oddhello(self):
-        self.assertRaises(
-            mpd.base.ProtocolError, self.init_client, odd_hello=[b"NOT OK\n"]
-        )
+    async def test_oddhello(self) -> None:
+        with self.assertRaises(mpd.base.ProtocolError):
+            await self.init_client(odd_hello=[b"NOT OK\n"])
 
     @unittest.skipIf(
         os.getenv("RUN_SLOW_TESTS") is None,
         "This test would add 5 seconds of idling to the run (export RUN_SLOW_TESTS=1 to run anyway)",
     )
-    def test_noresponse(self):
-        self.assertRaises(mpd.base.ConnectionError, self.init_client, odd_hello=[])
+    def test_noresponse(self) -> None:
+        with self.assertRaises(mpd.base.ConnectionError):
+            self.init_client(odd_hello=[])
 
-    def test_status(self):
-        self.init_client()
+    async def test_status(self) -> None:
+        await self.init_client()
 
         self.mockserver.expect_exchange(
             [b"status\n"],
@@ -1341,7 +1339,7 @@ class TestAsyncioMPD(unittest.TestCase):
             ],
         )
 
-        status = self._await(self.client.status())
+        status = await self.client.status()
         self.assertEqual(
             status,
             {
@@ -1364,7 +1362,8 @@ class TestAsyncioMPD(unittest.TestCase):
             },
         )
 
-    async def _test_outputs(self):
+    async def test_outputs(self) -> None:
+        await self.init_client()
         self.mockserver.expect_exchange(
             [b"outputs\n"],
             [
@@ -1405,11 +1404,8 @@ class TestAsyncioMPD(unittest.TestCase):
             self.assertEqual(o, next(expected))
         self.assertRaises(StopIteration, next, expected)
 
-    def test_outputs(self):
-        self.init_client()
-        self._await(self._test_outputs())
-
-    async def _test_list(self):
+    async def test_list(self) -> None:
+        await self.init_client()
         self.mockserver.expect_exchange(
             [b'list "album"\n'], [b"Album: first\n", b"Album: second\n", b"OK\n",]
         )
@@ -1422,11 +1418,8 @@ class TestAsyncioMPD(unittest.TestCase):
             self.assertEqual(o, next(expected))
         self.assertRaises(StopIteration, next, expected)
 
-    def test_list(self):
-        self.init_client()
-        self._await(self._test_list())
-
-    async def _test_albumart(self):
+    async def test_albumart(self) -> None:
+        await self.init_client()
         self.mockserver.expect_exchange(
             [b'albumart "x.mp3" "0"\n'],
             [
@@ -1454,70 +1447,63 @@ class TestAsyncioMPD(unittest.TestCase):
 
         self.assertEqual(albumart, expected)
 
-    async def _test_readpicture(self):
-            self.mockserver.expect_exchange(
-                [b'readpicture "x.mp3" "0"\n'],
-                [
-                    b"size: 32\n",
-                    b"type: image/jpeg\n",
-                    b"binary: 16\n",
-                    bytes(range(16)),
-                    b"\n",
-                    b"OK\n",
-                ]
-            )
-            self.mockserver.expect_exchange(
-                [b'readpicture "x.mp3" "16"\n'],
-                [
-                    b"size: 32\n",
-                    b"type: image/jpeg\n",
-                    b"binary: 16\n",
-                    bytes(range(16)),
-                    b"\n",
-                    b"OK\n",
-                ],
-            )
+    async def test_readpicture(self) -> None:
+        await self.init_client()
+        self.mockserver.expect_exchange(
+            [b'readpicture "x.mp3" "0"\n'],
+            [
+                b"size: 32\n",
+                b"type: image/jpeg\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ]
+        )
+        self.mockserver.expect_exchange(
+            [b'readpicture "x.mp3" "16"\n'],
+            [
+                b"size: 32\n",
+                b"type: image/jpeg\n",
+                b"binary: 16\n",
+                bytes(range(16)),
+                b"\n",
+                b"OK\n",
+            ],
+        )
 
-            art = await self.client.readpicture("x.mp3")
+        art = await self.client.readpicture("x.mp3")
 
-            expected = {"binary": bytes(range(16)) + bytes(range(16)), "type": "image/jpeg"}
+        expected = {"binary": bytes(range(16)) + bytes(range(16)), "type": "image/jpeg"}
 
-            self.assertEqual(art, expected)
+        self.assertEqual(art, expected)
 
-    async def _test_readpicture_empty(self):
-            self.mockserver.expect_exchange(
-                [b'readpicture "x.mp3" "0"\n'],
-                [
-                    b"OK\n",
-                ]
-            )
+    async def test_readpicture_empty(self) -> None:
+        await self.init_client()
+        self.mockserver.expect_exchange(
+            [b'readpicture "x.mp3" "0"\n'],
+            [
+                b"OK\n",
+            ]
+        )
 
-            art = await self.client.readpicture("x.mp3")
+        art = await self.client.readpicture("x.mp3")
 
-            expected = {}
+        expected = {}
 
-            self.assertEqual(art, expected)
+        self.assertEqual(art, expected)
 
-    def test_albumart(self):
-        self.init_client()
-        self._await(self._test_albumart())
-
-    def test_readpicture(self):
-        self.init_client()
-        self._await(self._test_readpicture())
-
-    def test_readpicture_empty(self):
-        self.init_client()
-        self._await(self._test_readpicture_empty())
-
-    def test_mocker(self):
+    async def test_mocker(self) -> None:
         """Does the mock server refuse unexpected writes?"""
-        self.init_client()
+        await self.init_client()
 
         self.mockserver.expect_exchange([b"expecting odd things\n"], [b""])
-        self.assertRaises(AssertionError, self._await, self.client.status())
 
-    async def _test_idle(self):
+        with self.assertRaises(AssertionError):
+            await self.client.status()
+
+    async def test_idle(self) -> None:
+        await self.init_client()
         self.mockserver.expect_exchange(
                 [b'idle "database"\n',],
                 [b"ACK [4@0] don't let you yet but you shouldn't care\n"],
@@ -1546,7 +1532,7 @@ class TestAsyncioMPD(unittest.TestCase):
                 [b"ACK [4@0] whatever made the idle failed now fails too\n", ],
                 )
 
-        # clearly longer than IMMEDITE_COMMAND_TIMEOUT
+        # clearly longer than IMMEDIATE_COMMAND_TIMEOUT
         await asyncio.sleep(0.5)
 
         await self.client.password("1234")
@@ -1572,11 +1558,12 @@ class TestAsyncioMPD(unittest.TestCase):
 
         self.client.disconnect()
 
-    def test_idle(self):
-        self.init_client()
-        self._await(self._test_idle())
-
-    async def _test_idle_timeout(self):
+    @unittest.skipIf(
+        sys.version_info >= (3, 12),
+        "In Python 3.12 we see a timeout error triggering idle instead of the bug described in https://github.com/Mic92/python-mpd2/pull/199",
+    )
+    async def test_idle_timeout(self) -> None:
+        await self.init_client()
         self.mockserver.expect_exchange([b'currentsong\n'], [b"OK\n"])
         self.mockserver.expect_exchange([b'currentsong\n'], [b"OK\n"])
         await self.client.currentsong()
@@ -1584,10 +1571,6 @@ class TestAsyncioMPD(unittest.TestCase):
         await asyncio.sleep(self.client.IMMEDIATE_COMMAND_TIMEOUT)
         await self.client.currentsong()
         self.client.disconnect()
-
-    def test_idle_timeout(self):
-        self.init_client()
-        self._await(self._test_idle_timeout())
 
 if __name__ == "__main__":
     unittest.main()
