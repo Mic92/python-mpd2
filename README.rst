@@ -118,7 +118,7 @@ Building Documentation
 
 Install Sphinx::
 
-    $ easy_install -U Sphinx
+    $ pip install Sphinx
 
 Change to the source directory and run::
 
