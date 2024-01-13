@@ -18,29 +18,35 @@ Command lists are currently not supported.
 This module requires Python 3.5.2 or later to run.
 """
 
-import warnings
 import asyncio
+import warnings
 from functools import partial
-from typing import Optional, List, Tuple, Iterable, Callable, Union
+from typing import (Any, AsyncIterator, Callable, Iterable, List,
+                    Optional, Set, Tuple, Union, Dict, cast)
 
-from mpd.base import HELLO_PREFIX, ERROR_PREFIX, SUCCESS
-from mpd.base import MPDClientBase
+from mpd.base import (ERROR_PREFIX, SUCCESS, CommandError, CommandListError,
+                      ConnectionError, CallableWithCommands)
 from mpd.base import MPDClient as SyncMPDClient
-from mpd.base import ProtocolError, ConnectionError, CommandError, CommandListError
-from mpd.base import mpd_command_provider
+from mpd.base import MPDClientBase, ProtocolError, mpd_command_provider
 
 
 class BaseCommandResult(asyncio.Future):
     """A future that carries its command/args/callback with it for the
     convenience of passing it around to the command queue."""
 
-    def __init__(self, command, args, callback):
+    def __init__(self, command: str, args: List[str], callback: Callable) -> None:
         super().__init__()
         self._command = command
         self._args = args
         self._callback = callback
 
-    async def _feed_from(self, mpdclient):
+    def _feed_line(self, line: Optional[str]) -> None:  # FIXME just inline?
+        raise NotImplementedError
+
+    def _feed_error(self, error: Exception) -> None:
+        raise NotImplementedError
+
+    async def _feed_from(self, mpdclient: "MPDClient") -> None:
         while True:
             line = await mpdclient._read_line()
             self._feed_line(line)
@@ -49,11 +55,11 @@ class BaseCommandResult(asyncio.Future):
 
 
 class CommandResult(BaseCommandResult):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__spooled_lines = []
+        self.__spooled_lines: List[str] = []
 
-    def _feed_line(self, line): # FIXME just inline?
+    def _feed_line(self, line: Optional[str]) -> None:  # FIXME just inline?
         """Put the given line into the callback machinery, and set the result on a None line."""
         if line is None:
             if self.cancelled():
@@ -66,7 +72,7 @@ class CommandResult(BaseCommandResult):
         else:
             self.__spooled_lines.append(line)
 
-    def _feed_error(self, error):
+    def _feed_error(self, error: Exception) -> None:
         if not self.done():
             self.set_exception(error)
         else:
@@ -83,11 +89,12 @@ class CommandResult(BaseCommandResult):
             # sleep(0) that ensures it can be cancelled properly at any time.
             raise error
 
+
 class BinaryCommandResult(asyncio.Future):
     # Unlike the regular commands that defer to any callback that may be
     # defined for them, this uses the predefined _read_binary mechanism of the
     # mpdclient
-    async def _feed_from(self, mpdclient):
+    async def _feed_from(self, mpdclient: "MPDClient") -> None:
         # Data must be pulled out no matter whether will later be ignored or not
         binary = await mpdclient._read_binary()
         if self.cancelled():
@@ -95,7 +102,9 @@ class BinaryCommandResult(asyncio.Future):
         else:
             self.set_result(binary)
 
-    _feed_error = CommandResult._feed_error
+    def _feed_error(self, error: Exception) -> None:
+        return CommandResult._feed_error(cast(CommandResult, self), error)
+
 
 class CommandResultIterable(BaseCommandResult):
     """Variant of CommandResult where the underlying callback is an
@@ -110,22 +119,23 @@ class CommandResultIterable(BaseCommandResult):
     raise them.
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__spooled_lines = asyncio.Queue()
+        self.__spooled_lines: asyncio.Queue[Union[str, None, Exception]] = asyncio.Queue()
 
-    def _feed_line(self, line):
+    def _feed_line(self, line: Union[str, None]) -> None:
         self.__spooled_lines.put_nowait(line)
 
-    _feed_error = _feed_line
+    def _feed_error(self, error: Exception) -> None:
+        self.__spooled_lines.put_nowait(error)
 
-    def __await__(self):
+    def __await__(self) -> Any:
         asyncio.Task(self.__feed_future())
         return super().__await__()
 
     __iter__ = __await__  # for 'yield from' style invocation
 
-    async def __feed_future(self):
+    async def __feed_future(self) -> None:
         result = []
         try:
             async for r in self:
@@ -136,7 +146,7 @@ class CommandResultIterable(BaseCommandResult):
             if not self.cancelled():
                 self.set_result(result)
 
-    def __aiter__(self):
+    def __aiter__(self) -> "Any":
         if self.done():
             raise RuntimeError("Command result is already being consumed")
         return self._callback(self.__spooled_lines).__aiter__()
@@ -176,7 +186,9 @@ class MPDClient(MPDClientBase):
     # *directly* throttling output, but as the convention is to put the
     # processor on the queue and then send the command, and commands are of
     # limited size, this is practically creating backpressure.)
-    __command_queue = None
+    __command_queue: Optional[
+        "asyncio.Queue[Union[BaseCommandResult, BinaryCommandResult]]"
+    ] = None
 
     #: Construction size of __command_queue. The default limit is high enough
     # that a client can easily send off all existing commands simultaneously
@@ -190,18 +202,31 @@ class MPDClient(MPDClientBase):
     # (and all current listeners' union is used to populate the `idle`
     # command's arguments), the latter is an actual callback that will be
     # passed either a set of changes or an exception.
-    __idle_consumers: Optional[List[Tuple[
-        Iterable[str],
-        Callable[[Union[List[str], Exception]], None]
-        ]]] = None
+    __idle_consumers: Optional[
+        List[
+            Tuple[
+                Union[List[str], Tuple[str]],
+                Callable[[Union[List[str], Exception]], None],
+            ]
+        ]
+    ] = None
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__rfile = self.__wfile = None
+        self.__rfile: Optional[asyncio.StreamReader] = None
+        self.__wfile: Optional[asyncio.StreamWriter] = None
 
-    async def connect(self, host, port=6600, loop=None):
+    async def connect(
+        self,
+        host: str,
+        port: int = 6600,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None:
         if loop is not None:
-            warnings.warn("loop passed into MPDClient.connect is ignored, this will become an error", DeprecationWarning)
+            warnings.warn(
+                "loop passed into MPDClient.connect is ignored, this will become an error",
+                DeprecationWarning,
+            )
         if host.startswith("@"):
             host = "\0" + host[1:]
         if host.startswith("\0") or "/" in host:
@@ -211,7 +236,7 @@ class MPDClient(MPDClientBase):
         self.__rfile, self.__wfile = r, w
 
         self.__command_queue = asyncio.Queue(maxsize=self.COMMAND_QUEUE_LENGTH)
-        self.__idle_consumers = []  #: list of (subsystem-list, callbacks) tuples
+        self.__idle_consumers = []
 
         try:
             helloline = await asyncio.wait_for(self.__readline(), timeout=5)
@@ -219,15 +244,15 @@ class MPDClient(MPDClientBase):
             self.disconnect()
             raise ConnectionError("No response from server while reading MPD hello")
         # FIXME should be reusable w/o reaching in
-        SyncMPDClient._hello(self, helloline)
+        SyncMPDClient._hello(cast(SyncMPDClient, self), helloline)
 
         self.__run_task = asyncio.Task(self.__run())
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         return self.__run_task is not None
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         if (
             self.__run_task is not None
         ):  # is None eg. when connection fails in .connect()
@@ -243,7 +268,7 @@ class MPDClient(MPDClientBase):
                 callback(ConnectionError())
         self.__idle_consumers = None
 
-    def _get_idle_interests(self):
+    def _get_idle_interests(self) -> Optional[Set[str]]:
         """Accumulate a set of interests from the current __idle_consumers.
         Returns the union of their subscribed subjects, [] if at least one of
         them is the empty catch-all set, or None if there are no interests at
@@ -252,10 +277,10 @@ class MPDClient(MPDClientBase):
         if not self.__idle_consumers:
             return None
         if any(len(s) == 0 for (s, c) in self.__idle_consumers):
-            return []
+            return set()
         return set.union(*(set(s) for (s, c) in self.__idle_consumers))
 
-    def _end_idle(self):
+    def _end_idle(self) -> None:
         """If the main task is currently idling, make it leave idle and process
         the next command (if one is present) or just restart idle"""
 
@@ -263,14 +288,15 @@ class MPDClient(MPDClientBase):
             self.__write("noidle\n")
             self.__in_idle = False
 
-    async def __run(self):
+    async def __run(self) -> None:
         # See CommandResult._feed_error documentation
         await asyncio.sleep(0)
-        result = None
 
         try:
             while True:
                 try:
+                    if self.__command_queue is None:
+                        raise ConnectionError("Disconnected while waiting for command")
                     result = await asyncio.wait_for(
                         self.__command_queue.get(),
                         timeout=self.IMMEDIATE_COMMAND_TIMEOUT,
@@ -280,7 +306,10 @@ class MPDClient(MPDClientBase):
                     # in this case is intended, and is just what asyncio.Queue
                     # suggests for "get with timeout".
 
-                    if not self.__command_queue.empty():
+                    if (
+                        self.__command_queue is not None
+                        and not self.__command_queue.empty()
+                    ):
                         # A __command_queue.put() has happened after the
                         # asyncio.wait_for() timeout but before execution of
                         # this coroutine resumed. Looping around again will
@@ -300,7 +329,7 @@ class MPDClient(MPDClientBase):
                     if subsystems is None:
                         # The presumably most quiet subsystem -- in this case,
                         # idle is only used to keep the connection alive.
-                        subsystems = ["database"]
+                        subsystems = set(["database"])
 
                     # Careful: There can't be any await points between the
                     # except and here, or the sequence between the idle and the
@@ -326,10 +355,13 @@ class MPDClient(MPDClientBase):
             # Pass exception to any pending task to terminate them. Otherwise they will hang
             # indefinitely as we are about to disconnect.
             try:
-                while not self.__command_queue.empty():
+                while (
+                    self.__command_queue is not None
+                    and not self.__command_queue.empty()
+                ):
                     pending_result = self.__command_queue.get_nowait()
                     pending_result._feed_error(e)
-            except QueueEmpty:
+            except asyncio.QueueEmpty:
                 # As per documentation, the queue raises this type of exception when get_nowait()
                 # is called and the queue is empty. It actually rather block on the get_nowait() call
                 # but let's leave the except just in case.
@@ -351,10 +383,10 @@ class MPDClient(MPDClientBase):
                 raise
                 # Typically this is a bug in mpd.asyncio.
 
-    def __idle_result(self, result):
+    def __idle_result(self, result: BaseCommandResult) -> None:
         try:
             idle_changes = result.result()
-        except CommandError as e:
+        except CommandError:
             # Don't retry until something changed
             self.__idle_failed = True
 
@@ -366,20 +398,24 @@ class MPDClient(MPDClientBase):
             # This does swallow the exact error cause.
 
             idle_changes = set()
-            for subsystems, _ in self.__idle_consumers:
-                idle_changes = idle_changes.union(subsystems)
+            if self.__idle_consumers is not None:
+                for subsystems, _ in self.__idle_consumers:
+                    idle_changes = idle_changes.union(subsystems)
 
         # make generator accessible multiple times
         idle_changes = list(idle_changes)
 
-        for subsystems, callback in self.__idle_consumers:
-            if not subsystems or any(s in subsystems for s in idle_changes):
-                callback(idle_changes)
+        if self.__idle_consumers is not None:
+            for subsystems, callback in self.__idle_consumers:
+                if not subsystems or any(s in subsystems for s in idle_changes):
+                    callback(idle_changes)
 
     # helper methods
 
-    async def __readline(self):
+    async def __readline(self) -> str:
         """Wrapper around .__rfile.readline that handles encoding"""
+        if self.__rfile is None:
+            raise ConnectionError("Can not read from a disconnected client")
         data = await self.__rfile.readline()
         try:
             return data.decode("utf8")
@@ -387,26 +423,31 @@ class MPDClient(MPDClientBase):
             self.disconnect()
             raise ProtocolError("Invalid UTF8 received")
 
-    async def _read_chunk(self, length):
+    async def _read_chunk(self, length: int) -> bytes:
+        if self.__rfile is None:
+            raise ConnectionError("Can not read from a disconnected client")
         try:
             return await self.__rfile.readexactly(length)
         except asyncio.IncompleteReadError:
             raise ConnectionError("Connection lost while reading binary")
 
-    def __write(self, text):
+    def __write(self, text: str) -> None:
         """Wrapper around .__wfile.write that handles encoding."""
+        if self.__wfile is None:
+            raise ConnectionError("Can not write to a disconnected client")
         self.__wfile.write(text.encode("utf8"))
 
     # copied and subtly modifiedstuff from base
 
     # This is just a wrapper for the below.
-    def _write_line(self, text):
+    def _write_line(self, text: str) -> None:
         self.__write(text + "\n")
 
-    # FIXME This code should be shareable.
-    _write_command = SyncMPDClient._write_command
+    def _write_command(self, command: str, args: List[Any]) -> None:
+        # FIXME This code should be shareable.
+        SyncMPDClient._write_command(cast(SyncMPDClient, self), command, args)
 
-    async def _read_line(self):
+    async def _read_line(self) -> Optional[str]:
         line = await self.__readline()
         if not line.endswith("\n"):
             raise ConnectionError("Connection lost while reading line")
@@ -418,8 +459,13 @@ class MPDClient(MPDClientBase):
             return None
         return line
 
-    async def _parse_objects_direct(self, lines, delimiters=[], lookup_delimiter=False):
-        obj = {}
+    async def _parse_objects_direct( # type: ignore
+        self,
+        lines: "asyncio.Queue[str]",
+        delimiters: List[str] = [],
+        lookup_delimiter: bool = False,
+    ) -> AsyncIterator[Dict[str, str]]:
+        obj : Dict[str, Any] = {}
         while True:
             line = await lines.get()
             if isinstance(line, BaseException):
@@ -444,7 +490,9 @@ class MPDClient(MPDClientBase):
         if obj:
             yield obj
 
-    async def _execute_binary(self, command, args):
+    async def _execute_binary(
+        self, command: str, args: Iterable[Any]
+    ) -> Dict[str, Union[str, bytes]]:
         # Fun fact: By fetching data in lockstep, this is a bit less efficient
         # than it could be (which would be "after having received the first
         # chunk, guess that the other chunks are of equal size and request at
@@ -457,13 +505,15 @@ class MPDClient(MPDClientBase):
         assert len(args) == 1
         args.append(0)
         final_metadata = None
+        if self.__command_queue is None:
+            raise ConnectionError("Can not send command to disconnected client")
         while True:
             partial_result = BinaryCommandResult()
             await self.__command_queue.put(partial_result)
             self._end_idle()
             self._write_command(command, args)
             metadata = await partial_result
-            chunk = metadata.pop('binary', None)
+            chunk = metadata.pop("binary", None)
 
             if final_metadata is None:
                 data = chunk
@@ -471,33 +521,36 @@ class MPDClient(MPDClientBase):
                 if not data:
                     break
                 try:
-                    size = int(final_metadata['size'])
+                    size = int(final_metadata["size"])
                 except KeyError:
                     size = len(chunk)
                 except ValueError:
                     raise CommandError("Size data unsuitable for binary transfer")
             else:
                 if metadata != final_metadata:
-                    raise CommandError("Metadata of binary data changed during transfer")
+                    raise CommandError(
+                        "Metadata of binary data changed during transfer"
+                    )
                 if chunk is None:
                     raise CommandError("Binary field vanished changed during transfer")
                 data += chunk
             args[-1] = len(data)
             if len(data) > size:
+                breakpoint()
                 raise CommandListError("Binary data announced size exceeded")
             elif len(data) == size:
                 break
 
         if data is not None:
-            final_metadata['binary'] = data
+            final_metadata["binary"] = data
 
-        final_metadata.pop('size', None)
+        final_metadata.pop("size", None)
 
         return final_metadata
 
     # omits _read_chunk checking because the async version already
     # raises; otherwise it's just awaits sprinkled in
-    async def _read_binary(self):
+    async def _read_binary(self) -> Dict[str, Union[str, bytes]]:
         obj = {}
 
         while True:
@@ -505,11 +558,14 @@ class MPDClient(MPDClientBase):
             if line is None:
                 break
 
+            value: Union[str, bytes]
             key, value = self._parse_pair(line, ": ")
 
             if key == "binary":
                 chunk_size = int(value)
                 value = await self._read_chunk(chunk_size)
+                if self.__rfile is None:
+                    raise ConnectionError("Can not read from a disconnected client")
 
                 if await self.__rfile.readexactly(1) != b"\n":
                     # newline after binary content
@@ -521,15 +577,20 @@ class MPDClient(MPDClientBase):
 
     # command provider interface
     @classmethod
-    def add_command(cls, name, callback):
+    def add_command(cls: Any, name: str, callback: CallableWithCommands) -> None:
         if callback.mpd_commands_binary:
-            async def f(self, *args):
+
+            async def async_func(self: Any, *args: Any) -> BaseCommandResult:
                 result = await self._execute_binary(name, args)
 
                 # With binary, the callback is applied to the final result
                 # rather than to the iterator over the lines (cf.
                 # MPDClient._execute_binary)
                 return callback(self, result)
+
+            escaped_name = name.replace(" ", "_")
+            async_func.__name__ = escaped_name
+            setattr(cls, escaped_name, async_func)
         else:
             command_class = (
                 CommandResultIterable if callback.mpd_commands_direct else CommandResult
@@ -538,7 +599,7 @@ class MPDClient(MPDClientBase):
                 # Idle and noidle are explicitly implemented, skipping them.
                 return
 
-            def f(self, *args):
+            def sync_func(self: Any, *args: Any) -> BaseCommandResult:
                 result = command_class(name, args, partial(callback, self))
                 if self.__run_task is None:
                     raise ConnectionError("Can not send command to disconnected client")
@@ -546,10 +607,12 @@ class MPDClient(MPDClientBase):
                 try:
                     self.__command_queue.put_nowait(result)
                 except asyncio.QueueFull as e:
-                    e.args = ("Command queue overflowing; this indicates the"
-                            " application sending commands in an uncontrolled"
-                            " fashion without awaiting them, and typically"
-                            " indicates a memory leak.",)
+                    e.args = (
+                        "Command queue overflowing; this indicates the"
+                        " application sending commands in an uncontrolled"
+                        " fashion without awaiting them, and typically"
+                        " indicates a memory leak.",
+                    )
                     # While we *could* indicate to the queued result that it has
                     # yet to send its request, that'd practically create a queue of
                     # awaited items in the user application that's growing
@@ -571,19 +634,21 @@ class MPDClient(MPDClientBase):
                     result.set_exception(e)
                 return result
 
-        escaped_name = name.replace(" ", "_")
-        f.__name__ = escaped_name
-        setattr(cls, escaped_name, f)
+            escaped_name = name.replace(" ", "_")
+            sync_func.__name__ = escaped_name
+            setattr(cls, escaped_name, sync_func)
 
     # commands that just work differently
-    async def idle(self, subsystems=()):
+    async def idle(
+        self, subsystems: Union[List[str], Tuple[str]] = []
+    ) -> AsyncIterator[Union[List[str], Exception]]:
         if self.__idle_consumers is None:
             raise ConnectionError("Can not start idle on a disconnected client")
 
         interests_before = self._get_idle_interests()
         # A queue accepting either a list of things that changed in a single
         # idle cycle, or an exception to be raised
-        changes = asyncio.Queue()
+        changes: asyncio.Queue[Union[List[str], Exception]] = asyncio.Queue()
         try:
             entry = (subsystems, changes.put_nowait)
             self.__idle_consumers.append(entry)
@@ -601,5 +666,5 @@ class MPDClient(MPDClientBase):
             if self.__idle_consumers is not None:
                 self.__idle_consumers.remove(entry)
 
-    def noidle(self):
+    def noidle(self) -> None:
         raise AttributeError("noidle is not supported / required in mpd.asyncio")

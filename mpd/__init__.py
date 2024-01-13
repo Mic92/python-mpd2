@@ -28,11 +28,12 @@ from mpd.base import PendingCommandError
 from mpd.base import ProtocolError
 from mpd.base import VERSION
 
-
 try:
     from mpd.twisted import MPDProtocol
 except ImportError:
 
-    class MPDProtocol:
-        def __init__():
-            raise "No twisted module found"
+    class MPDProtocolDummy:
+        def __init__(self) -> None:
+            raise Exception("No twisted module found")
+
+    MPDProtocol = MPDProtocolDummy  # type: ignore
