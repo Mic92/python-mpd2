@@ -3,14 +3,14 @@
 
 from __future__ import absolute_import
 import itertools
-import mpd
+import mpd.base
 import mpd.asyncio
 import os
 import socket
 import sys
 import types
 import warnings
-from typing import Any
+from typing import Any, Union, List, Tuple, Optional, Callable
 
 import unittest
 from unittest import mock
@@ -42,7 +42,7 @@ class TestMPDClient(unittest.TestCase):
 
     longMessage = True
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.socket_patch = mock.patch("mpd.base.socket")
         self.socket_mock = self.socket_patch.start()
         self.socket_mock.getaddrinfo.return_value = [range(5)]
@@ -62,24 +62,21 @@ class TestMPDClient(unittest.TestCase):
         self.client._sock.reset_mock()
         self.MPDWillReturn("ACK don't forget to setup your mock\n")
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.socket_patch.stop()
 
-    def MPDWillReturn(self, *lines):
+    def MPDWillReturn(self, *lines: str) -> None:
         # Return what the caller wants first, then do as if the socket was
         # disconnected.
         innerIter = itertools.chain(lines, itertools.repeat(""))
-        if sys.version_info >= (3, 0):
-            self.client._rbfile.readline.side_effect = (
-                x.encode("utf-8") for x in innerIter
-            )
-        else:
-            self.client._rbfile.readline.side_effect = innerIter
+        self.client._rbfile.readline.side_effect = (
+            x.encode("utf-8") for x in innerIter
+        )
 
-    def assertMPDReceived(self, *lines):
+    def assertMPDReceived(self, *lines: str) -> None:
         self.client._wfile.write.assert_called_with(*lines)
 
-    def test_abstract_functions(self):
+    def test_abstract_functions(self) -> None:
         MPDClientBase = mpd.base.MPDClientBase
         self.assertRaises(
             NotImplementedError,
@@ -90,7 +87,7 @@ class TestMPDClient(unittest.TestCase):
         self.assertRaises(NotImplementedError, lambda: client.command_list_ok_begin())
         self.assertRaises(NotImplementedError, lambda: client.command_list_end())
 
-    def test_metaclass_commands(self):
+    def test_metaclass_commands(self) -> None:
         # just some random functions
         self.assertTrue(hasattr(self.client, "commands"))
         self.assertTrue(hasattr(self.client, "save"))
@@ -99,33 +96,33 @@ class TestMPDClient(unittest.TestCase):
         self.assertFalse(hasattr(self.client, "sticker get"))
         self.assertTrue(hasattr(self.client, "sticker_get"))
 
-    def test_duplicate_tags(self):
+    def test_duplicate_tags(self) -> None:
         self.MPDWillReturn("Track: file1\n", "Track: file2\n", "OK\n")
         song = self.client.currentsong()
         self.assertIsInstance(song, dict)
         self.assertIsInstance(song["track"], list)
         self.assertMPDReceived("currentsong\n")
 
-    def test_parse_nothing(self):
+    def test_parse_nothing(self) -> None:
         self.MPDWillReturn("OK\n", "OK\n")
 
-        self.assertIsNone(self.client.ping())
+        self.assertIsNone(self.client.ping()) 
         self.assertMPDReceived("ping\n")
 
-        self.assertIsNone(self.client.clearerror())
+        self.assertIsNone(self.client.clearerror()) 
         self.assertMPDReceived("clearerror\n")
 
-    def test_parse_list(self):
+    def test_parse_list(self) -> None:
         self.MPDWillReturn(
             "tagtype: Artist\n", "tagtype: ArtistSort\n", "tagtype: Album\n", "OK\n"
         )
 
-        result = self.client.tagtypes()
+        result = self.client.tagtypes() 
         self.assertMPDReceived("tagtypes\n")
         self.assertIsInstance(result, list)
         self.assertEqual(result, ["Artist", "ArtistSort", "Album",])
 
-    def test_parse_list_groups(self):
+    def test_parse_list_groups(self) -> None:
         self.MPDWillReturn(
             "Album: \n",
             "Album: 20th_Century_Masters_The_Millenium_Collection\n",
@@ -133,7 +130,7 @@ class TestMPDClient(unittest.TestCase):
             "OK\n",
         )
 
-        result = self.client.list("album")
+        result = self.client.list("album") 
         self.assertMPDReceived('list "album"\n')
         self.assertIsInstance(result, list)
         self.assertEqual(
@@ -154,7 +151,7 @@ class TestMPDClient(unittest.TestCase):
             "OK\n",
         )
 
-        result = self.client.list("album", "group", "artist")
+        result = self.client.list("album", "group", "artist") 
         self.assertMPDReceived('list "album" "group" "artist"\n')
         self.assertIsInstance(result, list)
         self.assertEqual(
@@ -169,26 +166,26 @@ class TestMPDClient(unittest.TestCase):
             ],
         )
 
-    def test_parse_item(self):
+    def test_parse_item(self) -> None:
         self.MPDWillReturn("updating_db: 42\n", "OK\n")
-        self.assertIsNotNone(self.client.update())
+        self.assertIsNotNone(self.client.update()) 
 
-    def test_parse_object(self):
+    def test_parse_object(self) -> None:
         # XXX: _read_objects() doesn't wait for the final OK
         self.MPDWillReturn("volume: 63\n", "OK\n")
-        status = self.client.status()
+        status = self.client.status() 
         self.assertMPDReceived("status\n")
         self.assertIsInstance(status, dict)
 
         # XXX: _read_objects() doesn't wait for the final OK
         self.MPDWillReturn("OK\n")
-        stats = self.client.stats()
+        stats = self.client.stats() 
         self.assertMPDReceived("stats\n")
         self.assertIsInstance(stats, dict)
 
-    def test_parse_songs(self):
+    def test_parse_songs(self) -> None:
         self.MPDWillReturn("file: my-song.ogg\n", "Pos: 0\n", "Id: 66\n", "OK\n")
-        playlist = self.client.playlistinfo()
+        playlist = self.client.playlistinfo() 
 
         self.assertMPDReceived("playlistinfo\n")
         self.assertIsInstance(playlist, list)
@@ -199,20 +196,20 @@ class TestMPDClient(unittest.TestCase):
         self.assertEqual("0", e["pos"])
         self.assertEqual("66", e["id"])
 
-    def test_readcomments(self):
+    def test_readcomments(self) -> None:
         self.MPDWillReturn(
             "major_brand: M4V\n", "minor_version: 1\n", "lyrics: Lalala\n", "OK\n"
         )
-        comments = self.client.readcomments()
+        comments = self.client.readcomments() 
         self.assertMPDReceived("readcomments\n")
         self.assertEqual(comments["major_brand"], "M4V")
         self.assertEqual(comments["minor_version"], "1")
         self.assertEqual(comments["lyrics"], "Lalala")
 
-    def test_iterating(self):
+    def test_iterating(self) -> None:
         self.MPDWillReturn("file: my-song.ogg\n", "Pos: 0\n", "Id: 66\n", "OK\n")
         self.client.iterate = True
-        playlist = self.client.playlistinfo()
+        playlist = self.client.playlistinfo() 
         self.assertMPDReceived("playlistinfo\n")
         self.assertIsInstance(playlist, types.GeneratorType)
         for song in playlist:
@@ -221,13 +218,13 @@ class TestMPDClient(unittest.TestCase):
             self.assertEqual("0", song["pos"])
             self.assertEqual("66", song["id"])
 
-    def test_add_and_remove_command(self):
+    def test_add_and_remove_command(self) -> None:
         self.MPDWillReturn("ACK awesome command\n")
 
         self.client.add_command("awesome command", mpd.MPDClient._parse_nothing)
         self.assertTrue(hasattr(self.client, "awesome_command"))
         # should be unknown by mpd
-        self.assertRaises(mpd.CommandError, self.client.awesome_command)
+        self.assertRaises(mpd.CommandError, self.client.awesome_command) 
 
         self.client.remove_command("awesome_command")
         self.assertFalse(hasattr(self.client, "awesome_command"))
@@ -235,9 +232,9 @@ class TestMPDClient(unittest.TestCase):
         # remove non existing command
         self.assertRaises(ValueError, self.client.remove_command, "awesome_command")
 
-    def test_partitions(self):
+    def test_partitions(self) -> None:
         self.MPDWillReturn("partition: default\n", "partition: partition2\n", "OK\n")
-        partitions = self.client.listpartitions()
+        partitions = self.client.listpartitions() 
         self.assertMPDReceived("listpartitions\n")
         self.assertEqual(
             [
@@ -248,22 +245,22 @@ class TestMPDClient(unittest.TestCase):
         )
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.newpartition("Another Partition"))
+        self.assertIsNone(self.client.newpartition("Another Partition")) 
         self.assertMPDReceived('newpartition "Another Partition"\n')
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.partition("Another Partition"))
+        self.assertIsNone(self.client.partition("Another Partition")) 
         self.assertMPDReceived('partition "Another Partition"\n')
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.delpartition("Another Partition"))
+        self.assertIsNone(self.client.delpartition("Another Partition")) 
         self.assertMPDReceived('delpartition "Another Partition"\n')
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.moveoutput("My ALSA Device"))
+        self.assertIsNone(self.client.moveoutput("My ALSA Device")) 
         self.assertMPDReceived('moveoutput "My ALSA Device"\n')
 
-    def test_list_group(self):
+    def test_list_group(self) -> None:
         self.MPDWillReturn(
             "AlbumArtist: Kraftwerk\n",
             "Date: 1970\n",
@@ -273,7 +270,7 @@ class TestMPDClient(unittest.TestCase):
             "Album: Autobahn (2009 Der Katalog)\n",
             "OK\n"
         )
-        grouped_list = self.client.list(
+        grouped_list = self.client.list( 
             "album", "albumartist", "Kraftwerk", "group", "date", "group", "albumartist"
         )
         self.assertMPDReceived(
@@ -288,97 +285,97 @@ class TestMPDClient(unittest.TestCase):
             grouped_list
         )
 
-    def test_client_to_client(self):
+    def test_client_to_client(self) -> None:
         # client to client is at this time in beta!
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.subscribe("monty"))
+        self.assertIsNone(self.client.subscribe("monty")) 
         self.assertMPDReceived('subscribe "monty"\n')
 
         self.MPDWillReturn("channel: monty\n", "OK\n")
-        channels = self.client.channels()
+        channels = self.client.channels() 
         self.assertMPDReceived("channels\n")
         self.assertEqual(["monty"], channels)
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.sendmessage("monty", "SPAM"))
+        self.assertIsNone(self.client.sendmessage("monty", "SPAM")) 
         self.assertMPDReceived('sendmessage "monty" "SPAM"\n')
 
         self.MPDWillReturn("channel: monty\n", "message: SPAM\n", "OK\n")
-        msg = self.client.readmessages()
+        msg = self.client.readmessages() 
         self.assertMPDReceived("readmessages\n")
         self.assertEqual(msg, [{"channel": "monty", "message": "SPAM"}])
 
         self.MPDWillReturn("OK\n")
-        self.assertIsNone(self.client.unsubscribe("monty"))
+        self.assertIsNone(self.client.unsubscribe("monty")) 
         self.assertMPDReceived('unsubscribe "monty"\n')
 
         self.MPDWillReturn("OK\n")
-        channels = self.client.channels()
+        channels = self.client.channels() 
         self.assertMPDReceived("channels\n")
         self.assertEqual([], channels)
 
-    def test_unicode_as_command_args(self):
+    def test_unicode_as_command_args(self) -> None:
         self.MPDWillReturn("OK\n")
-        res = self.client.find("file", "☯☾☝♖✽")
+        res = self.client.find("file", "☯☾☝♖✽") 
         self.assertIsInstance(res, list)
         self.assertMPDReceived('find "file" "☯☾☝♖✽"\n')
 
-    def test_numbers_as_command_args(self):
+    def test_numbers_as_command_args(self) -> None:
         self.MPDWillReturn("OK\n")
-        self.client.find("file", 1)
+        self.client.find("file", 1) 
         self.assertMPDReceived('find "file" "1"\n')
 
-    def test_commands_without_callbacks(self):
+    def test_commands_without_callbacks(self) -> None:
         self.MPDWillReturn("\n")
-        self.client.close()
+        self.client.close() 
         self.assertMPDReceived("close\n")
 
         # XXX: what are we testing here?
         #      looks like reconnection test?
         self.client._reset()
-        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT) 
 
-    def test_set_timeout_on_client(self):
-        self.client.timeout = 1
-        self.client._sock.settimeout.assert_called_with(1)
-        self.assertEqual(self.client.timeout, 1)
+    def test_set_timeout_on_client(self) -> None:
+        self.client.timeout = 1 
+        self.client._sock.settimeout.assert_called_with(1) 
+        self.assertEqual(self.client.timeout, 1) 
 
-        self.client.timeout = None
-        self.client._sock.settimeout.assert_called_with(None)
-        self.assertEqual(self.client.timeout, None)
+        self.client.timeout = None 
+        self.client._sock.settimeout.assert_called_with(None) 
+        self.assertEqual(self.client.timeout, None) 
 
-    def test_set_timeout_from_connect(self):
-        self.client.disconnect()
+    def test_set_timeout_from_connect(self) -> None:
+        self.client.disconnect() 
         with warnings.catch_warnings(record=True) as w:
-            self.client.connect("example.com", 10000, timeout=5)
-            self.client._sock.settimeout.assert_called_with(5)
+            self.client.connect("example.com", 10000, timeout=5) 
+            self.client._sock.settimeout.assert_called_with(5) 
             self.assertEqual(len(w), 1)
             self.assertIn("Use MPDClient.timeout", str(w[0].message))
 
     @unittest.skipIf(
         sys.version_info < (3, 3), "BrokenPipeError was introduced in python 3.3"
     )
-    def test_broken_pipe_error(self):
+    def test_broken_pipe_error(self) -> None:
         self.MPDWillReturn("volume: 63\n", "OK\n")
-        self.client._wfile.write.side_effect = BrokenPipeError
+        self.client._wfile.write.side_effect = BrokenPipeError 
         self.socket_mock.error = Exception
 
         with self.assertRaises(mpd.ConnectionError):
-            self.client.status()
+            self.client.status() 
 
-    def test_connection_lost(self):
+    def test_connection_lost(self) -> None:
         # Simulate a connection lost: the socket returns empty strings
         self.MPDWillReturn("")
         self.socket_mock.error = Exception
 
         with self.assertRaises(mpd.ConnectionError):
-            self.client.status()
+            self.client.status() 
             self.socket_mock.unpack.assert_called()
 
         # consistent behaviour, solves bug #11 (github)
         with self.assertRaises(mpd.ConnectionError):
-            self.client.status()
+            self.client.status() 
             self.socket_mock.unpack.assert_called()
 
         self.assertIs(self.client._sock, None)
@@ -387,10 +384,10 @@ class TestMPDClient(unittest.TestCase):
         sys.version_info < (3, 0),
         "Automatic decoding/encoding from the socket is only " "available in Python 3",
     )
-    def test_force_socket_encoding_and_nonbuffering(self):
+    def test_force_socket_encoding_and_nonbuffering(self) -> None:
         # Force the reconnection to refill the mock
-        self.client.disconnect()
-        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+        self.client.disconnect() 
+        self.client.connect(TEST_MPD_HOST, TEST_MPD_PORT) 
         self.assertEqual(
             [
                 mock.call("rb", newline="\n"),
@@ -398,34 +395,34 @@ class TestMPDClient(unittest.TestCase):
             ],
             # We are only interested into the 2 first entries,
             # otherwise we get all the readline() & co...
-            self.client._sock.makefile.call_args_list[0:2],
+            self.client._sock.makefile.call_args_list[0:2], 
         )
 
-    def test_ranges_as_argument(self):
+    def test_ranges_as_argument(self) -> None:
         self.MPDWillReturn("OK\n")
-        self.client.move((1, 2), 2)
+        self.client.move((1, 2), 2) 
         self.assertMPDReceived('move "1:2" "2"\n')
 
         self.MPDWillReturn("OK\n")
-        self.client.move((1,), 2)
+        self.client.move((1,), 2) 
         self.assertMPDReceived('move "1:" "2"\n')
 
         # old code still works!
         self.MPDWillReturn("OK\n")
-        self.client.move("1:2", 2)
+        self.client.move("1:2", 2) 
         self.assertMPDReceived('move "1:2" "2"\n')
 
         # empty ranges
         self.MPDWillReturn("OK\n")
-        self.client.rangeid(1, ())
+        self.client.rangeid(1, ()) 
         self.assertMPDReceived('rangeid "1" ":"\n')
 
         with self.assertRaises(ValueError):
             self.MPDWillReturn("OK\n")
-            self.client.move((1, "garbage"), 2)
+            self.client.move((1, "garbage"), 2) 
             self.assertMPDReceived('move "1:" "2"\n')
 
-    def test_parse_changes(self):
+    def test_parse_changes(self) -> None:
         self.MPDWillReturn(
             "cpos: 0\n",
             "Id: 66\n",
@@ -439,7 +436,7 @@ class TestMPDClient(unittest.TestCase):
             "Id: 70\n",
             "OK\n",
         )
-        res = self.client.plchangesposid(0)
+        res = self.client.plchangesposid(0) 
         self.assertEqual(
             [
                 {"cpos": "0", "id": "66"},
@@ -451,7 +448,7 @@ class TestMPDClient(unittest.TestCase):
             res,
         )
 
-    def test_parse_database(self):
+    def test_parse_database(self) -> None:
         self.MPDWillReturn(
             "directory: foo\n",
             "Last-Modified: 2014-01-23T16:42:46Z\n",
@@ -460,9 +457,9 @@ class TestMPDClient(unittest.TestCase):
             "Last-Modified: 2014-11-02T19:57:00Z\n",
             "OK\n",
         )
-        self.client.listfiles("/")
+        self.client.listfiles("/") 
 
-    def test_parse_mounts(self):
+    def test_parse_mounts(self) -> None:
         self.MPDWillReturn(
             "mount: \n",
             "storage: /home/foo/music\n",
@@ -470,7 +467,7 @@ class TestMPDClient(unittest.TestCase):
             "storage: nfs://192.168.1.4/export/mp3\n",
             "OK\n",
         )
-        res = self.client.listmounts()
+        res = self.client.listmounts() 
         self.assertEqual(
             [
                 {"mount": "", "storage": "/home/foo/music"},
@@ -479,29 +476,29 @@ class TestMPDClient(unittest.TestCase):
             res,
         )
 
-    def test_parse_neighbors(self):
+    def test_parse_neighbors(self) -> None:
         self.MPDWillReturn(
             "neighbor: smb://FOO\n", "name: FOO (Samba 4.1.11-Debian)\n", "OK\n"
         )
-        res = self.client.listneighbors()
+        res = self.client.listneighbors() 
         self.assertEqual(
             [{"name": "FOO (Samba 4.1.11-Debian)", "neighbor": "smb://FOO"}], res
         )
 
-    def test_parse_outputs(self):
+    def test_parse_outputs(self) -> None:
         self.MPDWillReturn(
             "outputid: 0\n",
             "outputname: My ALSA Device\n",
             "outputenabled: 0\n",
             "OK\n",
         )
-        res = self.client.outputs()
+        res = self.client.outputs() 
         self.assertEqual(
             [{"outputenabled": "0", "outputid": "0", "outputname": "My ALSA Device"}],
             res,
         )
 
-    def test_parse_playlist(self):
+    def test_parse_playlist(self) -> None:
         self.MPDWillReturn(
             "0:file: Weezer - Say It Ain't So.mp3\n",
             "1:file: Dire Straits - Walk of Life.mp3\n",
@@ -510,7 +507,7 @@ class TestMPDClient(unittest.TestCase):
             "4:file: Nirvana - Lithium.mp3\n",
             "OK\n",
         )
-        res = self.client.playlist()
+        res = self.client.playlist() 
         self.assertEqual(
             [
                 "file: Weezer - Say It Ain't So.mp3",
@@ -522,16 +519,16 @@ class TestMPDClient(unittest.TestCase):
             res,
         )
 
-    def test_parse_playlists(self):
+    def test_parse_playlists(self) -> None:
         self.MPDWillReturn(
             "playlist: Playlist\n", "Last-Modified: 2016-08-13T10:55:56Z\n", "OK\n"
         )
-        res = self.client.listplaylists()
+        res = self.client.listplaylists() 
         self.assertEqual(
             [{"last-modified": "2016-08-13T10:55:56Z", "playlist": "Playlist"}], res
         )
 
-    def test_parse_plugins(self):
+    def test_parse_plugins(self) -> None:
         self.MPDWillReturn(
             "plugin: vorbis\n",
             "suffix: ogg\n",
@@ -546,7 +543,7 @@ class TestMPDClient(unittest.TestCase):
             "mime_type: audio/x-vorbis+ogg\n",
             "OK\n",
         )
-        res = self.client.decoders()
+        res = self.client.decoders() 
         self.assertEqual(
             [
                 {
@@ -567,42 +564,42 @@ class TestMPDClient(unittest.TestCase):
             list(res),
         )
 
-    def test_parse_raw_stickers(self):
+    def test_parse_raw_stickers(self) -> None:
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
-        res = self.client._parse_raw_stickers(self.client._read_lines())
+        res = self.client._parse_raw_stickers(self.client._read_lines()) 
         self.assertEqual([("foo", "bar")], list(res))
 
         self.MPDWillReturn("sticker: foo=bar\n", "sticker: l=b\n", "OK\n")
-        res = self.client._parse_raw_stickers(self.client._read_lines())
+        res = self.client._parse_raw_stickers(self.client._read_lines()) 
         self.assertEqual([("foo", "bar"), ("l", "b")], list(res))
 
-    def test_parse_raw_sticker_with_special_value(self):
+    def test_parse_raw_sticker_with_special_value(self) -> None:
         self.MPDWillReturn("sticker: foo==uv=vu\n", "OK\n")
-        res = self.client._parse_raw_stickers(self.client._read_lines())
+        res = self.client._parse_raw_stickers(self.client._read_lines()) 
         self.assertEqual([("foo", "=uv=vu")], list(res))
 
-    def test_parse_sticket_get_one(self):
+    def test_parse_sticket_get_one(self) -> None:
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
-        res = self.client.sticker_get("song", "baz", "foo")
+        res = self.client.sticker_get("song", "baz", "foo") 
         self.assertEqual("bar", res)
 
-    def test_parse_sticket_get_no_sticker(self):
+    def test_parse_sticket_get_no_sticker(self) -> None:
         self.MPDWillReturn("ACK [50@0] {sticker} no such sticker\n")
         self.assertRaises(
-            mpd.CommandError, self.client.sticker_get, "song", "baz", "foo"
+            mpd.CommandError, self.client.sticker_get, "song", "baz", "foo" 
         )
 
-    def test_parse_sticker_list(self):
+    def test_parse_sticker_list(self) -> None:
         self.MPDWillReturn("sticker: foo=bar\n", "sticker: lom=bok\n", "OK\n")
-        res = self.client.sticker_list("song", "baz")
+        res = self.client.sticker_list("song", "baz") 
         self.assertEqual({"foo": "bar", "lom": "bok"}, res)
 
         # Even with only one sticker, we get a dict
         self.MPDWillReturn("sticker: foo=bar\n", "OK\n")
-        res = self.client.sticker_list("song", "baz")
+        res = self.client.sticker_list("song", "baz") 
         self.assertEqual({"foo": "bar"}, res)
 
-    def test_command_list(self):
+    def test_command_list(self) -> None:
         self.MPDWillReturn(
             "list_OK\n",
             "list_OK\n",
@@ -630,12 +627,12 @@ class TestMPDClient(unittest.TestCase):
             "OK\n",
         )
         self.client.command_list_ok_begin()
-        self.client.clear()
-        self.client.load("Playlist")
-        self.client.random(1)
-        self.client.repeat(1)
-        self.client.play(0)
-        self.client.status()
+        self.client.clear() 
+        self.client.load("Playlist") 
+        self.client.random(1) 
+        self.client.repeat(1) 
+        self.client.play(0) 
+        self.client.status() 
         res = self.client.command_list_end()
         self.assertEqual(None, res[0])
         self.assertEqual(None, res[1])
@@ -675,7 +672,7 @@ class TestMPDClientSocket(unittest.TestCase):
 
     longMessage = True
 
-    def setUp(self):
+    def setUp(self) -> None:
         self.connect_patch = mock.patch("mpd.MPDClient._connect_unix")
         self.connect_mock = self.connect_patch.start()
 
@@ -694,20 +691,20 @@ class TestMPDClientSocket(unittest.TestCase):
 
         self.connect_mock.assert_called_once()
 
-    def tearDown(self):
+    def tearDown(self) -> None:
         self.close_server_socket()
         self.connect_patch.stop()
 
-    def close_server_socket(self):
+    def close_server_socket(self) -> None:
         self.server_socket_reader.close()
         self.server_socket_writer.close()
         self.server_socket.close()
 
-    def MPDWillReturnBinary(self, byteStr):
+    def MPDWillReturnBinary(self, byteStr: bytes) -> None:
         self.server_socket_writer.write(byteStr)
         self.server_socket_writer.flush()
 
-    def assertMPDReceived(self, byteStr):
+    def assertMPDReceived(self, byteStr: bytes) -> None:
         """
         Assert MPD received the given bytestring.
         Note: this disconnects the client.
@@ -720,21 +717,21 @@ class TestMPDClientSocket(unittest.TestCase):
 
         self.assertEqual(received, byteStr)
 
-    def test_readbinary_error(self):
+    def test_readbinary_error(self) -> None:
         self.MPDWillReturnBinary(b"ACK [50@0] {albumart} No file exists\n")
 
         self.assertRaises(
-            mpd.CommandError, lambda: self.client.albumart("a/full/path.mp3")
+            mpd.CommandError, lambda: self.client.albumart("a/full/path.mp3") 
         )
 
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
 
-    def test_binary_albumart_disconnect_afterchunk(self):
+    def test_binary_albumart_disconnect_afterchunk(self) -> None:
         self.MPDWillReturnBinary(b"size: 17\nbinary: 3\n" b"\x00\x00\x00\nOK\n")
 
         # we're expecting a timeout
         self.assertRaises(
-            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3") 
         )
 
         self.assertMPDReceived(
@@ -742,18 +739,18 @@ class TestMPDClientSocket(unittest.TestCase):
         )
         self.assertIs(self.client._sock, None)
 
-    def test_binary_albumart_disconnect_midchunk(self):
+    def test_binary_albumart_disconnect_midchunk(self) -> None:
         self.MPDWillReturnBinary(b"size: 8\nbinary: 8\n\x00\x01\x02\x03")
 
         # we're expecting a timeout or error of some form
         self.assertRaises(
-            socket.timeout, lambda: self.client.albumart("a/full/path.mp3")
+            socket.timeout, lambda: self.client.albumart("a/full/path.mp3") 
         )
 
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
-        self.assertIs(self.client._sock, None)
+        self.assertIs(self.client._sock, None) 
 
-    def test_binary_albumart_singlechunk_networkmultiwrite(self):
+    def test_binary_albumart_singlechunk_networkmultiwrite(self) -> None:
         # length 16
         expected_binary = (
             b"\xA0\xA1\xA2\xA3\xA4\xA5\xA6\xA7\xA8\xA9\xAA\xAB\xAC\xAD\xAE\xAF"
@@ -770,7 +767,7 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
         self.assertEqual(real_binary, {"binary": expected_binary})
 
-    def test_binary_albumart_singlechunk_nosize(self):
+    def test_binary_albumart_singlechunk_nosize(self) -> None:
         # length: 16
         expected_binary = (
             b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01"
@@ -782,7 +779,7 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
         self.assertEqual(real_binary, {"binary": expected_binary})
 
-    def test_binary_albumart_singlechunk_sizeheader(self):
+    def test_binary_albumart_singlechunk_sizeheader(self) -> None:
         # length: 16
         expected_binary = (
             b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01"
@@ -796,7 +793,7 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertMPDReceived(b'albumart "a/full/path.mp3" "0"\n')
         self.assertEqual(real_binary, {"binary": expected_binary})
 
-    def test_binary_albumart_even_multichunk(self):
+    def test_binary_albumart_even_multichunk(self) -> None:
         # length: 16 each
         expected_chunk1 = (
             b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01"
@@ -828,7 +825,7 @@ class TestMPDClientSocket(unittest.TestCase):
         )
         self.assertEqual(real_binary, {"binary": expected_binary})
 
-    def test_binary_albumart_odd_multichunk(self):
+    def test_binary_albumart_odd_multichunk(self) -> None:
         # lengths: 17, 15, 1
         expected_chunk1 = (
             b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01\x13"
@@ -858,7 +855,7 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertEqual(real_binary, {"binary": expected_binary})
 
     # MPD server can return empty response if a file exists but is empty
-    def test_binary_albumart_emptyresponse(self):
+    def test_binary_albumart_emptyresponse(self) -> None:
         self.MPDWillReturnBinary(b"size: 0\nbinary: 0\n\nOK\n")
 
         real_binary = self.client.albumart("a/full/path.mp3")
@@ -866,14 +863,14 @@ class TestMPDClientSocket(unittest.TestCase):
         self.assertEqual(real_binary, {"binary": b""})
 
     # readpicture returns empty object if the song exists but has no picture
-    def test_binary_readpicture_emptyresponse(self):
+    def test_binary_readpicture_emptyresponse(self) -> None:
         self.MPDWillReturnBinary(b"OK\n")
 
         real_binary = self.client.readpicture("plainsong.mp3")
         self.assertMPDReceived(b'readpicture "plainsong.mp3" "0"\n')
         self.assertEqual(real_binary, {})
 
-    def test_binary_readpicture_untyped(self):
+    def test_binary_readpicture_untyped(self) -> None:
         # length: 16 each
         expected_chunk1 = (
             b"\x01\x02\x00\x03\x04\x00\xFF\x05\x07\x08\x0A\x0F\xF0\xA5\x00\x01"
@@ -905,7 +902,7 @@ class TestMPDClientSocket(unittest.TestCase):
         )
         self.assertEqual(real_binary, {"binary": expected_binary})
 
-    def test_binary_readpicture_typed(self):
+    def test_binary_readpicture_typed(self) -> None:
         # length: 16 each
         expected_binary = bytes(range(48))
 
@@ -928,7 +925,7 @@ class TestMPDClientSocket(unittest.TestCase):
         )
         self.assertEqual(real_binary, {"binary": expected_binary, "type": "image/png"})
 
-    def test_binary_readpicture_badheaders(self):
+    def test_binary_readpicture_badheaders(self) -> None:
         expected_binary = bytes(range(32))
 
         # inconsistent type header from response 1 to response 2
@@ -951,43 +948,44 @@ class TestMPDClientSocket(unittest.TestCase):
 
 
 class MockTransport(object):
-    def __init__(self):
-        self.written = list()
+    def __init__(self) -> None:
+        self.written: List[bytes] = []
 
-    def clear(self):
-        self.written = list()
+    def clear(self) -> None:
+        self.written.clear()
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         self.written.append(data)
 
 
 @unittest.skipIf(TWISTED_MISSING, "requires twisted to be installed")
 class TestMPDProtocol(unittest.TestCase):
-    def init_protocol(self, default_idle=True, idle_result=None):
+
+    def init_protocol(self, default_idle: bool=True, idle_result: Union[Callable[[List[str]],None],None]=None) -> None:
         self.protocol = mpd.MPDProtocol(
             default_idle=default_idle, idle_result=idle_result
         )
         self.protocol.transport = MockTransport()
 
-    def test_create_command(self):
+    def test_create_command(self) -> None:
         self.init_protocol(default_idle=False)
         self.assertEqual(self.protocol._create_command("play"), b"play")
         self.assertEqual(
-            self.protocol._create_command("rangeid", args=["1", ()]), b'rangeid "1" ":"'
+            self.protocol._create_command("rangeid", args=["1", ()]), b'rangeid "1" ":"' # type: ignore
         )
         self.assertEqual(
-            self.protocol._create_command("rangeid", args=["1", (1,)]),
+            self.protocol._create_command("rangeid", args=["1", (1,)]), # type: ignore
             b'rangeid "1" "1:"',
         )
         self.assertEqual(
-            self.protocol._create_command("rangeid", args=["1", (1, 2)]),
+            self.protocol._create_command("rangeid", args=["1", (1, 2)]), # type: ignore
             b'rangeid "1" "1:2"',
         )
 
-    def test_success(self):
+    def test_success(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def success(result):
+        def success(result: Any) -> None:
             expected = {
                 "file": "Dire Straits - Walk of Life.mp3",
                 "artist": "Dire Straits",
@@ -1020,10 +1018,10 @@ class TestMPDProtocol(unittest.TestCase):
         ]:
             self.protocol.lineReceived(line)
 
-    def test_failure(self):
+    def test_failure(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def error(result):
+        def error(result: Failure) -> None:
             self.assertIsInstance(result, Failure)
             self.assertEqual(result.getErrorMessage(), "[50@0] {load} No such playlist")
 
@@ -1031,8 +1029,8 @@ class TestMPDProtocol(unittest.TestCase):
         self.assertEqual([b'load "Foo"\n'], self.protocol.transport.written)
         self.protocol.lineReceived(b"ACK [50@0] {load} No such playlist")
 
-    def test_default_idle(self):
-        def idle_result(result):
+    def test_default_idle(self) -> None:
+        def idle_result(result: List[str]) -> None:
             self.assertEqual(list(result), ["player"])
 
         self.init_protocol(idle_result=idle_result)
@@ -1043,7 +1041,7 @@ class TestMPDProtocol(unittest.TestCase):
         self.protocol.lineReceived(b"OK")
         self.assertEqual([b"idle\n"], self.protocol.transport.written)
 
-    def test_noidle_when_default_idle(self):
+    def test_noidle_when_default_idle(self) -> None:
         self.init_protocol()
         self.protocol.lineReceived(b"OK MPD 0.18.0")
         self.protocol.pause()
@@ -1054,19 +1052,19 @@ class TestMPDProtocol(unittest.TestCase):
             self.protocol.transport.written,
         )
 
-    def test_already_idle(self):
+    def test_already_idle(self) -> None:
         self.init_protocol(default_idle=False)
         self.protocol.idle()
         self.assertRaises(mpd.CommandError, lambda: self.protocol.idle())
 
-    def test_already_noidle(self):
+    def test_already_noidle(self) -> None:
         self.init_protocol(default_idle=False)
         self.assertRaises(mpd.CommandError, lambda: self.protocol.noidle())
 
-    def test_command_list(self):
+    def test_command_list(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def success(result):
+        def success(result: Any) -> None:
             self.assertEqual([None, None], result)
 
         self.protocol.command_list_ok_begin()
@@ -1082,14 +1080,14 @@ class TestMPDProtocol(unittest.TestCase):
         self.protocol.lineReceived(b"list_OK")
         self.protocol.lineReceived(b"OK")
 
-    def test_command_list_failure(self):
+    def test_command_list_failure(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def load_command_error(result):
+        def load_command_error(result: Failure) -> None:
             self.assertIsInstance(result, Failure)
             self.assertEqual(result.getErrorMessage(), "[50@0] {load} No such playlist")
 
-        def command_list_general_error(result):
+        def command_list_general_error(result: Failure) -> None:
             self.assertIsInstance(result, Failure)
             self.assertEqual(result.getErrorMessage(), "An earlier command failed.")
 
@@ -1108,11 +1106,11 @@ class TestMPDProtocol(unittest.TestCase):
         )
         self.protocol.lineReceived(b"ACK [50@0] {load} No such playlist")
 
-    def test_command_list_when_default_idle(self):
+    def test_command_list_when_default_idle(self) -> None:
         self.init_protocol()
         self.protocol.lineReceived(b"OK MPD 0.18.0")
 
-        def success(result):
+        def success(result: Any) -> None:
             self.assertEqual([None, None], result)
 
         self.protocol.command_list_ok_begin()
@@ -1137,15 +1135,15 @@ class TestMPDProtocol(unittest.TestCase):
         self.protocol.lineReceived(b"OK")
         self.assertEqual([b"idle\n"], self.protocol.transport.written)
 
-    def test_command_list_failure_when_default_idle(self):
+    def test_command_list_failure_when_default_idle(self) -> None:
         self.init_protocol()
         self.protocol.lineReceived(b"OK MPD 0.18.0")
 
-        def load_command_error(result):
+        def load_command_error(result: Failure) -> None:
             self.assertIsInstance(result, Failure)
             self.assertEqual(result.getErrorMessage(), "[50@0] {load} No such playlist")
 
-        def command_list_general_error(result):
+        def command_list_general_error(result: Failure) -> None:
             self.assertIsInstance(result, Failure)
             self.assertEqual(result.getErrorMessage(), "An earlier command failed.")
 
@@ -1169,10 +1167,10 @@ class TestMPDProtocol(unittest.TestCase):
         self.protocol.lineReceived(b"ACK [50@0] {load} No such playlist")
         self.assertEqual([b"idle\n"], self.protocol.transport.written)
 
-    def test_command_list_item_is_generator(self):
+    def test_command_list_item_is_generator(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def success(result):
+        def success(result: Any) -> None:
             self.assertEqual(
                 result,
                 [
@@ -1195,54 +1193,54 @@ class TestMPDProtocol(unittest.TestCase):
         self.protocol.lineReceived(b"list_OK")
         self.protocol.lineReceived(b"OK")
 
-    def test_already_in_command_list(self):
+    def test_already_in_command_list(self) -> None:
         self.init_protocol(default_idle=False)
         self.protocol.command_list_ok_begin()
         self.assertRaises(
             mpd.CommandListError, lambda: self.protocol.command_list_ok_begin()
         )
 
-    def test_not_in_command_list(self):
+    def test_not_in_command_list(self) -> None:
         self.init_protocol(default_idle=False)
         self.assertRaises(
             mpd.CommandListError, lambda: self.protocol.command_list_end()
         )
 
-    def test_invalid_command_in_command_list(self):
+    def test_invalid_command_in_command_list(self) -> None:
         self.init_protocol(default_idle=False)
         self.protocol.command_list_ok_begin()
         self.assertRaises(mpd.CommandListError, lambda: self.protocol.kill())
 
-    def test_close(self):
+    def test_close(self) -> None:
         self.init_protocol(default_idle=False)
 
-        def success(result):
+        def success(result: Any) -> None:
             self.assertEqual(result, None)
 
         self.protocol.close().addCallback(success)
 
 
 class AsyncMockServer:
-    def __init__(self):
-        self._output = asyncio.Queue()
-        self._expectations = []
+    def __init__(self) -> None:
+        self._output: asyncio.Queue[bytes] = asyncio.Queue()
+        self._expectations : List[Tuple[List[bytes], List[bytes]]] = []
 
-    def get_streams(self):
-        result = asyncio.Future()
+    async def get_streams(self) -> Tuple["AsyncMockServer", "AsyncMockServer"]:
+        result: asyncio.Future[Tuple[AsyncMockServer, AsyncMockServer]] = asyncio.Future()
         result.set_result((self, self))
-        return result
+        return await result
 
-    def readline(self):
+    async def readline(self) -> bytes:
         # directly passing around the awaitable
-        return self._output.get()
+        return await self._output.get()
 
-    async def readexactly(self, length):
+    async def readexactly(self, length: int) -> bytes:
         ret = await self._output.get()
         if len(ret) != length:
             self.error("Mock data is not chuncked in the way the client expects to read it")
         return ret
 
-    def write(self, data):
+    def write(self, data: bytes) -> None:
         try:
             next_write = self._expectations[0][0][0]
         except IndexError:
@@ -1253,26 +1251,26 @@ class AsyncMockServer:
         else:
             self.error("Mock got %r, expected %r" % (data, next_write))
 
-    def close(self):
+    def close(self) -> None:
         # todo: make sure calls to self.write fail after calling close
         pass
 
-    def error(self, message):
+    def error(self, message: str) -> None:
         raise AssertionError(message)
 
-    def _feed(self):
+    def _feed(self) -> None:
         if len(self._expectations[0][0]) == 0:
             _, response_lines = self._expectations.pop(0)
             for l in response_lines:
                 self._output.put_nowait(l)
 
-    def expect_exchange(self, request_lines, response_lines):
+    def expect_exchange(self, request_lines: List[bytes], response_lines: List[bytes]) -> None:
         self._expectations.append((request_lines, response_lines))
         self._feed()
 
 
 class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
-    async def init_client(self, odd_hello=None) -> None:
+    async def init_client(self, odd_hello: Optional[List[bytes]]=None) -> None:
         self.loop = asyncio.get_event_loop()
 
         self.mockserver = AsyncMockServer()
@@ -1309,9 +1307,9 @@ class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
         os.getenv("RUN_SLOW_TESTS") is None,
         "This test would add 5 seconds of idling to the run (export RUN_SLOW_TESTS=1 to run anyway)",
     )
-    def test_noresponse(self) -> None:
+    async def test_noresponse(self) -> None:
         with self.assertRaises(mpd.base.ConnectionError):
-            self.init_client(odd_hello=[])
+            await self.init_client(odd_hello=[])
 
     async def test_status(self) -> None:
         await self.init_client()
@@ -1339,7 +1337,7 @@ class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
             ],
         )
 
-        status = await self.client.status()
+        status = await self.client.status() 
         self.assertEqual(
             status,
             {
@@ -1489,9 +1487,7 @@ class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
 
         art = await self.client.readpicture("x.mp3")
 
-        expected = {}
-
-        self.assertEqual(art, expected)
+        self.assertEqual(art, {})
 
     async def test_mocker(self) -> None:
         """Does the mock server refuse unexpected writes?"""

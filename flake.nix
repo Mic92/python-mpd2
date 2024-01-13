@@ -20,6 +20,7 @@
             python312
             pypy3
             twine
+            mypy
           ];
           shellHook = ''
             # breaks python36/python37
