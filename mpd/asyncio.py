@@ -323,6 +323,18 @@ class MPDClient(MPDClientBase):
                     # through the result and terminate the connection
 
         except Exception as e:
+            # Pass exception to any pending task to terminate them. Otherwise they will hang
+            # indefinitely as we are about to disconnect.
+            try:
+                while not self.__command_queue.empty():
+                    pending_result = self.__command_queue.get_nowait()
+                    pending_result._feed_error(e)
+            except QueueEmpty:
+                # As per documentation, the queue raises this type of exception when get_nowait()
+                # is called and the queue is empty. It actually rather block on the get_nowait() call
+                # but let's leave the except just in case.
+                pass
+
             # Prevent the destruction of the pending task in the shutdown
             # function -- it's just shutting down by itself.
             self.__run_task = None
