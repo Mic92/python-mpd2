@@ -1,6 +1,13 @@
 python-mpd2 Changes List
 ========================
 
+Changes in v3.1.1
+-----------------
+
+* Propagate exception to all pending commands by @2franix in https://github.com/Mic92/python-mpd2/pull/221
+* Fix test for python 3.12 by @Mic92 in https://github.com/Mic92/python-mpd2/pull/222
+
+
 Changes in v3.1.0
 -----------------
 

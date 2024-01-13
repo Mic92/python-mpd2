@@ -69,6 +69,7 @@ setup(
     python_requires='>=3.6',
     description="A Python MPD client library",
     long_description=read('README.rst'),
+    long_description_content_type='text/x-rst',
     classifiers=CLASSIFIERS,
     author="Joerg Thalheim",
     author_email="joerg@thalheim.io",

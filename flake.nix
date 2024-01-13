@@ -15,8 +15,8 @@
             bashInteractive
             python38
             python39
-            (python310.withPackages(ps: [ps.setuptools ps.tox ps.wheel]))
-            python311
+            python310
+            (python311.withPackages(ps: [ps.setuptools ps.tox ps.wheel]))
             python312
             pypy3
             twine
