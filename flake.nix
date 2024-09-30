@@ -4,6 +4,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
+    flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
   };
 
   outputs = inputs@{ flake-parts, ... }:
@@ -13,11 +14,11 @@
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             bashInteractive
-            python38
             python39
             python310
-            (python311.withPackages(ps: [ps.setuptools ps.tox ps.wheel]))
-            python312
+            python311
+            (python312.withPackages(ps: [ps.setuptools ps.tox ps.wheel]))
+            python313
             pypy3
             twine
             mypy
