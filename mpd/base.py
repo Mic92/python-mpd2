@@ -266,7 +266,7 @@ class MPDClientBase:
     def _parse_idle(self, lines: List[str]) -> Iterator[str]:
         return self._parse_list(lines)
 
-    @mpd_commands("addid", "config", "replay_gain_status", "rescan", "update")
+    @mpd_commands("addid", "replay_gain_status", "rescan", "update")
     def _parse_item(self, lines: List[str]) -> Optional[str]:
         pairs = list(self._parse_pairs(lines))
         if len(pairs) != 1:
@@ -376,7 +376,7 @@ class MPDClientBase:
                 "Got unexpected return value: '{}'".format(", ".join(lines))
             )
 
-    @mpd_commands("count", "currentsong", "readcomments", "stats", "status")
+    @mpd_commands("config", "count", "currentsong", "readcomments", "stats", "status")
     def _parse_object(self, lines: List[str]) -> Dict[str, str]:
         try:
             return next(self._parse_objects(lines))
