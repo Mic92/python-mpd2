@@ -9,36 +9,6 @@ python-mpd2
 the `Music Player Daemon <http://musicpd.org>`__.
 
 
-Difference with python-mpd
---------------------------
-
-python-mpd2 is a fork of `python-mpd`_.  While 0.4.x was backwards compatible
-with python-mpd, starting with 0.5 provides enhanced features which are *NOT*
-backward compatibles with the original `python-mpd`_ package (see `Porting
-Guide <https://python-mpd2.readthedocs.io/en/latest/topics/porting.html>`__
-for more information).
-
-The following features were added:
-
--  Python 3 support (but you need at least Python 3.6)
--  asyncio/twisted support
--  support for the client-to-client protocol
--  support for new commands from MPD (seekcur, prio, prioid,
-   config, searchadd, searchaddpl, listfiles, rangeid, addtagid, cleartagid,
-   mount, umount, listmounts, listneighbors)
--  remove deprecated commands (volume)
--  explicitly declared MPD commands (which is handy when using for
-   example `IPython <http://ipython.org>`__)
--  a test suite
--  API documentation to add new commands (see `Future Compatible <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#future-compatible>`__)
--  support for Unicode strings in all commands (optionally in python2,
-   default in python3 - see `Unicode Handling <https://python-mpd2.readthedocs.io/en/latest/topics/advanced.html#unicode-handling>`__)
--  configurable timeouts
--  support for `logging <https://python-mpd2.readthedocs.io/en/latest/topics/logging.html>`__
--  improved support for sticker
--  improved support for ranges
-
-
 Getting the latest source code
 ------------------------------
 
