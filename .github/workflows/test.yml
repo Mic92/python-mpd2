@@ -14,4 +14,4 @@ jobs:
     - uses: cachix/install-nix-action@v31
     - name: run tests
       run:
-        nix develop -c 'tox'
+        nix develop -c tox -p auto
