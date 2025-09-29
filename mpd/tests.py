@@ -1285,8 +1285,8 @@ class AsyncMockServer:
     def _feed(self) -> None:
         if len(self._expectations[0][0]) == 0:
             _, response_lines = self._expectations.pop(0)
-            for l in response_lines:
-                self._output.put_nowait(l)
+            for line in response_lines:
+                self._output.put_nowait(line)
 
     def expect_exchange(
         self, request_lines: List[bytes], response_lines: List[bytes]

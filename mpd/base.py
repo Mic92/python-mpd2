@@ -23,6 +23,7 @@ import socket
 import sys
 import warnings
 from enum import Enum
+from logging import NullHandler
 from typing import (
     IO,
     Any,
@@ -46,15 +47,12 @@ ERROR_PATTERN = re.compile(
 SUCCESS = "OK"
 NEXT = "list_OK"
 
+logger = logging.getLogger(__name__)
+logger.addHandler(NullHandler())
+
 
 def escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"')
-
-
-from logging import NullHandler
-
-logger = logging.getLogger(__name__)
-logger.addHandler(NullHandler())
 
 
 # MPD Protocol errors as found in CommandError exceptions

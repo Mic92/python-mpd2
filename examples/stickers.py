@@ -25,17 +25,16 @@
 
 #! /usr/bin/env python
 
-# Edit these
-HOST = "localhost"
-PORT = 6600
-PASS = None
-
-
 from optparse import OptionParser
 from socket import error as SocketError
 from sys import stderr
 
 from mpd import MPDClient, MPDError
+
+# Edit these
+HOST = "localhost"
+PORT = 6600
+PASS = None
 
 
 ACTIONS = ("get", "set", "delete", "list", "find")

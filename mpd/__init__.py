@@ -17,16 +17,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with python-mpd2.  If not, see <http://www.gnu.org/licenses/>.
 
-from mpd.base import CommandError
-from mpd.base import CommandListError
-from mpd.base import ConnectionError
-from mpd.base import FailureResponseCode
-from mpd.base import IteratingError
-from mpd.base import MPDClient
-from mpd.base import MPDError
-from mpd.base import PendingCommandError
-from mpd.base import ProtocolError
-from mpd.base import VERSION
+from mpd.base import CommandError as CommandError
+from mpd.base import CommandListError as CommandListError
+from mpd.base import ConnectionError as ConnectionError
+from mpd.base import FailureResponseCode as FailureResponseCode
+from mpd.base import IteratingError as IteratingError
+from mpd.base import MPDClient as MPDClient
+from mpd.base import MPDError as MPDError
+from mpd.base import PendingCommandError as PendingCommandError
+from mpd.base import ProtocolError as ProtocolError
+from mpd.base import VERSION as VERSION
 
 try:
     from mpd.twisted import MPDProtocol

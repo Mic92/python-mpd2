@@ -131,7 +131,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     # Catch the remaining exit errors
-    except:
+    except Exception:
         sys.exit(0)
 
 
