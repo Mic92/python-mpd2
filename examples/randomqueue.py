@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # IMPORTS
-from mpd import (MPDClient, CommandError)
+from mpd import MPDClient, CommandError
 from random import choice
 from socket import error as SocketError
 from sys import exit
@@ -10,8 +10,8 @@ from sys import exit
 
 ## SETTINGS
 ##
-HOST = 'localhost'
-PORT = '6600'
+HOST = "localhost"
+PORT = "6600"
 PASSWORD = False
 ###
 
@@ -29,7 +29,7 @@ if PASSWORD:
     except CommandError:
         exit(1)
 
-client.add(choice(client.list('file')))
+client.add(choice(client.list("file")))
 client.disconnect()
 
 # VIM MODLINE

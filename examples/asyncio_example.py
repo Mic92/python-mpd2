@@ -2,6 +2,7 @@ import asyncio
 
 from mpd.asyncio import MPDClient
 
+
 async def main():
     print("Create MPD client")
     client = MPDClient()
@@ -10,7 +11,7 @@ async def main():
     client.disconnect()
 
     try:
-        await client.connect('localhost', 6600)
+        await client.connect("localhost", 6600)
     except Exception as e:
         print("Connection failed:", e)
         return
@@ -28,6 +29,7 @@ async def main():
     print(list(await client.commands()))
 
     import time
+
     start = time.time()
     for x in await client.listall():
         print("sync:", x)
@@ -59,5 +61,6 @@ async def main():
             print("Enough changes, quitting")
             break
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     asyncio.run(main())

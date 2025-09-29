@@ -2,6 +2,7 @@ from threading import Lock, Thread
 from random import choice
 from mpd import MPDClient
 
+
 class LockableMPDClient(MPDClient):
     def __init__(self):
         super(LockableMPDClient, self).__init__()
@@ -24,11 +25,12 @@ client = LockableMPDClient()
 client.connect("localhost", 6600)
 # now whenever you need thread-safe access
 # use the 'with' statement like this:
-with client: # acquire lock
+with client:  # acquire lock
     status = client.status()
 # if you leave the block, the lock is released
 # it is recommend to leave it soon,
 # otherwise your other threads will blocked.
+
 
 # Let's test if it works ....
 def fetch_playlist():

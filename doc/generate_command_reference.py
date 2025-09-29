@@ -5,6 +5,7 @@ import sys
 import os.path
 from textwrap import TextWrapper
 import urllib.request
+
 try:
     from lxml import etree
 except ImportError:
@@ -17,15 +18,15 @@ SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 def get_text(elements, itemize=False):
     paragraphs = []
-    highlight_elements = ['varname', 'parameter']
+    highlight_elements = ["varname", "parameter"]
     strip_elements = [
-            'returnvalue',
-            'command',
-            'link',
-            'footnote',
-            'simpara',
-            'footnoteref',
-            'function'
+        "returnvalue",
+        "command",
+        "link",
+        "footnote",
+        "simpara",
+        "footnoteref",
+        "function",
     ] + highlight_elements
     for element in elements:
         # put "Since MPD version..." in parenthese
@@ -42,17 +43,18 @@ def get_text(elements, itemize=False):
         else:
             initial_indent = "    "
             subsequent_indent = "    "
-        wrapper = TextWrapper(subsequent_indent=subsequent_indent,
-                              initial_indent=initial_indent)
+        wrapper = TextWrapper(
+            subsequent_indent=subsequent_indent, initial_indent=initial_indent
+        )
         text = element.text.replace("\n", " ").strip()
-        text = re.subn(r'\s+', ' ', text)[0]
+        text = re.subn(r"\s+", " ", text)[0]
         paragraphs.append(wrapper.fill(text))
     return "\n\n".join(paragraphs)
 
 
 def main(url):
     header_file = os.path.join(SCRIPT_PATH, "commands_header.txt")
-    with open(header_file, 'r') as f:
+    with open(header_file, "r") as f:
         print(f.read())
 
     r = urllib.request.urlopen(url)
@@ -97,7 +99,7 @@ def main(url):
                 cmd += "_" + subcommand
             print(".. function:: MPDClient." + cmd + "(" + args + ")")
             description = get_text(entry.xpath("listitem/para"))
-            description = re.sub(r':$', r'::', description, flags=re.MULTILINE)
+            description = re.sub(r":$", r"::", description, flags=re.MULTILINE)
 
             print("\n")
             print(description)
@@ -109,6 +111,7 @@ def main(url):
             for item in entry.xpath("listitem/itemizedlist/listitem"):
                 print(get_text(item.xpath("para"), itemize=True))
                 print("\n")
+
 
 if __name__ == "__main__":
     url = "https://raw.githubusercontent.com/MusicPlayerDaemon/MPD/master/doc/protocol.xml"

@@ -1,5 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-mpd2"
+version = "3.1.1"
+description = "A Python MPD client library"
+readme = "README.rst"
+authors = [
+    {name = "Joerg Thalheim", email = "joerg@thalheim.io"},
+]
+maintainers = [
+    {name = "Joerg Thalheim", email = "joerg@thalheim.io"},
+]
+license = {text = "GNU Lesser General Public License v3 (LGPLv3)"}
+keywords = ["mpd"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+twisted = ["Twisted"]
+test = [
+    "tox",
+    "Twisted",
+]
+
+[project.urls]
+Homepage = "https://github.com/Mic92/python-mpd2"
+Repository = "https://github.com/Mic92/python-mpd2"
+Issues = "https://github.com/Mic92/python-mpd2/issues"
+
+[tool.setuptools]
+packages = ["mpd"]
+zip-safe = true
+
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 pretty = true
 warn_redundant_casts = true
 disallow_untyped_calls = true
@@ -17,3 +68,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "mpd.tests.*"
 disable_error_code = ["attr-defined", "union-attr"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
