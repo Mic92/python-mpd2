@@ -1,27 +1,27 @@
-#Descriptio, file=sys.stderrn
+# Descriptio, file=sys.stderrn
 #
-#Using this client, one can manipulate and query stickers. The script is essentially a raw interface to the MPD protocol's sticker command, and is used in exactly the same way.
-#Examples
+# Using this client, one can manipulate and query stickers. The script is essentially a raw interface to the MPD protocol's sticker command, and is used in exactly the same way.
+# Examples
 
 ## set sticker "foo" to "bar" on "dir/song.mp3"
-#sticker.py set dir/song.mp3 foo bar
+# sticker.py set dir/song.mp3 foo bar
 #
 ## get sticker "foo" on "dir/song.mp3"
-#sticker.py get dir/song.mp3 foo
+# sticker.py get dir/song.mp3 foo
 #
 ## list all stickers on "dir/song.mp3"
-#sticker.py list dir/song.mp3
+# sticker.py list dir/song.mp3
 #
 ## find all files with sticker "foo" in "dir"
-#sticker.py find dir foo
+# sticker.py find dir foo
 #
 ## find all files with sticker "foo"
-#sticker.py find / foo
+# sticker.py find / foo
 #
 ## delete sticker "foo" from "dir/song.mp3"
-#sticker.py delete dir/song.mp3 foo
+# sticker.py delete dir/song.mp3 foo
 #
-#sticker.py
+# sticker.py
 
 #! /usr/bin/env python
 
@@ -65,9 +65,11 @@ def main(action, uri, name, value):
 
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog action args", version="0.1",
-                          description="Manipulate and query "
-                                      "MPD song stickers.")
+    parser = OptionParser(
+        usage="%prog action args",
+        version="0.1",
+        description="Manipulate and query MPD song stickers.",
+    )
     options, args = parser.parse_args()
 
     if len(args) < 1:
@@ -98,11 +100,14 @@ if __name__ == "__main__":
     try:
         main(action, uri, name, value)
     except SocketError as e:
-        print("%s: error with connection to MPD: %s" % \
-                (parser.get_prog_name(), e[1]), file=stderr)
+        print(
+            "%s: error with connection to MPD: %s" % (parser.get_prog_name(), e[1]),
+            file=stderr,
+        )
     except MPDError as e:
-        print("%s: error executing action: %s" % \
-                (parser.get_prog_name(), e), file=stderr)
+        print(
+            "%s: error executing action: %s" % (parser.get_prog_name(), e), file=stderr
+        )
 
 
 # vim: set expandtab shiftwidth=4 softtabstop=4 textwidth=79:

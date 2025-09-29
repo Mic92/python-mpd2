@@ -68,3 +68,7 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "mpd.tests.*"
 disable_error_code = ["attr-defined", "union-attr"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88

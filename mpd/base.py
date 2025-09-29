@@ -23,8 +23,19 @@ import socket
 import sys
 import warnings
 from enum import Enum
-from typing import (IO, Any, Callable, Dict, Iterator, List, Optional, Tuple, Iterable,
-                    Type, Union)
+from typing import (
+    IO,
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Iterable,
+    Type,
+    Union,
+)
 
 VERSION = (3, 1, 1)
 HELLO_PREFIX = "OK MPD "
@@ -123,8 +134,7 @@ class mpd_commands:
         self.is_binary = kwargs.pop("is_binary", False)
         if kwargs:
             raise AttributeError(
-                "mpd_commands() got unexpected keyword"
-                " arguments %s" % ",".join(kwargs)
+                "mpd_commands() got unexpected keyword arguments %s" % ",".join(kwargs)
             )
 
     def __call__(self, ob: Any) -> CallableWithCommands:
@@ -155,8 +165,7 @@ class MPDClientBase:
         self.iterate = False
         if use_unicode is not None:
             warnings.warn(
-                "use_unicode parameter to ``MPDClientBase`` constructor is "
-                "deprecated",
+                "use_unicode parameter to ``MPDClientBase`` constructor is deprecated",
                 DeprecationWarning,
                 stacklevel=2,
             )
@@ -165,7 +174,7 @@ class MPDClientBase:
     @property
     def use_unicode(self) -> bool:
         warnings.warn(
-            "``use_unicode`` is deprecated: python-mpd 2.x always uses " "Unicode",
+            "``use_unicode`` is deprecated: python-mpd 2.x always uses Unicode",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -184,12 +193,12 @@ class MPDClientBase:
 
     def command_list_ok_begin(self) -> None:
         raise NotImplementedError(
-            "Abstract ``MPDClientBase`` does not implement " "``command_list_ok_begin``"
+            "Abstract ``MPDClientBase`` does not implement ``command_list_ok_begin``"
         )
 
     def command_list_end(self) -> None:
         raise NotImplementedError(
-            "Abstract ``MPDClientBase`` does not implement " "``command_list_end``"
+            "Abstract ``MPDClientBase`` does not implement ``command_list_end``"
         )
 
     def _reset(self) -> None:
@@ -523,7 +532,7 @@ class MPDClient(MPDClientBase):
     def __init__(self, use_unicode: Optional[bool] = None) -> None:
         if use_unicode is not None:
             warnings.warn(
-                "use_unicode parameter to ``MPDClient`` constructor is " "deprecated",
+                "use_unicode parameter to ``MPDClient`` constructor is deprecated",
                 DeprecationWarning,
                 stacklevel=2,
             )

@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 #
-#Introduction
+# Introduction
 #
-#A python program that continuously polls for song info. Demonstrates how and where to handle errors
-#Details
+# A python program that continuously polls for song info. Demonstrates how and where to handle errors
+# Details
 #
 
 from mpd import MPDClient, MPDError, CommandError
@@ -27,16 +27,14 @@ class MPDPoller(object):
         # Catch socket errors
         except IOError as err:
             errno, strerror = err
-            raise PollerError("Could not connect to '%s': %s" %
-                              (self._host, strerror))
+            raise PollerError("Could not connect to '%s': %s" % (self._host, strerror))
 
         # Catch all other possible errors
         # ConnectionError and ProtocolError are always fatal.  Others may not
         # be, but we don't know how to handle them here, so treat them as if
         # they are instead of ignoring them.
         except MPDError as e:
-            raise PollerError("Could not connect to '%s': %s" %
-                              (self._host, e))
+            raise PollerError("Could not connect to '%s': %s" % (self._host, e))
 
         if self._password:
             try:
@@ -46,15 +44,17 @@ class MPDPoller(object):
             except CommandError as e:
                 # On CommandErrors we have access to the parsed error response
                 # split into errno, offset, command and msg.
-                raise PollerError("Could not connect to '%s': "
-                                  "password commmand failed: [%d] %s" %
-                                  (self._host, e.errno, e.msg))
+                raise PollerError(
+                    "Could not connect to '%s': "
+                    "password commmand failed: [%d] %s" % (self._host, e.errno, e.msg)
+                )
 
             # Catch all other possible errors
             except (MPDError, IOError) as e:
-                raise PollerError("Could not connect to '%s': "
-                                  "error with password command: %s" %
-                                  (self._host, e))
+                raise PollerError(
+                    "Could not connect to '%s': "
+                    "error with password command: %s" % (self._host, e)
+                )
 
     def disconnect(self):
         # Try to tell MPD we're closing the connection first

@@ -21,11 +21,28 @@ This module requires Python 3.5.2 or later to run.
 import asyncio
 import warnings
 from functools import partial
-from typing import (Any, AsyncIterator, Callable, Iterable, List,
-                    Optional, Set, Tuple, Union, Dict, cast)
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    Dict,
+    cast,
+)
 
-from mpd.base import (ERROR_PREFIX, SUCCESS, CommandError, CommandListError,
-                      ConnectionError, CallableWithCommands)
+from mpd.base import (
+    ERROR_PREFIX,
+    SUCCESS,
+    CommandError,
+    CommandListError,
+    ConnectionError,
+    CallableWithCommands,
+)
 from mpd.base import MPDClient as SyncMPDClient
 from mpd.base import MPDClientBase, ProtocolError, mpd_command_provider
 
@@ -121,7 +138,9 @@ class CommandResultIterable(BaseCommandResult):
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.__spooled_lines: asyncio.Queue[Union[str, None, Exception]] = asyncio.Queue()
+        self.__spooled_lines: asyncio.Queue[Union[str, None, Exception]] = (
+            asyncio.Queue()
+        )
 
     def _feed_line(self, line: Union[str, None]) -> None:
         self.__spooled_lines.put_nowait(line)
@@ -459,13 +478,13 @@ class MPDClient(MPDClientBase):
             return None
         return line
 
-    async def _parse_objects_direct( # type: ignore
+    async def _parse_objects_direct(  # type: ignore
         self,
         lines: "asyncio.Queue[str]",
         delimiters: List[str] = [],
         lookup_delimiter: bool = False,
     ) -> AsyncIterator[Dict[str, str]]:
-        obj : Dict[str, Any] = {}
+        obj: Dict[str, Any] = {}
         while True:
             line = await lines.get()
             if isinstance(line, BaseException):

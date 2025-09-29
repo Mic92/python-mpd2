@@ -31,9 +31,19 @@ from typing import Any, Callable, List, Optional, Protocol, Union, cast
 from twisted.internet import defer
 from twisted.protocols import basic
 
-from mpd.base import (ERROR_PREFIX, HELLO_PREFIX, NEXT, SUCCESS, CommandError,
-                      CommandListError, MPDClientBase, escape, logger,
-                      mpd_command_provider, mpd_commands)
+from mpd.base import (
+    ERROR_PREFIX,
+    HELLO_PREFIX,
+    NEXT,
+    SUCCESS,
+    CommandError,
+    CommandListError,
+    MPDClientBase,
+    escape,
+    logger,
+    mpd_command_provider,
+    mpd_commands,
+)
 
 
 def lock(func: Callable) -> Callable:

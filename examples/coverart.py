@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 # IMPORTS
-from mpd import (MPDClient, CommandError, FailureResponseCode)
+from mpd import MPDClient, CommandError, FailureResponseCode
 from socket import error as SocketError
 from sys import exit
 from PIL import Image
@@ -10,10 +10,10 @@ from io import BytesIO
 
 ## SETTINGS
 ##
-HOST = 'localhost'
-PORT = '6600'
+HOST = "localhost"
+PORT = "6600"
 PASSWORD = False
-SONG = ''
+SONG = ""
 ###
 
 client = MPDClient()
@@ -43,15 +43,15 @@ try:
 except CommandError:
     exit(1)
 
-if 'binary' not in cover_art:
+if "binary" not in cover_art:
     # The song exists but has no embedded cover art
     print("No embedded art found!")
     exit(1)
 
-if 'type' in cover_art:
-    print("Cover art of type " + cover_art['type'])
+if "type" in cover_art:
+    print("Cover art of type " + cover_art["type"])
 
-with Image.open(BytesIO(cover_art['binary'])) as img:
+with Image.open(BytesIO(cover_art["binary"])) as img:
     img.show()
 
 client.disconnect()
