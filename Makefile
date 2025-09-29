@@ -27,5 +27,9 @@ bump-version:
 	@# Update version in pyproject.toml
 	@sed -i.bak 's/^version = .*/version = "$(NEW_VERSION)"/' pyproject.toml && rm pyproject.toml.bak
 	@echo "Version bumped to $(NEW_VERSION)"
+	@# Commit the version bump
+	@git add mpd/base.py pyproject.toml
+	@git commit -m "Bump version to $(NEW_VERSION)"
+	@echo "Committed version bump to $(NEW_VERSION)"
 
 .PHONY: test release clean bump-version
