@@ -894,9 +894,9 @@ class MPDClient(MPDClientBase):
     def add_command(cls, name: str, callback: Any) -> None:
         wrap_result = callback in cls._wrap_iterator_parsers
         if callback.mpd_commands_binary:
-            method = lambda self, *args: callback(
-                self, cls._execute_binary(self, name, args)
-            )
+
+            def method(self, *args):
+                return callback(self, cls._execute_binary(self, name, args))
         else:
             method = _create_command(cls._execute, name, callback, wrap_result)
         # create new mpd commands as function:
