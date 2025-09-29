@@ -5,12 +5,31 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     flake-parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ flake-parts, ... }:
+  outputs = inputs@{ flake-parts, treefmt-nix, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } ({ lib, ... }: {
+      imports = [
+        treefmt-nix.flakeModule
+      ];
       systems = lib.systems.flakeExposed;
-      perSystem = { pkgs, ... }: {
+      perSystem = { pkgs, config, ... }: {
+        treefmt = {
+          projectRootFile = "flake.nix";
+          programs = {
+            ruff.format = true;
+            ruff.check = true;
+            mypy.enable = true;
+            mypy.directories = {
+              "." = {
+                modules = [ "mpd" ];
+              };
+            };
+          };
+        };
+
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             bashInteractive
@@ -22,6 +41,8 @@
             pypy3
             twine
             mypy
+            ruff
+            config.treefmt.build.wrapper
           ];
         };
       };
