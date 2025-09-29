@@ -38,7 +38,7 @@ from typing import (
     Union,
 )
 
-VERSION = (3, 1, 1)
+VERSION = (3, 1, 2)
 HELLO_PREFIX = "OK MPD "
 ERROR_PREFIX = "ACK "
 ERROR_PATTERN = re.compile(
