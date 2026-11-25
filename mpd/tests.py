@@ -1296,6 +1296,53 @@ class AsyncMockServer:
 
 
 class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
+    async def test_iterable_repeat_await(self) -> None:
+        await self.init_client()
+        self.addCleanup(self.client.disconnect)
+        errors = []
+        old_handler = self.loop.get_exception_handler()
+        self.loop.set_exception_handler(lambda _loop, context: errors.append(context))
+        self.addCleanup(self.loop.set_exception_handler, old_handler)
+        self.mockserver.expect_exchange(
+            [b'list "album"\n'], [b"Album: first\n", b"Album: second\n", b"OK\n"]
+        )
+        result = self.client.list("album")
+        expected = [{"album": "first"}, {"album": "second"}]
+        self.assertEqual(await result, expected)
+        self.assertEqual(await result, expected)
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        self.assertEqual(errors, [])
+
+    async def test_iterable_repeat_await_concurrently(self) -> None:
+        await self.init_client()
+        self.addCleanup(self.client.disconnect)
+        self.mockserver.expect_exchange(
+            [b'list "album"\n'], []
+        )
+        result = self.client.list("album")
+
+        async def wait_for_result() -> Any:
+            return await result
+
+        first = asyncio.create_task(wait_for_result())
+        second = asyncio.create_task(wait_for_result())
+        await asyncio.sleep(0)
+        await asyncio.sleep(0)
+        for line in (b"Album: first\n", b"Album: second\n", b"OK\n"):
+            self.mockserver._output.put_nowait(line)
+        self.assertEqual(
+            await asyncio.wait_for(asyncio.gather(first, second), timeout=1),
+            [[{"album": "first"}, {"album": "second"}]] * 2,
+        )
+        await asyncio.sleep(0)
+        # Both callers must share one collector; no task may remain waiting
+        # for a second end-of-response marker on this command's queue.
+        pending = [task for task in asyncio.all_tasks()
+                   if task is not asyncio.current_task()
+                   and "__feed_future" in task.get_coro().__qualname__]
+        self.assertEqual(pending, [])
+
     async def init_client(self, odd_hello: Optional[List[bytes]] = None) -> None:
         self.loop = asyncio.get_event_loop()
 
