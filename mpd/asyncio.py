@@ -259,11 +259,14 @@ class MPDClient(MPDClientBase):
 
         try:
             helloline = await asyncio.wait_for(self.__readline(), timeout=5)
+            # FIXME should be reusable w/o reaching in
+            SyncMPDClient._hello(cast(SyncMPDClient, self), helloline)
         except asyncio.TimeoutError:
             self.disconnect()
             raise ConnectionError("No response from server while reading MPD hello")
-        # FIXME should be reusable w/o reaching in
-        SyncMPDClient._hello(cast(SyncMPDClient, self), helloline)
+        except BaseException:
+            self.disconnect()
+            raise
 
         self.__run_task = asyncio.Task(self.__run())
 
