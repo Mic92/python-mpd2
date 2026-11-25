@@ -1295,6 +1295,56 @@ class AsyncMockServer:
         self._feed()
 
 
+class TestAsyncioHandshake(unittest.IsolatedAsyncioTestCase):
+    async def test_failed_greeting_closes_connection(self) -> None:
+        for greeting, error in (
+            (b"NOT MPD\n", mpd.ProtocolError),
+            (b"\xff\n", mpd.ProtocolError),
+        ):
+            with self.subTest(greeting=greeting):
+                client = mpd.asyncio.MPDClient()
+                reader = asyncio.StreamReader()
+                reader.feed_data(greeting)
+                writer = mock.Mock(spec=asyncio.StreamWriter)
+                with (
+                    mock.patch(
+                        "asyncio.open_connection",
+                        new=mock.AsyncMock(return_value=(reader, writer)),
+                    ),
+                    self.assertRaises(error),
+                ):
+                    await client.connect(TEST_MPD_HOST, TEST_MPD_PORT)
+                writer.close.assert_called_once_with()
+                self.assertFalse(client.connected)
+                with self.assertRaises(mpd.ConnectionError):
+                    await client.albumart("test.ogg")
+
+    async def test_cancelled_greeting_closes_connection(self) -> None:
+        client = mpd.asyncio.MPDClient()
+        reading = asyncio.Event()
+
+        async def readline() -> bytes:
+            reading.set()
+            return await asyncio.Future()
+
+        reader = mock.Mock(spec=asyncio.StreamReader)
+        reader.readline = readline
+        writer = mock.Mock(spec=asyncio.StreamWriter)
+        with mock.patch(
+            "asyncio.open_connection",
+            new=mock.AsyncMock(return_value=(reader, writer)),
+        ):
+            connecting = asyncio.create_task(client.connect(TEST_MPD_HOST, TEST_MPD_PORT))
+            await reading.wait()
+            connecting.cancel()
+            with self.assertRaises(asyncio.CancelledError):
+                await connecting
+        writer.close.assert_called_once_with()
+        self.assertFalse(client.connected)
+        with self.assertRaises(mpd.ConnectionError):
+            await client.albumart("test.ogg")
+
+
 class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
     async def init_client(self, odd_hello: Optional[List[bytes]] = None) -> None:
         self.loop = asyncio.get_event_loop()
