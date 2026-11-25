@@ -141,6 +141,7 @@ class CommandResultIterable(BaseCommandResult):
         self.__spooled_lines: asyncio.Queue[Union[str, None, Exception]] = (
             asyncio.Queue()
         )
+        self.__feed_task: asyncio.Task[None] | None = None
 
     def _feed_line(self, line: Union[str, None]) -> None:
         self.__spooled_lines.put_nowait(line)
@@ -149,7 +150,8 @@ class CommandResultIterable(BaseCommandResult):
         self.__spooled_lines.put_nowait(error)
 
     def __await__(self) -> Any:
-        asyncio.Task(self.__feed_future())
+        if self.__feed_task is None and not self.done():
+            self.__feed_task = asyncio.Task(self.__feed_future())
         return super().__await__()
 
     __iter__ = __await__  # for 'yield from' style invocation
