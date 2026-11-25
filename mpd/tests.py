@@ -111,6 +111,28 @@ class TestMPDClient(unittest.TestCase):
         self.assertIsNone(self.client.clearerror())
         self.assertMPDReceived("clearerror\n")
 
+    def test_binary_empty_first_chunk(self) -> None:
+        with (
+            mock.patch.object(
+                self.client, "_read_binary", return_value={"size": "4", "binary": b""}
+            ),
+            self.assertRaises(mpd.CommandError),
+        ):
+            self.client.albumart("test.ogg")
+
+    def test_binary_empty_chunk_does_not_repeat_request(self) -> None:
+        with mock.patch.object(
+            self.client,
+            "_read_binary",
+            side_effect=[
+                {"size": "4", "binary": b"ab"},
+                {"size": "4", "binary": b""},
+            ],
+        ) as read_binary:
+            with self.assertRaises(mpd.CommandError):
+                self.client.albumart("test.ogg")
+            self.assertEqual(read_binary.call_count, 2)
+
     def test_parse_list(self) -> None:
         self.MPDWillReturn(
             "tagtype: Artist\n", "tagtype: ArtistSort\n", "tagtype: Album\n", "OK\n"
@@ -1326,6 +1348,39 @@ class TestAsyncioMPD(unittest.IsolatedAsyncioTestCase):
     async def test_oddhello(self) -> None:
         with self.assertRaises(mpd.base.ProtocolError):
             await self.init_client(odd_hello=[b"NOT OK\n"])
+
+    async def test_binary_empty_first_chunk(self) -> None:
+        await self.init_client()
+        self.mockserver.expect_exchange(
+            [b'albumart "test.ogg" "0"\n'],
+            [b"size: 4\n", b"binary: 0\n", b"", b"\n", b"OK\n"],
+        )
+        with self.assertRaises(mpd.CommandError):
+            await self.client.albumart("test.ogg")
+
+    async def test_binary_empty_chunk_does_not_repeat_request(self) -> None:
+        await self.init_client()
+        self.mockserver.expect_exchange(
+            [b'albumart "test.ogg" "0"\n'],
+            [b"size: 4\n", b"binary: 2\n", b"ab", b"\n", b"OK\n"],
+        )
+        self.mockserver.expect_exchange(
+            [b'albumart "test.ogg" "2"\n'],
+            [b"size: 4\n", b"binary: 0\n", b"", b"\n", b"OK\n"],
+        )
+        with self.assertRaises(mpd.CommandError):
+            await self.client.albumart("test.ogg")
+
+    async def test_binary_oversized_chunk_does_not_start_debugger(self) -> None:
+        await self.init_client()
+        self.mockserver.expect_exchange(
+            [b'albumart "test.ogg" "0"\n'],
+            [b"size: 1\n", b"binary: 2\n", b"ab", b"\n", b"OK\n"],
+        )
+        with mock.patch("builtins.breakpoint") as breakpoint_mock:
+            with self.assertRaises(mpd.CommandListError):
+                await self.client.albumart("test.ogg")
+            breakpoint_mock.assert_not_called()
 
     @unittest.skipIf(
         os.getenv("RUN_SLOW_TESTS") is None,

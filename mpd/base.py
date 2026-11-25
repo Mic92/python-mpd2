@@ -693,7 +693,7 @@ class MPDClient(MPDClientBase):
             if final_metadata is None:
                 data = chunk
                 final_metadata = metadata
-                if not data:
+                if not data and "size" not in final_metadata:
                     break
                 try:
                     size = int(final_metadata["size"])
@@ -705,6 +705,10 @@ class MPDClient(MPDClientBase):
                     size = len(chunk)
                 except ValueError:
                     raise CommandError("Size data unsuitable for binary transfer")
+                if not data:
+                    if size:
+                        raise CommandError("Empty binary chunk before transfer completed")
+                    break
             else:
                 if metadata != final_metadata:
                     raise CommandError(
@@ -712,6 +716,8 @@ class MPDClient(MPDClientBase):
                     )
                 if chunk is None:
                     raise CommandError("Binary field vanished changed during transfer")
+                if not chunk:
+                    raise CommandError("Empty binary chunk before transfer completed")
                 data += chunk
             args[-1] = len(data)
             if len(data) > size:
